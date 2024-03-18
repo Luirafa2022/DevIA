@@ -1,3 +1,4 @@
+![___1_-removebg-preview](https://github.com/Luirafa2022/DevIA/assets/100379672/b0dccd78-60e9-4843-bb59-01bcbcfe240b)
 # DevIA
 Esse é o inicio de desenvolvimento de um projeto de uma IA que responda com base na documentação para ajudar a programar.
 
