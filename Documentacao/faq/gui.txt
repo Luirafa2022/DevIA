@@ -1,0 +1,73 @@
+FAQ da Interface Gráfica do Usuário
+***********************************
+
+
+Perguntas Gerais sobre a GUI
+============================
+
+
+Quais toolkits de GUI existem para o Python?
+============================================
+
+As versões padrão do Python incluem uma interface orientada a objetos
+para o conjunto de widgets Tcl/Tk, chamado tkinter. Este é
+provavelmente o mais fácil de instalar (uma vez que vem incluído na
+maioria das distribuições binárias do Python) e usar. Para obter mais
+informações sobre o Tk, incluindo ponteiros para a fonte, consulte a
+página inicial do Tcl/Tk. Tcl/Tk é totalmente portátil para as
+plataformas macOS, Windows e Unix.
+
+Dependendo da(s) plataforma(s) que você está visando, também existem
+várias alternativas. Uma lista de frameworks GUI de plataformas
+cruzadas e frameworks GUI específicas de plataforma podem ser
+encontradas na wiki do python.
+
+
+Perguntas do Tkinter
+====================
+
+
+Como eu congelo as aplicações Tkinter?
+--------------------------------------
+
+Freeze é uma ferramenta para criar aplicativos autônomos. Ao congelar
+aplicativos Tkinter, os aplicativos não serão verdadeiramente
+autônomos, pois o aplicativo ainda precisará das bibliotecas Tcl e Tk.
+
+Uma solução é enviar a aplicação com as bibliotecas Tcl e Tk e
+apontá-las em tempo de execução usando as variáveis de ambiente
+"TCL_LIBRARY" e "TK_LIBRARY".
+
+Para obter aplicativos verdadeiramente autônomos, os scripts Tcl que
+formam a biblioteca também precisam ser integrados no aplicativo. Uma
+ferramenta que suporta isso é SAM (módulos autônomos), que faz parte
+da distribuição Tix (https://tix.sourceforge.net/).
+
+Compile o Tix com SAM habilitado, execute a chamada apropriada para
+"Tclsam_init()" etc. dentro do "Modules/tkappinit.c" do Python e faça
+um link com libtclsam e libtksam (você também pode incluir as
+bibliotecas Tix).
+
+
+Posso ter eventos Tk manipulados enquanto aguardo pelo E/S?
+-----------------------------------------------------------
+
+Em plataformas diferentes do Windows, sim, e você nem precisa de
+threads! Mas você terá que reestruturar seu código de E/S um pouco. O
+Tk tem o equivalente à chamada "XtAddInput()" do Xt, que permite que
+você registre uma função de retorno de chamada que será chamada a
+partir do loop principal do Tk quando E/S é possível em um descritor
+de arquivo. Consulte Tratadores de arquivos.
+
+
+Não consigo fazer as ligações de tecla funcionarem no Tkinter: por que?
+-----------------------------------------------------------------------
+
+Uma queixa frequentemente ouvida é que os manipuladores de eventos
+vinculados a eventos com o método "bind()" não são manipulados mesmo
+quando a tecla apropriada é pressionada.
+
+A causa mais comum é que o widget para o qual a ligação se aplica não
+possui "foco no teclado". Confira a documentação do Tk para o comando
+de foco. Normalmente, um widget é dado o foco do teclado clicando nele
+(mas não para rótulos, veja a opção takefocus).

@@ -1,0 +1,284 @@
+Python no Windows
+*****************
+
+
+Como faço para executar um programa Python no Windows?
+======================================================
+
+Esta não é necessariamente uma questão direta. Se você já está
+familiarizado com a execução de programas através das linha de comando
+do Windows, então tudo parecerá óbvio; caso contrário, poderá precisar
+de um pouco mais de orientação.
+
+A menos que você use algum tipo de ambiente de desenvolvimento
+integrado, você vai acabar digitando os comandos do Windows no que é
+chamado "janela do DOS" ou "janela do prompt de comando". Geralmente
+você pode abrir essas janelas procurando na barra de pesquisa por
+"cmd". Você deverá reconhecer quando iniciar porque você verá um
+"Prompt de Comando do Windows", que geralmente parece com isso:
+
+   C:\>
+
+A letra pode ser diferente, e pode haver outras coisas depois, então
+você facilmente pode ver algo como:
+
+   D:\YourName\Projects\Python>
+
+dependendo de como seu computador foi configurado e o que mais você
+tem feito com ele recentemente. Uma vez que você tenha iniciado a
+janela, você estará no caminho para executar os seus programas Python.
+
+Você deve observar que seu código Python deve ser processado por outro
+programa chamado interpretador. O interpretador lê o seu código,
+compila em bytecodes, e depois executa os bytecodes para rodar o seu
+programa. Então, como você pode organizar o interpretador para lidar
+com seu Python?
+
+Primeiro, você precisa ter certeza de que sua janela de comando
+reconhece a palavra "py" como uma instrução para iniciar o
+interpretador. Se você abriu a janela de comando, você deve tentar
+digitar o comando "py" e o observar o retorno:
+
+   C:\Users\YourName> py
+
+Você deve então ver algo como:
+
+   Python 3.6.4 (v3.6.4:d48eceb, Dec 19 2017, 06:04:45) [MSC v.1900 32 bit (Intel)] on win32
+   Type "help", "copyright", "credits" or "license" for more information.
+   >>>
+
+Você iniciou o interpretador no "modo interativo". Que significa que
+você pode inserir instruções ou expressões Python interativamente e
+executá-las ou calculá-las enquanto espera. Esta é uma das
+características mais fortes do Python. Verifique isso digitando
+algumas instruções de sua escolha e veja os resultados:
+
+   >>> print("Hello")
+   Hello
+   >>> "Hello" * 3
+   'HelloHelloHello'
+
+Muitas pessoas usam o modo interativo como uma calculadora
+conveniente, mas altamente programável. Quando quiser encerrar sua
+sessão interativa do Python, chame a função "exit()" ou mantenha
+pressionada a tecla "Ctrl" enquanto você digita a "Z" e pressione a
+tecla ""Enter"" para voltar ao prompt de comando do Windows.
+
+Você também pode descobrir que você tem um item no Menu Iniciar como
+Iniciar ‣ Programas‣ Python 3.x ‣ Python (linha de comando) que
+resultará em você vendo o prompt ">>>" em uma nova janela. Se
+acontecer isso, a janela desaparecerá depois que você chamar a função
+"exit()" ou inserir o caractere "Ctrl-Z"; o Windows está executando um
+único comando "python" na janela, e fecha quando você termina o
+interpretador.
+
+Agora que sabemos que o comando "py" é reconhecido, você pode dar seu
+script Python para ele. Você terá que dar um caminho absoluto ou
+relativo para o script Python. Vamos dizer que seu script Python está
+localizado na sua área de trabalho e se chama "hello.py", e seu prompt
+de comando está aberto no seu diretório raiz de forma que você está
+vendo algo similar a:
+
+   C:\Users\YourName>
+
+Então, agora você solicitará o comando "py" para fornecer seu script
+para Python, digitando "py" seguido pelo seu caminho de script:
+
+   C:\Users\YourName> py Desktop\hello.py
+   hello
+
+
+Como eu faço para criar programas Python executáveis?
+=====================================================
+
+No Windows, o instalador padrão do Python já associa a extensão .py
+com o tipo de arquivo (Python.File) e dá àquele tipo de arquivo um
+comando aberto que executa o interpretador ("D:\Program
+Files\Python\python.exe "%1" %*"). Isso é o bastante para fazer
+scripts executáveis pelo prompt de comando como 'foo.py'. Se você
+preferir executar o script simplesmente digitando 'foo' sem extensão
+você precisa adicionar .py à variável de ambiente PATHEXT.
+
+
+Por que Python às vezes demora tanto para iniciar?
+==================================================
+
+Geralmente, Python inicia muito rapidamente no Windows, mas
+ocasionalmente há relatos de erros que, de repente, o Python começa a
+demorar muito tempo para iniciar. Isso é ainda mais intrigante, porque
+Python funciona bem em outros sistemas Windows que parecem estar
+configurados de forma idêntica.
+
+O problema pode ser causado por uma desconfiguração de software
+antivírus na máquina problemática. Alguns antivírus são conhecidos por
+introduzir sobrecarga de duas ordens de magnitude no início quando
+estão configurados para monitorar todas as leituras do sistema de
+arquivos. Tente verificar a configuração do antivírus nos seus
+sistemas para assegurar que eles estão de fato configurados
+identicamente. O McAfee, quando configurado para escanear todo a
+atividade do sistema de arquivos, é um ofensor conhecido.
+
+
+Como eu faço para criar um executável a partir de um código Python?
+===================================================================
+
+Consulte Como posso criar um binário independente a partir de um
+script Python? para uma lista de ferramentas que podem ser usada para
+criar executáveis.
+
+
+Um arquivo "*.pyd" é o mesmo que um DLL?
+========================================
+
+Sim, os arquivos .pyd são dll, mas existem algumas diferenças. Se você
+possui uma DLL chamada "foo.pyd", ela deve ter a função
+"PyInit_foo()". Você pode escrever "import foo" do Python, e o Python
+procurará por foo.pyd (assim como foo.py, foo.pyc) e, se o encontrar,
+tentará chamar "PyInit_foo()" para inicializá-lo. Você não vincula seu
+arquivo .exe ao arquivo foo.lib, pois isso faria com que o Windows
+exigisse a presença da DLL.
+
+Observe que o caminho de pesquisa para foo.pyd é PYTHONPATH, não o
+mesmo que o Windows usa para procurar por foo.dll. Além disso, foo.pyd
+não precisa estar presente para executar seu programa, enquanto que se
+você vinculou seu programa a uma dll, a dll será necessária.
+Obviamente, o foo.pyd é necessário se você quiser dizer "import foo".
+Em uma DLL, o vínculo é declarado no código-fonte com
+"__declspec(dllexport)". Em um .pyd, o vínculo é definido em uma lista
+de funções disponíveis.
+
+
+Como eu posso embutir Python dentro de uma aplicação do Windows?
+================================================================
+
+A incorporação do interpretador Python em um aplicativo do Windows
+pode ser resumida da seguinte forma:
+
+1. **Não** compile o Python diretamente em seu arquivo .exe. No
+   Windows, o Python deve ser uma DLL para manipular os módulos de
+   importação que são eles próprios. (Este é o primeiro fato chave não
+   documentado.) Em vez disso, vincule a "python*NN*.dll"; normalmente
+   é instalado em "C:\Windows\System". *NN* é a versão do Python, um
+   número como "33" para o Python 3.3.
+
+   Você pode vincular ao Python de duas maneiras diferentes. A
+   vinculação em tempo de carregamento significa vincular contra
+   "python*NN*.lib", enquanto a vinculação em tempo de execução
+   significa vincular a "python*NN*.dll". (Nota geral:
+   "python*NN*.lib" é a chamada "import lib" correspondente a
+   "python*NN*.dll". Apenas define símbolos para o vinculador.)
+
+   A vinculação em tempo de execução simplifica bastante as opções de
+   vinculação; tudo acontece em tempo de execução. Seu código deve
+   carregar "python*NN*.dll" usando a rotina "LoadLibraryEx()" do
+   Windows. O código também deve usar rotinas de acesso e dados em
+   "python*NN*.dll" (ou seja, as APIs C do Python) usando ponteiros
+   obtidos pela rotina "GetProcAddress()" do Windows. As macros podem
+   tornar o uso desses ponteiros transparente para qualquer código C
+   que chama rotinas na API C do Python.
+
+2. Se você usa SWIG, é fácil criar um "módulo de extensão" do Python
+   que disponibilizará os dados e os métodos da aplicação para o
+   Python. O SWIG cuidará de todos os detalhes obscuros para você. O
+   resultado é o código C que você vincula *ao* arquivo.exe (!) Você
+   **não** precisa criar um arquivo DLL, o que também simplifica a
+   vinculação.
+
+3. O SWIG criará uma função init (uma função C) cujo nome depende do
+   nome do módulo de extensão. Por exemplo, se o nome do módulo for
+   leo, a função init será chamada initleo(). Se você usa classes de
+   sombra SWIG, como deveria, a função init será chamada initleoc().
+   Isso inicializa uma classe auxiliar principalmente oculta usada
+   pela classe shadow.
+
+   O motivo pelo qual você pode vincular o código C na etapa 2 ao seu
+   arquivo .exe é que chamar a função de inicialização equivale a
+   importar o módulo para o Python! (Este é o segundo fato chave não
+   documentado.)
+
+4. Em suma, você pode utilizar o código a seguir para inicializar o
+   interpretador Python com seu módulo de extensão.
+
+      #include <Python.h>
+      ...
+      Py_Initialize();  // Initialize Python.
+      initmyAppc();  // Initialize (import) the helper class.
+      PyRun_SimpleString("import myApp");  // Import the shadow class.
+
+5. Existem dois problemas com a API C do Python que se tornarão
+   aparentes se você utiliza um compilador que não seja o MSVC, o
+   compilador utilizado no pythonNN.dll.
+
+   Problema 1: As chamadas funções de "Nível Muito Alto" que recebem
+   argumentos "FILE *" não funcionarão em um ambiente com vários
+   compiladores porque a noção de cada "struct FILE" de um compilador
+   será diferente. Do ponto de vista da implementação, essas são
+   funções de nível muito baixo.
+
+   Problema 2: SWIG gera o seguinte código ao gerar envólucros para
+   funções sem retorno:
+
+      Py_INCREF(Py_None);
+      _resultobj = Py_None;
+      return _resultobj;
+
+   Infelizmente, Py_None é uma macro que se expande para uma
+   referência a uma estrutura de dados complexa chamada _Py_NoneStruct
+   dentro de pythonNN.dll. Novamente, esse código falhará em um
+   ambiente com vários compiladores. Substitua esse código por:
+
+      return Py_BuildValue("");
+
+   Pode ser possível usar o comando "%typemap" do SWIG para fazer a
+   alteração automaticamente, embora eu não tenha conseguido fazer
+   isso funcionar (eu sou um completo novato em SWIG).
+
+6. Usar um script de shell do Python para criar uma janela do
+   interpretador Python de dentro da aplicação do Windows não é uma
+   boa ideia; a janela resultante será independente do sistema de
+   janelas da sua aplicação. Em vez disso, você (ou a classe
+   wxPythonWindow) deve criar uma janela "nativa" do interpretador. É
+   fácil conectar essa janela ao interpretador Python. Você pode
+   redirecionar a E/S do Python para qualquer objeto que suporte
+   leitura e gravação; portanto, tudo que você precisa é de um objeto
+   Python (definido no seu módulo de extensão) que contenha métodos
+   read() e write().
+
+
+Como eu impeço editores de adicionarem tabulações na minha source do Python?
+============================================================================
+
+As perguntas frequentes não recomendam a utilização de tabulações, e o
+guia de estilo Python, :pep:*8*, recomenda 4 espaços para código de
+Python distribuído; esse também é o padrão do python-mode do Emacs.
+
+Sob qualquer editor, misturar tabulações e espaços é uma má ideia. O
+MSVC não é diferente nesse aspecto e é facilmente configurado para
+usar espaços: Selecione Tools ‣ Options ‣ Tabs e, para o tipo de
+arquivo "Default", defina "Tab size" e "Indent size" para 4 e
+selecione o botão de opção "Insert spaces".
+
+O Python levanta "IndentationError" ou "TabError" se tabulações e
+espaços misturados estiverem causando problemas no espaço em branco à
+esquerda. Você também pode executar o módulo "tabnanny" para verificar
+uma árvore de diretórios no modo em lote.
+
+
+Como faço para verificar uma tecla pressionada sem bloquear?
+============================================================
+
+Use o módulo "msvcrt". Este é um módulo de extensão padrão específico
+do Windows. Ele define uma função "kbhit()" que verifica se um toque
+no teclado está presente, e "getch()" que recebe um caractere sem
+ecoá-lo.
+
+
+Como resolvo o erro da api-ms-win-crt-runtime-l1-1-0.dll ausente?
+=================================================================
+
+Isso pode ocorrer no Python 3.5 e posterior ao usar o Windows 8.1 ou
+anterior sem que todas as atualizações tenham sido instaladas.
+Primeiro, certifique-se de que seu sistema operacional seja compatível
+e esteja atualizado e, se isso não resolver o problema, visite a
+página de suporte da Microsoft para obter orientação sobre como
+instalar manualmente a atualização do C Runtime.

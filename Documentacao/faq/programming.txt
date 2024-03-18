@@ -1,0 +1,2278 @@
+FAQ referente a Programação
+***************************
+
+
+Questões Gerais
+===============
+
+
+Existe um depurador a nível de código-fonte que possuo pontos de interrupção (breakpoints), single-stepping etc.?
+-----------------------------------------------------------------------------------------------------------------
+
+Sim.
+
+Vários depuradores para Python estão descritos abaixo, e a função
+embutida "breakpoint()" permite que você caia em qualquer um deles.
+
+O módulo pdb é um depurador cujo funcionamento ocorre em modo Console
+simples mas, adequado para o Python. Faz parte da biblioteca padrão do
+Python e está documentado em "documented in the Library Reference
+Manual 1". Caso necessário, também é possível a construção do seu
+próprio depurador usando o código do pdb como um exemplo.
+
+A IDLE (Ambiente Interativo de Desenvolvimento), que faz parte da
+distribuição padrão do Python (normalmente acessível como
+Tools/scripts/idle3), inclui um depurador gráfico
+
+O PythonWin é uma IDE feita para o Python que inclui um depurador de
+GUI baseado no pdb. O depurador PythonWin colora os pontos de
+interrupção e tem alguns recursos legais, como a depuração de
+programas que não são PythonWin. O PythonWin está disponível como
+parte do projeto pywin32 e como parte da distribuição ActivePython.
+
+Eric is an IDE built on PyQt and the Scintilla editing component.
+
+trepan3k é um depurador similar ao gdb.
+
+Visual Studio Code é uma IDE com ferramentas de depuração que integra
+com softwares de controle de versão.
+
+Há uma série de IDE comerciais para desenvolvimento com o Python que
+incluem depuradores gráficos. Dentre tantas temos:
+
+* Wing IDE
+
+* Komodo IDE
+
+* PyCharm
+
+
+Existem ferramentas para ajudar a encontrar bugs ou fazer análise estática de desempenho?
+-----------------------------------------------------------------------------------------
+
+Sim.
+
+Pylint and Pyflakes do basic checking that will help you catch bugs
+sooner.
+
+Static type checkers such as Mypy, Pyre, and Pytype can check type
+hints in Python source code.
+
+
+Como posso criar um binário independente a partir de um script Python?
+----------------------------------------------------------------------
+
+Você não precisa possuir a capacidade de compilar o código Python para
+C se o que deseja é um programa autônomo que os usuários possam baixar
+e executar sem ter que instalar a distribuição Python primeiro.
+Existem várias ferramentas que determinam o conjunto de módulos
+exigidos por um programa e vinculam esses módulos junto com o binário
+do Python para produzir um único executável.
+
+One is to use the freeze tool, which is included in the Python source
+tree as Tools/freeze. It converts Python byte code to C arrays; with a
+C compiler you can embed all your modules into a new program, which is
+then linked with the standard Python modules.
+
+Ela funciona escaneando seu código recursivamente pelas instruções de
+importação (ambas as formas) e procurando pelos módulos no caminho
+padrão do Python e também no diretório fonte (para módulos embutidos).
+Então torna o bytecode de módulos escritos em Python em código C
+(inicializadores de vetor que podem ser transformado em objetos código
+usando o módulo marshal) e cria um arquivo de configurações
+customizado que só contém aqueles módulos embutidos que são na
+realidade usados no programa. A ferramenta então compila os códigos
+gerados em C e liga como o resto do interpretador Python para formar
+um binário autônomo que age exatamente como seu script.
+
+Os pacotes a seguir podem ajudar com a criação dos executáveis do
+console e da GUI:
+
+* Nuitka (Multiplataforma)
+
+* PyInstaller (Cross-platform)
+
+* PyOxidizer (Multiplataforma)
+
+* cx_Freeze (Multiplataforma)
+
+* py2app (somente macOS)
+
+* py2exe (Windows only)
+
+
+Existem padrões para a codificação ou um guia de estilo utilizado pela comunidade Python?
+-----------------------------------------------------------------------------------------
+
+Sim. O guia de estilo esperado para módulos e biblioteca padrão possui
+o nome de PEP8 e podes acessar a sua documentação em **PEP 8**.
+
+
+Núcleo da Linguagem
+===================
+
+
+Porque estou recebo o erro UnboundLocalError quando a variável possui um valor associado?
+-----------------------------------------------------------------------------------------
+
+It can be a surprise to get the "UnboundLocalError" in previously
+working code when it is modified by adding an assignment statement
+somewhere in the body of a function.
+
+Este código:
+
+>>> x = 10
+>>> def bar():
+...     print(x)
+...
+>>> bar()
+10
+
+funciona, mas este código:
+
+>>> x = 10
+>>> def foo():
+...     print(x)
+...     x += 1
+
+resulta em uma "UnboundLocalError":
+
+>>> foo()
+Traceback (most recent call last):
+  ...
+UnboundLocalError: local variable 'x' referenced before assignment
+
+Isso acontece devido ao fato de que quando realizamos uma tarefa numa
+variável de um determinado escopo, essa variável torna-se-á local
+desse escopo acabando por esconder qualquer variável similar que foi
+mencionada no escopo externo. Uma vez que a última declaração de foo
+atribuir um novo valor a "x", o compilador o reconhecera como uma
+variável local. Consequentemente, quando o "print(x)" anterior tentar
+imprimir a variável local não inicializada acabará resultando num.
+
+No exemplo acima, podemos acessar a variável do escopo externo
+declarando-o globalmente:
+
+>>> x = 10
+>>> def foobar():
+...     global x
+...     print(x)
+...     x += 1
+...
+>>> foobar()
+10
+
+Esta declaração explícita é necessária para lembrá-lo de que (ao
+contrário da situação superficialmente análoga com variáveis de classe
+e instância), você realmente está modificando o valor da variável no
+escopo externo:
+
+>>> print(x)
+11
+
+Você pode fazer uma coisa semelhante num escopo aninhado usando o
+argumento nomeado "nonlocal":
+
+>>> def foo():
+...    x = 10
+...    def bar():
+...        nonlocal x
+...        print(x)
+...        x += 1
+...    bar()
+...    print(x)
+...
+>>> foo()
+10
+11
+
+
+Quais são as regras para variáveis locais e globais em Python?
+--------------------------------------------------------------
+
+Em Python, as variáveis que são apenas utilizadas (referenciadas)
+dentro de uma função são implicitamente globais. Se uma variável for
+associada a um valor em qualquer lugar dentro do corpo da função,
+assume-se que a mesma será local, a menos que seja explicitamente
+declarado como global.
+
+Embora um pouco surpreendente no início, um momento de consideração
+explica isso. Por um lado, exigir "global" para variáveis atribuídas
+fornece uma barreira contra efeitos colaterais indesejados. Por outro
+lado, se "global" fosse necessário para todas as referências globais,
+você estaria usando "global" o tempo todo. Você teria que declarar
+como global todas as referências a uma função embutida ou a um
+componente de um módulo importado. Essa desordem anularia a utilidade
+da declaração de "global" para identificar efeitos colaterais.
+
+
+Por que os lambdas definidos em um loop com valores diferentes retornam o mesmo resultado?
+------------------------------------------------------------------------------------------
+
+Suponha que utilizes um loop for para definir algumas funções lambdas
+(ou mesmo funções simples), por exemplo.:
+
+   >>> squares = []
+   >>> for x in range(5):
+   ...     squares.append(lambda: x**2)
+
+Isso oferece uma lista que contém 5 lambdas que calculam "x**2".
+Poderás esperar que, quando invocado, os mesmo retornem,
+respectivamente, "0", "1", "4", "9", e "16". No entanto, quando
+realmente tentares, verás que todos retornam "16":
+
+   >>> squares[2]()
+   16
+   >>> squares[4]()
+   16
+
+Isso acontece porque "x" não é local para o lambdas, mas é definido no
+escopo externo, e é acessado quando o lambda for chamado --- não
+quando é definido. No final do loop, o valor de "x" será "4", e então,
+todas as funções agora retornarão "4**2", ou seja, "16". Também
+poderás verificar isso alterando o valor de "x" e vendo como os
+resultados dos lambdas mudam:
+
+   >>> x = 8
+   >>> squares[2]()
+   64
+
+Para evitar isso, precisarás salvar os valores nas variáveis locais
+para os lambdas, para que eles não dependam do valor de "x" global:
+
+   >>> squares = []
+   >>> for x in range(5):
+   ...     squares.append(lambda n=x: n**2)
+
+Aqui, "n=x" cria uma nova variável "n" local para o lambda e calculada
+quando o lambda será definido para que ele tenha o mesmo valor que "x"
+tenha nesse ponto no loop. Isso significa que o valor de "n" será "0"
+no primeiro "ciclo" do lambda, "1" no segundo "ciclo", "2" no
+terceiro, e assim por diante. Portanto, cada lambda agora retornará o
+resultado correto:
+
+   >>> squares[2]()
+   4
+   >>> squares[4]()
+   16
+
+Observe que esse comportamento não é peculiar dos lambdas, o mesmo
+também ocorre com as funções regulares.
+
+
+Como definir variáveis globais dentro de módulos?
+-------------------------------------------------
+
+A maneira canônica de compartilhar informações entre módulos dentro de
+um único programa é criando um módulo especial (geralmente chamado de
+config ou cfg). Basta importar o módulo de configuração em todos os
+módulos da sua aplicação; O módulo ficará disponível como um nome
+global. Como há apenas uma instância de cada módulo, todas as
+alterações feitas no objeto do módulo se refletem em todos os lugares.
+Por exemplo:
+
+config.py:
+
+   x = 0   # Default value of the 'x' configuration setting
+
+mod.py:
+
+   import config
+   config.x = 1
+
+main.py:
+
+   import config
+   import mod
+   print(config.x)
+
+Note que usar um módulo também é a base para a implementação de
+padrões de design singleton, pela mesma razão.
+
+
+Quais são as "melhores práticas" quando fazemos uso da importação de módulos?
+-----------------------------------------------------------------------------
+
+Em geral, não use "from modulename import *". Ao fazê-lo, o espaço de
+nomes do importador é mais difícil e torna muito mais difícil para as
+ferramentas linters detectar nomes indefinidos.
+
+Faça a importação de módulos na parte superior do arquivo. Isso deixa
+claro quais outros módulos nosso código necessita e evita dúvidas
+sobre por exemplo, se o nome do módulo está no escopo. Usar uma
+importação por linha facilita a adição e exclusão de importações de
+módulos, porém, usar várias importações num única linha, ocupa menos
+espaço da tela.
+
+É uma boa prática importar os módulos na seguinte ordem:
+
+1. módulos padrões da biblioteca -- por exemplo: "sys", "os",
+   "argparse", "re"
+
+2. third-party library modules (anything installed in Python's site-
+   packages directory) -- e.g. "dateutil", "requests", "PIL.Image"
+
+3. módulos desenvolvidos localmente
+
+Às vezes, é necessário transferir as importações para uma função ou
+classe para evitar problemas com importação circular. Gordon McMillan
+diz:
+
+   As importações circulares estão bem onde ambos os módulos utilizam
+   a forma de importação "import 1". Eles falham quando o 2º módulo
+   quer pegar um nome do primeiro ("from module import name") e a
+   importação está no nível superior. Isso porque os nomes no primeiro
+   ainda não estão disponíveis, porque o primeiro módulo está ocupado
+   importando o 2º.
+
+Nesse caso, se o segundo módulo for usado apenas numa função, a
+importação pode ser facilmente movida para dentro do escopo dessa
+função. No momento em que a importação for chamada, o primeiro módulo
+terá finalizado a inicialização e o segundo módulo poderá ser
+importado sem maiores complicações.
+
+Também poderá ser necessário mover as importações para fora do nível
+superior do código se alguns dos módulos forem específicos de uma
+determinada plataforma (SO). Nesse caso, talvez nem seja possível
+importar todos os módulos na parte superior do arquivo. Nessas
+situações devemos importar os módulos que são específicos de cada
+plataforma antes de necessitar utilizar os mesmos.
+
+Apenas mova as importações para um escopo local, como dentro da
+definição de função, se for necessário resolver algum tipo de
+problema, como exemplo, evitar importações circulares ou tentar
+reduzir o tempo de inicialização do módulo. Esta técnica é
+especialmente útil se muitas das importações forem desnecessárias,
+dependendo de como o programa é executado. Também podemos desejar
+mover as importações para uma função se os módulos forem usados
+somente nessa função. Note que carregar um módulo pela primeira vez
+pode ser demorado devido ao tempo de inicialização de cada módulo, no
+entanto, carregar um módulo várias vezes é praticamente imperceptível,
+tendo somente o custo de processamento de pesquisas no dicionário de
+nomes. Mesmo que o nome do módulo tenha saído do escopo, o módulo
+provavelmente estará disponível em "sys.modules".
+
+
+Por que os valores padrão são compartilhados entre objetos?
+-----------------------------------------------------------
+
+Este tipo de erro geralmente pega programadores neófitos. Considere
+esta função:
+
+   def foo(mydict={}):  # Danger: shared reference to one dict for all calls
+       ... compute something ...
+       mydict[key] = value
+       return mydict
+
+A primeira vez que chamares essa função, "mydict" irá conter um único
+item. A segunda vez, "mydict" irá conter dois itens, porque quando
+"foo()" começar a ser executado, "mydict" começará com um item já
+existente.
+
+Muitas vezes, espera-se que ao invocar uma função seja criado novos
+objetos referente aos valores padrão. Isso não é o que acontecerá. Os
+valores padrão são criados exatamente uma vez, quando a função está
+sendo definida. Se esse objeto for alterado, como o dicionário neste
+exemplo, as chamadas subsequentes para a essa função se referirão a
+este objeto alterado.
+
+Por definição, objetos imutáveis, como números, strings, tuplas e o
+"None", estão protegidos de sofrerem alteração. Alterações em objetos
+mutáveis, como dicionários, listas e instâncias de classe, podem levar
+à confusão.
+
+Por causa desse recurso, é uma boa prática de programação para evitar
+o uso de objetos mutáveis contendo valores padrão. Em vez disso,
+utilize "None" como o valor padrão e dentro da função, verifique se o
+parâmetro é "None" e crie uma nova lista /dicionário/ o que quer que
+seja. Por exemplo, escreva o seguinte código:
+
+   def foo(mydict={}):
+       ...
+
+mas:
+
+   def foo(mydict=None):
+       if mydict is None:
+           mydict = {}  # create a new dict for local namespace
+
+Esse recurso pode ser útil. Quando tiveres uma função que consome
+muito tempo para calcular, uma técnica comum é armazenar em cache os
+parâmetros e o valor resultante de cada chamada para a função e
+retornar o valor em cache se o mesmo valor for solicitado novamente.
+Isso se chama "memoizar", e pode ser implementado da seguinte forma:
+
+   # Callers can only provide two parameters and optionally pass _cache by keyword
+   def expensive(arg1, arg2, *, _cache={}):
+       if (arg1, arg2) in _cache:
+           return _cache[(arg1, arg2)]
+
+       # Calculate the value
+       result = ... expensive computation ...
+       _cache[(arg1, arg2)] = result           # Store result in the cache
+       return result
+
+Poderias usar uma variável global contendo um dicionário ao invés do
+valor padrão; isso é uma questão de gosto.
+
+
+Como passar parâmetros opcionais ou parâmetros na forma de keyword de uma função a outra?
+-----------------------------------------------------------------------------------------
+
+Colete os argumentos usando os especificadores "*" ou "**" na lista de
+parâmetros da função. Isso faz com que os argumentos posicionais como
+tupla e os argumentos nomeados sejam passados como um dicionário. Você
+pode, também, passar esses argumentos ao invocar outra função usando
+"*" e "**":
+
+   def f(x, *args, **kwargs):
+       ...
+       kwargs['width'] = '14.3c'
+       ...
+       g(x, *args, **kwargs)
+
+
+Qual a diferença entre argumentos e parâmetros?
+-----------------------------------------------
+
+*Parameters* are defined by the names that appear in a function
+definition, whereas *arguments* are the values actually passed to a
+function when calling it.  Parameters define what *kind of arguments*
+a function can accept.  For example, given the function definition:
+
+   def func(foo, bar=None, **kwargs):
+       pass
+
+*foo*, *bar* e *kwargs* são parâmetros de "func". Dessa forma, ao
+invocar "func", por exemplo:
+
+   func(42, bar=314, extra=somevar)
+
+os valores "42", "314", e "somevar" são os argumentos.
+
+
+Por que ao alterar a lista 'y' também altera a lista 'x'?
+---------------------------------------------------------
+
+Se escreveres um código como:
+
+   >>> x = []
+   >>> y = x
+   >>> y.append(10)
+   >>> y
+   [10]
+   >>> x
+   [10]
+
+Poderás estar se perguntando por que acrescentar um elemento a "y"
+também mudou "x".
+
+Há 2 fatores que produzem esse resultado, são eles:
+
+1. As variáveis são simplesmente nomes que referem-se a objetos. Ao
+   escrevermos "y = x" não criará uma cópia da lista -- criará uma
+   nova variável "y" que irá se referir ao mesmo objeto que "x" está
+   se referindo. Isso significa que existe apenas um objeto (lista), e
+   ambos nomes (variáveis) "x" e "y" estão associados ao mesmo.
+
+2. Listas são objetos *mutáveis*, o que significa que você pode
+   alterar o seu conteúdo.
+
+After the call to "append()", the content of the mutable object has
+changed from "[]" to "[10]".  Since both the variables refer to the
+same object, using either name accesses the modified value "[10]".
+
+Se por acaso, atribuímos um objeto imutável a "x":
+
+   >>> x = 5  # ints are immutable
+   >>> y = x
+   >>> x = x + 1  # 5 can't be mutated, we are creating a new object here
+   >>> x
+   6
+   >>> y
+   5
+
+veremos que nesse caso "x" e "y" não são mais iguais. Isso ocorre
+porque os números inteiros são *imutáveis*, e quando fizermos "x = x +
+1" não estaremos mudando o int "5" e incrementando o seu valor; em vez
+disso, estamos criando um novo objeto (o int "6") e associando "x"
+(isto é, mudando para o objeto no qual "x" se refere). Após esta
+atribuição, temos dois objetos (os ints "6" e "5") e duas variáveis
+que referem-se a elas ("x" agora se refere a "6" mas "y" ainda refere-
+se a "5").
+
+Some operations (for example "y.append(10)" and "y.sort()") mutate the
+object, whereas superficially similar operations (for example "y = y +
+[10]" and "sorted(y)") create a new object.  In general in Python (and
+in all cases in the standard library) a method that mutates an object
+will return "None" to help avoid getting the two types of operations
+confused.  So if you mistakenly write "y.sort()" thinking it will give
+you a sorted copy of "y", you'll instead end up with "None", which
+will likely cause your program to generate an easily diagnosed error.
+
+No entanto, há uma classe de operações em que a mesma operação às
+vezes tem comportamentos diferentes com tipos diferentes: os
+operadores de atribuição aumentada. Por exemplo, "+=" transforma
+listas, mas não tuplas ou ints ("a_list += [1, 2, 3]" é equivalente a
+"a_list.extend([1, 2, 3])" a altera "a_list", sendo que "some_tuple +=
+(1, 2, 3)" e "some_int += 1" cria novos objetos).
+
+Em outras palavras:
+
+* Se tivermos objetos mutáveis ("list", "dict", "set", etc.), podemos
+  usar algumas operações específicas para altera-lo e todas as
+  variáveis que se referem a ela sofreram também a mudança.
+
+* Caso tenhamos um objeto imutável ("str", "int", "tuple", etc.),
+  todas as variáveis que se referem as mesmas sempre verão o mesmo
+  valor, mas as operações que transformam-se nesses valores sempre
+  retornarão novos objetos.
+
+Se quiseres saber se duas variáveis se referem ao mesmo objeto ou não,
+podes usar a palavra-chave "is", ou a função embutida "id()".
+
+
+Como escrever uma função com parâmetros de saída (invocada por referência)?
+---------------------------------------------------------------------------
+
+Lembre-se de que os argumentos são passados por atribuição em Python.
+Uma vez que a tarefa apenas cria referências a objetos, não existe
+"alias" entre um nome de argumento naquele que invocado e o
+destinatário, portanto, não há referência de chamada por si. Podes
+alcançar o efeito desejado de várias maneiras.
+
+1. Retornando um Tupla com os resultados:
+
+      >>> def func1(a, b):
+      ...     a = 'new-value'        # a and b are local names
+      ...     b = b + 1              # assigned to new objects
+      ...     return a, b            # return new values
+      ...
+      >>> x, y = 'old-value', 99
+      >>> func1(x, y)
+      ('new-value', 100)
+
+   Esta quase sempre é a solução mais clara.
+
+2. Utilizando variáveis globais. Essa forma de trabalho não é segura
+   para uso com thread e portanto, a mesma não é recomendada.
+
+3. Pela passagem de um objeto mutável (que possa ser alterado
+   internamente):
+
+      >>> def func2(a):
+      ...     a[0] = 'new-value'     # 'a' references a mutable list
+      ...     a[1] = a[1] + 1        # changes a shared object
+      ...
+      >>> args = ['old-value', 99]
+      >>> func2(args)
+      >>> args
+      ['new-value', 100]
+
+4. Pela passagem de um dicionário que seja mutável:
+
+      >>> def func3(args):
+      ...     args['a'] = 'new-value'     # args is a mutable dictionary
+      ...     args['b'] = args['b'] + 1   # change it in-place
+      ...
+      >>> args = {'a': 'old-value', 'b': 99}
+      >>> func3(args)
+      >>> args
+      {'a': 'new-value', 'b': 100}
+
+5. Ou agrupando valores numa instância de classe:
+
+      >>> class Namespace:
+      ...     def __init__(self, /, **args):
+      ...         for key, value in args.items():
+      ...             setattr(self, key, value)
+      ...
+      >>> def func4(args):
+      ...     args.a = 'new-value'        # args is a mutable Namespace
+      ...     args.b = args.b + 1         # change object in-place
+      ...
+      >>> args = Namespace(a='old-value', b=99)
+      >>> func4(args)
+      >>> vars(args)
+      {'a': 'new-value', 'b': 100}
+
+   Quase nunca existe uma boa razão para complicar isso.
+
+A sua melhor escolha será retornar uma Tupla contendo os múltiplos
+resultados.
+
+
+Como fazer uma função de ordem superior em Python?
+--------------------------------------------------
+
+Existem duas opções: podes usar escopos aninhados ou poderás usar
+objetos chamáveis. Por exemplo, suponha que desejasses definir que
+"linear(a,b)" retorne uma função "f(x)" que calcule o valor "a*x+b".
+Usando escopos aninhados, temos:
+
+   def linear(a, b):
+       def result(x):
+           return a * x + b
+       return result
+
+Ou utilizando objetos chamáveis:
+
+   class linear:
+
+       def __init__(self, a, b):
+           self.a, self.b = a, b
+
+       def __call__(self, x):
+           return self.a * x + self.b
+
+Em ambos os casos:
+
+   taxes = linear(0.3, 2)
+
+dado um objeto chamável, onde "taxes(10e6) == 0.3 * 10e6 + 2".
+
+A abordagem do objeto chamável tem a desvantagem de que é um pouco
+mais lento e resulta num código ligeiramente mais longo. No entanto,
+note que uma coleção de chamáveis pode compartilhar sua assinatura via
+herança:
+
+   class exponential(linear):
+       # __init__ inherited
+       def __call__(self, x):
+           return self.a * (x ** self.b)
+
+Objetos podem encapsular o estado para vários métodos:
+
+   class counter:
+
+       value = 0
+
+       def set(self, x):
+           self.value = x
+
+       def up(self):
+           self.value = self.value + 1
+
+       def down(self):
+           self.value = self.value - 1
+
+   count = counter()
+   inc, dec, reset = count.up, count.down, count.set
+
+Aqui "inc()", "dec()" e "reset()" funcionam como funções que
+compartilham a mesma variável contadora.
+
+
+Como faço para copiar um objeto no Python?
+------------------------------------------
+
+Basicamente, tente utilizar a função "copy.copy()" ou a função
+"copy.deepcopy()" para casos gerais. Nem todos os objetos podem ser
+copiados, mas a maioria poderá.
+
+Alguns objetos podem ser copiados com mais facilidade. Os dicionários
+têm um método "copy()":
+
+   newdict = olddict.copy()
+
+As sequências podem ser copiadas através do uso de fatiamento:
+
+   new_l = l[:]
+
+
+Como posso encontrar os métodos ou atributos de um objeto?
+----------------------------------------------------------
+
+For an instance "x" of a user-defined class, "dir(x)" returns an
+alphabetized list of the names containing the instance attributes and
+methods and attributes defined by its class.
+
+
+Como que o meu código pode descobrir o nome de um objeto?
+---------------------------------------------------------
+
+De um modo geral, não pode, porque os objetos realmente não têm nomes.
+Essencialmente, a atribuição sempre liga um nome a um valor; o mesmo é
+verdade para as instruções "def" e "class", mas nesse caso o valor é
+um chamável. Considere o seguinte código:
+
+   >>> class A:
+   ...     pass
+   ...
+   >>> B = A
+   >>> a = B()
+   >>> b = a
+   >>> print(b)
+   <__main__.A object at 0x16D07CC>
+   >>> print(a)
+   <__main__.A object at 0x16D07CC>
+
+Arguably the class has a name: even though it is bound to two names
+and invoked through the name "B" the created instance is still
+reported as an instance of class "A".  However, it is impossible to
+say whether the instance's name is "a" or "b", since both names are
+bound to the same value.
+
+De um modo geral, não deveria ser necessário que o seu código "conheça
+os nomes" de valores específicos. A menos que escrevas deliberadamente
+programas introspectivos, isso geralmente é uma indicação de que uma
+mudança de abordagem pode ser benéfica.
+
+Em comp.lang.python, Fredrik Lundh deu uma excelente analogia em
+resposta a esta pergunta:
+
+   Da mesma forma que você pega o nome daquele gato que encontrou na
+   sua varanda: o próprio gato (objeto) não pode lhe dizer o seu nome,
+   e ele realmente não se importa -- então a única maneira de
+   descobrir como ele se chama é perguntar a todos os seus vizinhos
+   (espaços de nomes) se é o gato deles (objeto)...
+
+   ....e não fique surpreso se você encontrar que é conhecido por
+   muitos nomes, ou até mesmo nenhum nome.
+
+
+O que há com a precedência do operador vírgula?
+-----------------------------------------------
+
+A vírgula não é um operador em Python. Considere este código:
+
+   >>> "a" in "b", "a"
+   (False, 'a')
+
+Uma vez que a vírgula não seja um operador, mas um separador entre as
+expressões acima, o código será avaliado como se tivéssemos entrado:
+
+   ("a" in "b"), "a"
+
+não:
+
+   "a" in ("b", "a")
+
+O mesmo é verdade para as várias operações de atribuição ("=", "+="
+etc). Eles não são operadores de verdade mas delimitadores sintáticos
+em instruções de atribuição.
+
+
+Existe um equivalente ao operador "?:" ternário do C?
+-----------------------------------------------------
+
+Sim existe. A sintaxe é a seguinte:
+
+   [on_true] if [expression] else [on_false]
+
+   x, y = 50, 25
+   small = x if x < y else y
+
+Antes que essa sintaxe fosse introduzida no Python 2.5, um idioma
+comum era usar operadores lógicos:
+
+   [expression] and [on_true] or [on_false]
+
+No entanto, essa forma não é segura, pois pode dar resultados
+inesperados quando *on_true* possuir um valor booleano falso.
+Portanto, é sempre melhor usar a forma "... if ... else ...".
+
+
+É possível escrever instruções de uma só linha ofuscadas em Python?
+-------------------------------------------------------------------
+
+Yes.  Usually this is done by nesting "lambda" within "lambda".  See
+the following three examples, slightly adapted from Ulf Bartelt:
+
+   from functools import reduce
+
+   # Primes < 1000
+   print(list(filter(None,map(lambda y:y*reduce(lambda x,y:x*y!=0,
+   map(lambda x,y=y:y%x,range(2,int(pow(y,0.5)+1))),1),range(2,1000)))))
+
+   # First 10 Fibonacci numbers
+   print(list(map(lambda x,f=lambda x,f:(f(x-1,f)+f(x-2,f)) if x>1 else 1:
+   f(x,f), range(10))))
+
+   # Mandelbrot set
+   print((lambda Ru,Ro,Iu,Io,IM,Sx,Sy:reduce(lambda x,y:x+'\n'+y,map(lambda y,
+   Iu=Iu,Io=Io,Ru=Ru,Ro=Ro,Sy=Sy,L=lambda yc,Iu=Iu,Io=Io,Ru=Ru,Ro=Ro,i=IM,
+   Sx=Sx,Sy=Sy:reduce(lambda x,y:x+y,map(lambda x,xc=Ru,yc=yc,Ru=Ru,Ro=Ro,
+   i=i,Sx=Sx,F=lambda xc,yc,x,y,k,f=lambda xc,yc,x,y,k,f:(k<=0)or (x*x+y*y
+   >=4.0) or 1+f(xc,yc,x*x-y*y+xc,2.0*x*y+yc,k-1,f):f(xc,yc,x,y,k,f):chr(
+   64+F(Ru+x*(Ro-Ru)/Sx,yc,0,0,i)),range(Sx))):L(Iu+y*(Io-Iu)/Sy),range(Sy
+   ))))(-2.1, 0.7, -1.2, 1.2, 30, 80, 24))
+   #    \___ ___/  \___ ___/  |   |   |__ lines on screen
+   #        V          V      |   |______ columns on screen
+   #        |          |      |__________ maximum of "iterations"
+   #        |          |_________________ range on y axis
+   #        |____________________________ range on x axis
+
+Não tente isso em casa, crianças!
+
+
+O que a barra(/) na lista de parâmetros de uma função significa?
+----------------------------------------------------------------
+
+Uma barra na lista de argumentos de uma função indica que os
+parâmetros anteriores a ela são somente-posicionais.  Os parâmetros
+somente-posicionais são aqueles que não têm nome utilizável
+externamente.  Ao chamar uma função que aceita parâmetros somente-
+posicionais, os argumentos são mapeados para parâmetros com base
+apenas em sua posição. Por exemplo, "divmod()" é uma função que aceita
+parâmetros somente-posicionais. Sua documentação se parece com o
+seguinte:
+
+   >>> help(divmod)
+   Help on built-in function divmod in module builtins:
+
+   divmod(x, y, /)
+       Return the tuple (x//y, x%y).  Invariant: div*y + mod == x.
+
+A barra no final da lista de parâmetros significa que ambos os
+parâmetros são somente-posicionais. Assim, chamar "divmod()" com
+argumentos nomeados levaria a um erro:
+
+   >>> divmod(x=3, y=4)
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   TypeError: divmod() takes no keyword arguments
+
+
+Números e Strings
+=================
+
+
+Como faço para especificar números inteiros hexadecimais e octal?
+-----------------------------------------------------------------
+
+Para especificar um dígito no formato octal, preceda o valor octal com
+um zero e, em seguida, um "o" minúsculo ou maiúsculo. Por exemplo,
+para definir a variável "a" para o valor octal "10" (8 em decimal),
+digite:
+
+   >>> a = 0o10
+   >>> a
+   8
+
+Hexadecimal é bem fácil. Basta preceder o número hexadecimal com um
+zero e, em seguida, um "x" minúsculo ou maiúsculo. Os dígitos
+hexadecimais podem ser especificados em letras maiúsculas e
+minúsculas. Por exemplo, no interpretador Python:
+
+   >>> a = 0xa5
+   >>> a
+   165
+   >>> b = 0XB2
+   >>> b
+   178
+
+
+Por que -22 // 10 retorna -3?
+-----------------------------
+
+É principalmente direcionado pelo desejo de que "i % j" possui o mesmo
+sinal que "j". Se quiseres isso, e também se desejares:
+
+   i == (i // j) * j + (i % j)
+
+então a divisão inteira deve retornar o piso. C também requer que essa
+identidade seja mantida, e então os compiladores que truncarem "i //
+j" precisam fazer com que "i % j" tenham o mesmo sinal que "i".
+
+Existem poucos casos de uso reais para "i % j" quando "j" é negativo.
+Quando "j" é positivo, existem muitos, e em virtualmente todos eles é
+mais útil para "i % j" ser ">= 0". Se o relógio marca 10 agora, o que
+dizia há 200 horas? "-190 % 12 == 2" é útil, enquanto "-190 % 12 ==
+-10" é um bug esperando para morder.
+
+
+How do I get int literal attribute instead of SyntaxError?
+----------------------------------------------------------
+
+Trying to lookup an "int" literal attribute in the normal manner gives
+a "SyntaxError" because the period is seen as a decimal point:
+
+   >>> 1.__class__
+     File "<stdin>", line 1
+     1.__class__
+      ^
+   SyntaxError: invalid decimal literal
+
+A solução é separar o literal do ponto-final com um espaço ou
+parênteses.
+
+>>> 1 .__class__
+<class 'int'>
+>>> (1).__class__
+<class 'int'>
+
+
+Como faço para converter uma String em um número?
+-------------------------------------------------
+
+Para inteiros, use o tipo embutido "int()", por exemplo, "int('144')
+== 144". Da mesma forma, "float()" converterá para um valor do tipo
+ponto flutuante, por exemplo "float('144') == 144.0".
+
+Por padrão, eles interpretam o número como decimal, de modo que
+"int('0144') == 144" é verdadeiro e "int('0x144')" levanta
+"ValueError". "int(string, base)" toma a base para converter como um
+segundo argumento opcional, então "int( '0x144', 16) == 324". Se a
+base for especificada como 0, o número é interpretado usando as regras
+do Python: um "0o" à esquerda indica octal e "0x" indica um número
+hexadecimal.
+
+Não use a função embutida "eval()" se tudo que você precisa é
+converter strings em números. "eval()" será significativamente mais
+lento e apresenta um risco de segurança: alguém pode passar a você uma
+expressão Python que pode ter efeitos colaterais indesejados. Por
+exemplo, alguém poderia passar "__import__('os').system("rm -rf
+$HOME")" que apagaria seu diretório pessoal.
+
+"eval()" também tem o efeito de interpretar números como expressões
+Python, para que, por exemplo, "eval('09')" dá um erro de sintaxe
+porque Python não permite '0' inicial em um número decimal (exceto
+'0').
+
+
+Como faço para converter um número numa string?
+-----------------------------------------------
+
+To convert, e.g., the number "144" to the string "'144'", use the
+built-in type constructor "str()".  If you want a hexadecimal or octal
+representation, use the built-in functions "hex()" or "oct()".  For
+fancy formatting, see the Literais de strings formatadas and Sintaxe
+das strings de formato sections, e.g. ""{:04d}".format(144)" yields
+"'0144'" and ""{:.3f}".format(1.0/3.0)" yields "'0.333'".
+
+
+Como faço para modificar uma string no lugar?
+---------------------------------------------
+
+Você não poder fazer isso as Strings são objetos imutáveis. Na maioria
+das situações, você simplesmente deve construir uma nova string a
+partir das várias partes das quais desejas que a sua nova String
+tenha. No entanto, se precisares de um objeto com a capacidade de
+modificar dados Unicode internamente, tente usar a classe
+"io.StringIO" ou o módulo "array":
+
+   >>> import io
+   >>> s = "Hello, world"
+   >>> sio = io.StringIO(s)
+   >>> sio.getvalue()
+   'Hello, world'
+   >>> sio.seek(7)
+   7
+   >>> sio.write("there!")
+   6
+   >>> sio.getvalue()
+   'Hello, there!'
+
+   >>> import array
+   >>> a = array.array('u', s)
+   >>> print(a)
+   array('u', 'Hello, world')
+   >>> a[0] = 'y'
+   >>> print(a)
+   array('u', 'yello, world')
+   >>> a.tounicode()
+   'yello, world'
+
+
+Como faço para invocar funções/métodos através de uma String?
+-------------------------------------------------------------
+
+Existem várias técnicas.
+
+* A melhor forma é usar um dicionário que mapeie a Strings para
+  funções. A principal vantagem desta técnica é que as Strings não
+  precisam combinar os nomes das funções. Esta é também a principal
+  técnica utilizada para emular uma construção de maiúsculas e
+  minúsculas
+
+     def a():
+         pass
+
+     def b():
+         pass
+
+     dispatch = {'go': a, 'stop': b}  # Note lack of parens for funcs
+
+     dispatch[get_input()]()  # Note trailing parens to call function
+
+* Utilize a função embutida "getattr()":
+
+     import foo
+     getattr(foo, 'bar')()
+
+  Observe que a função "getattr()" funciona com qualquer objeto,
+  incluindo classes, instâncias de classe, módulos e assim por diante.
+
+  A mesma é usado em vários lugares na biblioteca padrão, como este:
+
+     class Foo:
+         def do_foo(self):
+             ...
+
+         def do_bar(self):
+             ...
+
+     f = getattr(foo_instance, 'do_' + opname)
+     f()
+
+* Use "locals()" para determinar o nome da função:
+
+     def myFunc():
+         print("hello")
+
+     fname = "myFunc"
+
+     f = locals()[fname]
+     f()
+
+
+Existe um equivalente em Perl "chomp()" para remover linhas novas de uma String?
+--------------------------------------------------------------------------------
+
+Podes utilizar "S.rstrip("\r\n")" para remover todas as ocorrência de
+qualquer terminador de linha que esteja no final da string "S" sem
+remover os espaços em branco. Se a string "S" representar mais de uma
+linha, contendo várias linhas vazias no final, os terminadores de
+linha de todas linhas em branco serão removidos:
+
+   >>> lines = ("line 1 \r\n"
+   ...          "\r\n"
+   ...          "\r\n")
+   >>> lines.rstrip("\n\r")
+   'line 1 '
+
+Geralmente isso só é desejado ao ler um texto linha por linha, usando
+"S.rstrip()" dessa maneira funciona bem.
+
+
+Existe uma função scanf() ou sscanf() ou algo equivalente?
+----------------------------------------------------------
+
+Não como tal.
+
+For simple input parsing, the easiest approach is usually to split the
+line into whitespace-delimited words using the "split()" method of
+string objects and then convert decimal strings to numeric values
+using "int()" or "float()".  "split()" supports an optional "sep"
+parameter which is useful if the line uses something other than
+whitespace as a separator.
+
+For more complicated input parsing, regular expressions are more
+powerful than C's "sscanf" and better suited for the task.
+
+
+O que significa o erro 'UnicodeDecodeError' ou 'UnicodeEncodeError'?
+--------------------------------------------------------------------
+
+Consulte Unicode HOWTO.
+
+
+Can I end a raw string with an odd number of backslashes?
+---------------------------------------------------------
+
+A raw string ending with an odd number of backslashes will escape the
+string's quote:
+
+   >>> r'C:\this\will\not\work\'
+     File "<stdin>", line 1
+       r'C:\this\will\not\work\'
+            ^
+   SyntaxError: unterminated string literal (detected at line 1)
+
+There are several workarounds for this. One is to use regular strings
+and double the backslashes:
+
+   >>> 'C:\\this\\will\\work\\'
+   'C:\\this\\will\\work\\'
+
+Another is to concatenate a regular string containing an escaped
+backslash to the raw string:
+
+   >>> r'C:\this\will\work' '\\'
+   'C:\\this\\will\\work\\'
+
+It is also possible to use "os.path.join()" to append a backslash on
+Windows:
+
+   >>> os.path.join(r'C:\this\will\work', '')
+   'C:\\this\\will\\work\\'
+
+Note that while a backslash will "escape" a quote for the purposes of
+determining where the raw string ends, no escaping occurs when
+interpreting the value of the raw string. That is, the backslash
+remains present in the value of the raw string:
+
+   >>> r'backslash\'preserved'
+   "backslash\\'preserved"
+
+Also see the specification in the language reference.
+
+
+Performance
+===========
+
+
+Meu programa está muito lento. Como faço para melhorar a performance?
+---------------------------------------------------------------------
+
+Isso geralmente é algo difícil de conseguir. Primeiro, aqui está uma
+lista de situações que devemos lembrar para melhorar a performance da
+nossa aplicação antes de buscarmos outras soluções:
+
+* As características da desempenho podem variar conforme a
+  implementação do Python. Esse FAQ foca em *CPython*.
+
+* O comportamento pode variar em cada Sistemas Operacionais,
+  especialmente quando estivermos tratando de I/o ou multi-threading.
+
+* Sempre devemos encontrar os hot spots em nosso programa *antes de*
+  tentar otimizar qualquer código (veja o módulo "profile").
+
+* Escrever Scripts de benchmark permitirá iterar rapidamente buscando
+  melhorias (veja o módulo "timeit").
+
+* É altamente recomendável ter boa cobertura de código (através de
+  testes de unidade ou qualquer outra técnica) antes de potencialmente
+  apresentar regressões escondidas em otimizações sofisticadas.
+
+Dito isto, existem muitos truques para acelerar nossos códigos Python.
+Aqui estão alguns dos principais tópicos e que geralmente ajudam a
+atingir níveis de desempenho aceitáveis:
+
+* Fazer seus algoritmos rápidos (ou mudando para mais rápidos) podem
+  produzir benefícios maiores que tentar encaixar várias micro-
+  otimizações no seu código.
+
+* Use as estruturas de dados corretas. Documentação de estudo para
+  Tipos embutidos e o módulo "collections".
+
+* Quando a biblioteca padrão fornecer um tipo primitivo para fazer
+  algo, é provável (embora não garantido) que este seja mais rápido do
+  que qualquer alternativa que possa surgir. Isso geralmente é verdade
+  para os tipos primitivos escritos em C, como os embutidos e alguns
+  tipos de extensão. Por exemplo, certifique-se de usar o método
+  embutido "list.sort()" ou a função relacionada "sorted()" para fazer
+  a ordenação (e veja Sorting Techniques para exemplos de uso
+  moderadamente avançado).
+
+* As abstrações tendem a criar indireções e forçar o interpretador a
+  trabalhar mais. Se os níveis de indireção superarem a quantidade de
+  trabalho útil feito, seu programa ficará mais lento. Você deve
+  evitar a abstração excessiva, especialmente sob a forma de pequenas
+  funções ou métodos (que também são muitas vezes prejudiciais à
+  legibilidade).
+
+If you have reached the limit of what pure Python can allow, there are
+tools to take you further away.  For example, Cython can compile a
+slightly modified version of Python code into a C extension, and can
+be used on many different platforms.  Cython can take advantage of
+compilation (and optional type annotations) to make your code
+significantly faster than when interpreted.  If you are confident in
+your C programming skills, you can also write a C extension module
+yourself.
+
+Ver também:
+
+  A página wiki dedicada a dicas de performance performance tips.
+
+
+Qual é a maneira mais eficiente de concatenar muitas Strings?
+-------------------------------------------------------------
+
+A classe "str" e a classe "bytes" são objetos imutáveis, portanto,
+concatenar muitas Strings em é ineficiente, pois cada concatenação
+criará um novo objeto String. No caso geral, o custo total do tempo de
+execução é quadrático no comprimento total da String.
+
+Para juntar vários objetos "str", a linguagem recomendada colocá-los
+numa lista e invocar o método "str.join()":
+
+   chunks = []
+   for s in my_strings:
+       chunks.append(s)
+   result = ''.join(chunks)
+
+(outra forma razoavelmente eficiente é usar a classe "io.StringIO")
+
+Para juntar vários objetos "bytes", a forma recomendada é estender uma
+classe "bytearray" usando a concatenação local (com o operador "+="):
+
+   result = bytearray()
+   for b in my_bytes_objects:
+       result += b
+
+
+Sequencias (Tuples/Lists)
+=========================
+
+
+Como faço para converter tuplas em listas?
+------------------------------------------
+
+O construtor de tipo "tuple(seq)" converte qualquer sequência (na
+verdade, qualquer iterável) numa tupla com os mesmos itens na mesma
+ordem.
+
+Por exemplo, "tuple([1, 2, 3])" produz "(1, 2, 3)" e "tuple('abc')"
+produz "('a', 'b', 'c')". Se o argumento for uma tupla, a mesma não
+faz uma cópia, mas retorna o mesmo objeto, por isso é barato invocar a
+função "tuple()" quando você não tiver certeza que determinado objeto
+já é uma tupla.
+
+O construtor de tipos "list(seq)" converte qualquer sequência ou
+iterável em uma lista com os mesmos itens na mesma ordem. Por exemplo,
+"list((1, 2, 3))" produz "[1, 2, 3]" e "list('abc')" produz "['a',
+'b', 'c']". Se o argumento for uma lista, o meso fará uma cópia como
+em "seq[:]".
+
+
+O que é um índice negativo?
+---------------------------
+
+Python sequences are indexed with positive numbers and negative
+numbers.  For positive numbers 0 is the first index 1 is the second
+index and so forth.  For negative indices -1 is the last index and -2
+is the penultimate (next to last) index and so forth.  Think of
+"seq[-n]" as the same as "seq[len(seq)-n]".
+
+Using negative indices can be very convenient.  For example "S[:-1]"
+is all of the string except for its last character, which is useful
+for removing the trailing newline from a string.
+
+
+Como que eu itero uma sequência na ordem inversa?
+-------------------------------------------------
+
+Use a função embutida "reversed()":
+
+   for x in reversed(sequence):
+       ...  # do something with x ...
+
+Isso não vai alterar sua sequência original, mas construir uma nova
+cópia com a ordem inversa para iteração.
+
+
+Como que remove itens duplicados de uma lista?
+----------------------------------------------
+
+See the Python Cookbook for a long discussion of many ways to do this:
+
+   https://code.activestate.com/recipes/52560/
+
+If you don't mind reordering the list, sort it and then scan from the
+end of the list, deleting duplicates as you go:
+
+   if mylist:
+       mylist.sort()
+       last = mylist[-1]
+       for i in range(len(mylist)-2, -1, -1):
+           if last == mylist[i]:
+               del mylist[i]
+           else:
+               last = mylist[i]
+
+Se todos os elementos da lista podem ser usados como chaves de
+conjunto (isto é, eles são todos *hasheáveis*) isso é muitas vezes
+mais rápido
+
+   mylist = list(set(mylist))
+
+Isso converte a lista em um conjunto, deste modo removendo itens
+duplicados, e depois de volta em uma lista.
+
+
+Como remover múltiplos itens de uma lista
+-----------------------------------------
+
+As with removing duplicates, explicitly iterating in reverse with a
+delete condition is one possibility.  However, it is easier and faster
+to use slice replacement with an implicit or explicit forward
+iteration. Here are three variations.:
+
+   mylist[:] = filter(keep_function, mylist)
+   mylist[:] = (x for x in mylist if keep_condition)
+   mylist[:] = [x for x in mylist if keep_condition]
+
+A compreensão de lista pode ser a mais rápida.
+
+
+Como fazer um vetor em Python?
+------------------------------
+
+Utilize uma lista:
+
+   ["this", 1, "is", "an", "array"]
+
+Lists are equivalent to C or Pascal arrays in their time complexity;
+the primary difference is that a Python list can contain objects of
+many different types.
+
+The "array" module also provides methods for creating arrays of fixed
+types with compact representations, but they are slower to index than
+lists.  Also note that NumPy and other third party packages define
+array-like structures with various characteristics as well.
+
+To get Lisp-style linked lists, you can emulate *cons cells* using
+tuples:
+
+   lisp_list = ("like",  ("this",  ("example", None) ) )
+
+If mutability is desired, you could use lists instead of tuples.  Here
+the analogue of a Lisp *car* is "lisp_list[0]" and the analogue of
+*cdr* is "lisp_list[1]".  Only do this if you're sure you really need
+to, because it's usually a lot slower than using Python lists.
+
+
+Como faço para criar uma lista multidimensional?
+------------------------------------------------
+
+Você provavelmente tentou fazer um Array multidimensional como isso:
+
+   >>> A = [[None] * 2] * 3
+
+Isso parece correto se você imprimir:
+
+   >>> A
+   [[None, None], [None, None], [None, None]]
+
+Mas quando atribuíres um valor, o mesmo aparecerá em vários lugares:
+
+   >>> A[0][0] = 5
+   >>> A
+   [[5, None], [5, None], [5, None]]
+
+A razão é que replicar uma lista com "*" não cria cópias, ela apenas
+cria referências aos objetos existentes. O "*3" cria uma lista
+contendo 3 referências para a mesma lista que contém 2 itens cada.
+Mudanças numa linha serão mostradas em todas as linhas, o que
+certamente não é o que você deseja.
+
+A abordagem sugerida é criar uma lista de comprimento desejado
+primeiro e, em seguida, preencher cada elemento com uma lista recém-
+criada:
+
+   A = [None] * 3
+   for i in range(3):
+       A[i] = [None] * 2
+
+Isso gera uma lista contendo 3 listas diferentes contendo 2 itens
+cadas. Você também pode usar uma compreensão de lista:
+
+   w, h = 2, 3
+   A = [[None] * w for i in range(h)]
+
+Or, you can use an extension that provides a matrix datatype; NumPy is
+the best known.
+
+
+How do I apply a method or function to a sequence of objects?
+-------------------------------------------------------------
+
+To call a method or function and accumulate the return values is a
+list, a *list comprehension* is an elegant solution:
+
+   result = [obj.method() for obj in mylist]
+
+   result = [function(obj) for obj in mylist]
+
+To just run the method or function without saving the return values, a
+plain "for" loop will suffice:
+
+   for obj in mylist:
+       obj.method()
+
+   for obj in mylist:
+       function(obj)
+
+
+Porque a_tuple[i] += ['item'] levanta uma exceção quando a adição funciona?
+---------------------------------------------------------------------------
+
+This is because of a combination of the fact that augmented assignment
+operators are *assignment* operators, and the difference between
+mutable and immutable objects in Python.
+
+This discussion applies in general when augmented assignment operators
+are applied to elements of a tuple that point to mutable objects, but
+we'll use a "list" and "+=" as our exemplar.
+
+Se você escrever:
+
+   >>> a_tuple = (1, 2)
+   >>> a_tuple[0] += 1
+   Traceback (most recent call last):
+      ...
+   TypeError: 'tuple' object does not support item assignment
+
+The reason for the exception should be immediately clear: "1" is added
+to the object "a_tuple[0]" points to ("1"), producing the result
+object, "2", but when we attempt to assign the result of the
+computation, "2", to element "0" of the tuple, we get an error because
+we can't change what an element of a tuple points to.
+
+Por baixo, o que a instrução de atribuição aumentada está fazendo é
+aproximadamente isso:
+
+   >>> result = a_tuple[0] + 1
+   >>> a_tuple[0] = result
+   Traceback (most recent call last):
+     ...
+   TypeError: 'tuple' object does not support item assignment
+
+A parte da atribuição da operação que produz o erro, já que a tupla é
+imutável.
+
+Quando você escreve algo como:
+
+   >>> a_tuple = (['foo'], 'bar')
+   >>> a_tuple[0] += ['item']
+   Traceback (most recent call last):
+     ...
+   TypeError: 'tuple' object does not support item assignment
+
+The exception is a bit more surprising, and even more surprising is
+the fact that even though there was an error, the append worked:
+
+   >>> a_tuple[0]
+   ['foo', 'item']
+
+To see why this happens, you need to know that (a) if an object
+implements an "__iadd__()" magic method, it gets called when the "+="
+augmented assignment is executed, and its return value is what gets
+used in the assignment statement; and (b) for lists, "__iadd__()" is
+equivalent to calling "extend()" on the list and returning the list.
+That's why we say that for lists, "+=" is a "shorthand" for
+"list.extend()":
+
+   >>> a_list = []
+   >>> a_list += [1]
+   >>> a_list
+   [1]
+
+Isso equivale a:
+
+   >>> result = a_list.__iadd__([1])
+   >>> a_list = result
+
+The object pointed to by a_list has been mutated, and the pointer to
+the mutated object is assigned back to "a_list".  The end result of
+the assignment is a no-op, since it is a pointer to the same object
+that "a_list" was previously pointing to, but the assignment still
+happens.
+
+Thus, in our tuple example what is happening is equivalent to:
+
+   >>> result = a_tuple[0].__iadd__(['item'])
+   >>> a_tuple[0] = result
+   Traceback (most recent call last):
+     ...
+   TypeError: 'tuple' object does not support item assignment
+
+The "__iadd__()" succeeds, and thus the list is extended, but even
+though "result" points to the same object that "a_tuple[0]" already
+points to, that final assignment still results in an error, because
+tuples are immutable.
+
+
+I want to do a complicated sort: can you do a Schwartzian Transform in Python?
+------------------------------------------------------------------------------
+
+The technique, attributed to Randal Schwartz of the Perl community,
+sorts the elements of a list by a metric which maps each element to
+its "sort value". In Python, use the "key" argument for the
+"list.sort()" method:
+
+   Isorted = L[:]
+   Isorted.sort(key=lambda s: int(s[10:15]))
+
+
+Como eu posso ordenar uma lista pelos valores de outra lista?
+-------------------------------------------------------------
+
+Merge them into an iterator of tuples, sort the resulting list, and
+then pick out the element you want.
+
+   >>> list1 = ["what", "I'm", "sorting", "by"]
+   >>> list2 = ["something", "else", "to", "sort"]
+   >>> pairs = zip(list1, list2)
+   >>> pairs = sorted(pairs)
+   >>> pairs
+   [("I'm", 'else'), ('by', 'sort'), ('sorting', 'to'), ('what', 'something')]
+   >>> result = [x[1] for x in pairs]
+   >>> result
+   ['else', 'sort', 'to', 'something']
+
+
+Objetos
+=======
+
+
+O que é uma classe?
+-------------------
+
+A class is the particular object type created by executing a class
+statement. Class objects are used as templates to create instance
+objects, which embody both the data (attributes) and code (methods)
+specific to a datatype.
+
+A class can be based on one or more other classes, called its base
+class(es). It then inherits the attributes and methods of its base
+classes. This allows an object model to be successively refined by
+inheritance.  You might have a generic "Mailbox" class that provides
+basic accessor methods for a mailbox, and subclasses such as
+"MboxMailbox", "MaildirMailbox", "OutlookMailbox" that handle various
+specific mailbox formats.
+
+
+O que é um método?
+------------------
+
+A method is a function on some object "x" that you normally call as
+"x.name(arguments...)".  Methods are defined as functions inside the
+class definition:
+
+   class C:
+       def meth(self, arg):
+           return arg * 2 + self.attribute
+
+
+O que é o self?
+---------------
+
+Self is merely a conventional name for the first argument of a method.
+A method defined as "meth(self, a, b, c)" should be called as
+"x.meth(a, b, c)" for some instance "x" of the class in which the
+definition occurs; the called method will think it is called as
+"meth(x, a, b, c)".
+
+Veja também Por que o 'self' deve ser usado explicitamente em
+definições de método e chamadas?.
+
+
+Como eu verifico se um objeto é uma instância de uma dada classe ou de uma subclasse dela?
+------------------------------------------------------------------------------------------
+
+Use the built-in function "isinstance(obj, cls)".  You can check if an
+object is an instance of any of a number of classes by providing a
+tuple instead of a single class, e.g. "isinstance(obj, (class1,
+class2, ...))", and can also check whether an object is one of
+Python's built-in types, e.g. "isinstance(obj, str)" or
+"isinstance(obj, (int, float, complex))".
+
+Note that "isinstance()" also checks for virtual inheritance from an
+*abstract base class*.  So, the test will return "True" for a
+registered class even if hasn't directly or indirectly inherited from
+it.  To test for "true inheritance", scan the *MRO* of the class:
+
+   from collections.abc import Mapping
+
+   class P:
+        pass
+
+   class C(P):
+       pass
+
+   Mapping.register(P)
+
+   >>> c = C()
+   >>> isinstance(c, C)        # direct
+   True
+   >>> isinstance(c, P)        # indirect
+   True
+   >>> isinstance(c, Mapping)  # virtual
+   True
+
+   # Actual inheritance chain
+   >>> type(c).__mro__
+   (<class 'C'>, <class 'P'>, <class 'object'>)
+
+   # Test for "true inheritance"
+   >>> Mapping in type(c).__mro__
+   False
+
+Note that most programs do not use "isinstance()" on user-defined
+classes very often.  If you are developing the classes yourself, a
+more proper object-oriented style is to define methods on the classes
+that encapsulate a particular behaviour, instead of checking the
+object's class and doing a different thing based on what class it is.
+For example, if you have a function that does something:
+
+   def search(obj):
+       if isinstance(obj, Mailbox):
+           ...  # code to search a mailbox
+       elif isinstance(obj, Document):
+           ...  # code to search a document
+       elif ...
+
+A better approach is to define a "search()" method on all the classes
+and just call it:
+
+   class Mailbox:
+       def search(self):
+           ...  # code to search a mailbox
+
+   class Document:
+       def search(self):
+           ...  # code to search a document
+
+   obj.search()
+
+
+O que é delegation?
+-------------------
+
+Delegation is an object oriented technique (also called a design
+pattern). Let's say you have an object "x" and want to change the
+behaviour of just one of its methods.  You can create a new class that
+provides a new implementation of the method you're interested in
+changing and delegates all other methods to the corresponding method
+of "x".
+
+Python programmers can easily implement delegation.  For example, the
+following class implements a class that behaves like a file but
+converts all written data to uppercase:
+
+   class UpperOut:
+
+       def __init__(self, outfile):
+           self._outfile = outfile
+
+       def write(self, s):
+           self._outfile.write(s.upper())
+
+       def __getattr__(self, name):
+           return getattr(self._outfile, name)
+
+Here the "UpperOut" class redefines the "write()" method to convert
+the argument string to uppercase before calling the underlying
+"self._outfile.write()" method.  All other methods are delegated to
+the underlying "self._outfile" object.  The delegation is accomplished
+via the "__getattr__()" method; consult the language reference for
+more information about controlling attribute access.
+
+Note that for more general cases delegation can get trickier. When
+attributes must be set as well as retrieved, the class must define a
+"__setattr__()" method too, and it must do so carefully.  The basic
+implementation of "__setattr__()" is roughly equivalent to the
+following:
+
+   class X:
+       ...
+       def __setattr__(self, name, value):
+           self.__dict__[name] = value
+       ...
+
+Most "__setattr__()" implementations must modify "self.__dict__" to
+store local state for self without causing an infinite recursion.
+
+
+Como eu chamo um método definido numa classe base derivada de uma classe que estende ela?
+-----------------------------------------------------------------------------------------
+
+Use a função embutida "super()":
+
+   class Derived(Base):
+       def meth(self):
+           super().meth()  # calls Base.meth
+
+In the example, "super()" will automatically determine the instance
+from which it was called (the "self" value), look up the *method
+resolution order* (MRO) with "type(self).__mro__", and return the next
+in line after "Derived" in the MRO: "Base".
+
+
+Como eu posso organizar meu código para facilitar a troca da classe base?
+-------------------------------------------------------------------------
+
+You could assign the base class to an alias and derive from the alias.
+Then all you have to change is the value assigned to the alias.
+Incidentally, this trick is also handy if you want to decide
+dynamically (e.g. depending on availability of resources) which base
+class to use.  Example:
+
+   class Base:
+       ...
+
+   BaseAlias = Base
+
+   class Derived(BaseAlias):
+       ...
+
+
+How do I create static class data and static class methods?
+-----------------------------------------------------------
+
+Both static data and static methods (in the sense of C++ or Java) are
+supported in Python.
+
+For static data, simply define a class attribute.  To assign a new
+value to the attribute, you have to explicitly use the class name in
+the assignment:
+
+   class C:
+       count = 0   # number of times C.__init__ called
+
+       def __init__(self):
+           C.count = C.count + 1
+
+       def getcount(self):
+           return C.count  # or return self.count
+
+"c.count" also refers to "C.count" for any "c" such that
+"isinstance(c, C)" holds, unless overridden by "c" itself or by some
+class on the base-class search path from "c.__class__" back to "C".
+
+Caution: within a method of C, an assignment like "self.count = 42"
+creates a new and unrelated instance named "count" in "self"'s own
+dict.  Rebinding of a class-static data name must always specify the
+class whether inside a method or not:
+
+   C.count = 314
+
+Métodos estáticos são possíveis:
+
+   class C:
+       @staticmethod
+       def static(arg1, arg2, arg3):
+           # No 'self' parameter!
+           ...
+
+However, a far more straightforward way to get the effect of a static
+method is via a simple module-level function:
+
+   def getcount():
+       return C.count
+
+If your code is structured so as to define one class (or tightly
+related class hierarchy) per module, this supplies the desired
+encapsulation.
+
+
+Como eu posso sobrecarregar construtores (ou métodos) em Python?
+----------------------------------------------------------------
+
+Essa resposta na verdade se aplica para todos os métodos, mas a
+pergunta normalmente aparece primeiro no contexto de construtores.
+
+Em C++ escreveríamos
+
+   class C {
+       C() { cout << "No arguments\n"; }
+       C(int i) { cout << "Argument is " << i << "\n"; }
+   }
+
+Em Python você tem que escrever um único construtor que pega todos os
+casos usando argumentos padrão. Por exemplo:
+
+   class C:
+       def __init__(self, i=None):
+           if i is None:
+               print("No arguments")
+           else:
+               print("Argument is", i)
+
+Isso não é inteiramente equivalente, mas já está bem próximo.
+
+Você também pode tentar uma lista de argumentos de comprimento
+variável, por exemplo:
+
+   def __init__(self, *args):
+       ...
+
+A mesma abordagem funciona para todas as definições de métodos.
+
+
+Eu tentei usar __spam e recebi um erro sobre _SomeClassName__spam.
+------------------------------------------------------------------
+
+Variable names with double leading underscores are "mangled" to
+provide a simple but effective way to define class private variables.
+Any identifier of the form "__spam" (at least two leading underscores,
+at most one trailing underscore) is textually replaced with
+"_classname__spam", where "classname" is the current class name with
+any leading underscores stripped.
+
+This doesn't guarantee privacy: an outside user can still deliberately
+access the "_classname__spam" attribute, and private values are
+visible in the object's "__dict__".  Many Python programmers never
+bother to use private variable names at all.
+
+
+Minha classe define __del__, mas o mesmo não é chamado quando eu excluo o objeto.
+---------------------------------------------------------------------------------
+
+Há várias razões possíveis para isto.
+
+The "del" statement does not necessarily call "__del__()" -- it simply
+decrements the object's reference count, and if this reaches zero
+"__del__()" is called.
+
+If your data structures contain circular links (e.g. a tree where each
+child has a parent reference and each parent has a list of children)
+the reference counts will never go back to zero.  Once in a while
+Python runs an algorithm to detect such cycles, but the garbage
+collector might run some time after the last reference to your data
+structure vanishes, so your "__del__()" method may be called at an
+inconvenient and random time. This is inconvenient if you're trying to
+reproduce a problem. Worse, the order in which object's "__del__()"
+methods are executed is arbitrary.  You can run "gc.collect()" to
+force a collection, but there *are* pathological cases where objects
+will never be collected.
+
+Despite the cycle collector, it's still a good idea to define an
+explicit "close()" method on objects to be called whenever you're done
+with them.  The "close()" method can then remove attributes that refer
+to subobjects.  Don't call "__del__()" directly -- "__del__()" should
+call "close()" and "close()" should make sure that it can be called
+more than once for the same object.
+
+Another way to avoid cyclical references is to use the "weakref"
+module, which allows you to point to objects without incrementing
+their reference count. Tree data structures, for instance, should use
+weak references for their parent and sibling references (if they need
+them!).
+
+Finally, if your "__del__()" method raises an exception, a warning
+message is printed to "sys.stderr".
+
+
+Como eu consigo pegar uma lista de todas as instâncias de uma dada classe?
+--------------------------------------------------------------------------
+
+Python does not keep track of all instances of a class (or of a built-
+in type). You can program the class's constructor to keep track of all
+instances by keeping a list of weak references to each instance.
+
+
+Por que o resultado de "id()" aparenta não ser único?
+-----------------------------------------------------
+
+The "id()" builtin returns an integer that is guaranteed to be unique
+during the lifetime of the object.  Since in CPython, this is the
+object's memory address, it happens frequently that after an object is
+deleted from memory, the next freshly created object is allocated at
+the same position in memory.  This is illustrated by this example:
+
+>>> id(1000) 
+13901272
+>>> id(2000) 
+13901272
+
+The two ids belong to different integer objects that are created
+before, and deleted immediately after execution of the "id()" call.
+To be sure that objects whose id you want to examine are still alive,
+create another reference to the object:
+
+>>> a = 1000; b = 2000
+>>> id(a) 
+13901272
+>>> id(b) 
+13891296
+
+
+Quando eu posso depender dos testes de identidade com o operador *is*?
+----------------------------------------------------------------------
+
+The "is" operator tests for object identity.  The test "a is b" is
+equivalent to "id(a) == id(b)".
+
+The most important property of an identity test is that an object is
+always identical to itself, "a is a" always returns "True".  Identity
+tests are usually faster than equality tests.  And unlike equality
+tests, identity tests are guaranteed to return a boolean "True" or
+"False".
+
+However, identity tests can *only* be substituted for equality tests
+when object identity is assured.  Generally, there are three
+circumstances where identity is guaranteed:
+
+1) Assignments create new names but do not change object identity.
+After the assignment "new = old", it is guaranteed that "new is old".
+
+2) Putting an object in a container that stores object references does
+not change object identity.  After the list assignment "s[0] = x", it
+is guaranteed that "s[0] is x".
+
+3) If an object is a singleton, it means that only one instance of
+that object can exist.  After the assignments "a = None" and "b =
+None", it is guaranteed that "a is b" because "None" is a singleton.
+
+In most other circumstances, identity tests are inadvisable and
+equality tests are preferred.  In particular, identity tests should
+not be used to check constants such as "int" and "str" which aren't
+guaranteed to be singletons:
+
+   >>> a = 1000
+   >>> b = 500
+   >>> c = b + 500
+   >>> a is c
+   False
+
+   >>> a = 'Python'
+   >>> b = 'Py'
+   >>> c = b + 'thon'
+   >>> a is c
+   False
+
+Do mesmo jeito, novas instâncias de contêineres mutáveis nunca são
+idênticas:
+
+   >>> a = []
+   >>> b = []
+   >>> a is b
+   False
+
+In the standard library code, you will see several common patterns for
+correctly using identity tests:
+
+1) As recommended by **PEP 8**, an identity test is the preferred way
+to check for "None".  This reads like plain English in code and avoids
+confusion with other objects that may have boolean values that
+evaluate to false.
+
+2) Detecting optional arguments can be tricky when "None" is a valid
+input value.  In those situations, you can create a singleton sentinel
+object guaranteed to be distinct from other objects.  For example,
+here is how to implement a method that behaves like "dict.pop()":
+
+   _sentinel = object()
+
+   def pop(self, key, default=_sentinel):
+       if key in self:
+           value = self[key]
+           del self[key]
+           return value
+       if default is _sentinel:
+           raise KeyError(key)
+       return default
+
+3) Container implementations sometimes need to augment equality tests
+with identity tests.  This prevents the code from being confused by
+objects such as "float('NaN')" that are not equal to themselves.
+
+For example, here is the implementation of
+"collections.abc.Sequence.__contains__()":
+
+   def __contains__(self, value):
+       for v in self:
+           if v is value or v == value:
+               return True
+       return False
+
+
+How can a subclass control what data is stored in an immutable instance?
+------------------------------------------------------------------------
+
+When subclassing an immutable type, override the "__new__()" method
+instead of the "__init__()" method.  The latter only runs *after* an
+instance is created, which is too late to alter data in an immutable
+instance.
+
+All of these immutable classes have a different signature than their
+parent class:
+
+   from datetime import date
+
+   class FirstOfMonthDate(date):
+       "Always choose the first day of the month"
+       def __new__(cls, year, month, day):
+           return super().__new__(cls, year, month, 1)
+
+   class NamedInt(int):
+       "Allow text names for some numbers"
+       xlat = {'zero': 0, 'one': 1, 'ten': 10}
+       def __new__(cls, value):
+           value = cls.xlat.get(value, value)
+           return super().__new__(cls, value)
+
+   class TitleStr(str):
+       "Convert str to name suitable for a URL path"
+       def __new__(cls, s):
+           s = s.lower().replace(' ', '-')
+           s = ''.join([c for c in s if c.isalnum() or c == '-'])
+           return super().__new__(cls, s)
+
+The classes can be used like this:
+
+   >>> FirstOfMonthDate(2012, 2, 14)
+   FirstOfMonthDate(2012, 2, 1)
+   >>> NamedInt('ten')
+   10
+   >>> NamedInt(20)
+   20
+   >>> TitleStr('Blog: Why Python Rocks')
+   'blog-why-python-rocks'
+
+
+How do I cache method calls?
+----------------------------
+
+The two principal tools for caching methods are
+"functools.cached_property()" and "functools.lru_cache()".  The former
+stores results at the instance level and the latter at the class
+level.
+
+The *cached_property* approach only works with methods that do not
+take any arguments.  It does not create a reference to the instance.
+The cached method result will be kept only as long as the instance is
+alive.
+
+The advantage is that when an instance is no longer used, the cached
+method result will be released right away.  The disadvantage is that
+if instances accumulate, so too will the accumulated method results.
+They can grow without bound.
+
+The *lru_cache* approach works with methods that have *hashable*
+arguments.  It creates a reference to the instance unless special
+efforts are made to pass in weak references.
+
+The advantage of the least recently used algorithm is that the cache
+is bounded by the specified *maxsize*.  The disadvantage is that
+instances are kept alive until they age out of the cache or until the
+cache is cleared.
+
+Esse exemplo mostra as várias técnicas:
+
+   class Weather:
+       "Lookup weather information on a government website"
+
+       def __init__(self, station_id):
+           self._station_id = station_id
+           # The _station_id is private and immutable
+
+       def current_temperature(self):
+           "Latest hourly observation"
+           # Do not cache this because old results
+           # can be out of date.
+
+       @cached_property
+       def location(self):
+           "Return the longitude/latitude coordinates of the station"
+           # Result only depends on the station_id
+
+       @lru_cache(maxsize=20)
+       def historic_rainfall(self, date, units='mm'):
+           "Rainfall on a given date"
+           # Depends on the station_id, date, and units.
+
+The above example assumes that the *station_id* never changes.  If the
+relevant instance attributes are mutable, the *cached_property*
+approach can't be made to work because it cannot detect changes to the
+attributes.
+
+To make the *lru_cache* approach work when the *station_id* is
+mutable, the class needs to define the "__eq__()" and "__hash__()"
+methods so that the cache can detect relevant attribute updates:
+
+   class Weather:
+       "Example with a mutable station identifier"
+
+       def __init__(self, station_id):
+           self.station_id = station_id
+
+       def change_station(self, station_id):
+           self.station_id = station_id
+
+       def __eq__(self, other):
+           return self.station_id == other.station_id
+
+       def __hash__(self):
+           return hash(self.station_id)
+
+       @lru_cache(maxsize=20)
+       def historic_rainfall(self, date, units='cm'):
+           'Rainfall on a given date'
+           # Depends on the station_id, date, and units.
+
+
+Módulos
+=======
+
+
+Como faço para criar um arquivo .pyc?
+-------------------------------------
+
+When a module is imported for the first time (or when the source file
+has changed since the current compiled file was created) a ".pyc" file
+containing the compiled code should be created in a "__pycache__"
+subdirectory of the directory containing the ".py" file.  The ".pyc"
+file will have a filename that starts with the same name as the ".py"
+file, and ends with ".pyc", with a middle component that depends on
+the particular "python" binary that created it.  (See **PEP 3147** for
+details.)
+
+One reason that a ".pyc" file may not be created is a permissions
+problem with the directory containing the source file, meaning that
+the "__pycache__" subdirectory cannot be created. This can happen, for
+example, if you develop as one user but run as another, such as if you
+are testing with a web server.
+
+Unless the "PYTHONDONTWRITEBYTECODE" environment variable is set,
+creation of a .pyc file is automatic if you're importing a module and
+Python has the ability (permissions, free space, etc...) to create a
+"__pycache__" subdirectory and write the compiled module to that
+subdirectory.
+
+Running Python on a top level script is not considered an import and
+no ".pyc" will be created.  For example, if you have a top-level
+module "foo.py" that imports another module "xyz.py", when you run
+"foo" (by typing "python foo.py" as a shell command), a ".pyc" will be
+created for "xyz" because "xyz" is imported, but no ".pyc" file will
+be created for "foo" since "foo.py" isn't being imported.
+
+If you need to create a ".pyc" file for "foo" -- that is, to create a
+".pyc" file for a module that is not imported -- you can, using the
+"py_compile" and "compileall" modules.
+
+The "py_compile" module can manually compile any module.  One way is
+to use the "compile()" function in that module interactively:
+
+   >>> import py_compile
+   >>> py_compile.compile('foo.py')                 
+
+This will write the ".pyc" to a "__pycache__" subdirectory in the same
+location as "foo.py" (or you can override that with the optional
+parameter "cfile").
+
+You can also automatically compile all files in a directory or
+directories using the "compileall" module.  You can do it from the
+shell prompt by running "compileall.py" and providing the path of a
+directory containing Python files to compile:
+
+   python -m compileall .
+
+
+Como encontro o nome do módulo atual?
+-------------------------------------
+
+A module can find out its own module name by looking at the predefined
+global variable "__name__".  If this has the value "'__main__'", the
+program is running as a script.  Many modules that are usually used by
+importing them also provide a command-line interface or a self-test,
+and only execute this code after checking "__name__":
+
+   def main():
+       print('Running test...')
+       ...
+
+   if __name__ == '__main__':
+       main()
+
+
+How can I have modules that mutually import each other?
+-------------------------------------------------------
+
+Suponha que tenhas os seguintes módulos:
+
+"foo.py":
+
+   from bar import bar_var
+   foo_var = 1
+
+"bar.py":
+
+   from foo import foo_var
+   bar_var = 2
+
+O problema é que o interpretador vai realizar os seguintes passos:
+
+* main imports "foo"
+
+* Empty globals for "foo" are created
+
+* "foo" is compiled and starts executing
+
+* "foo" imports "bar"
+
+* Empty globals for "bar" are created
+
+* "bar" is compiled and starts executing
+
+* "bar" imports "foo" (which is a no-op since there already is a
+  module named "foo")
+
+* The import mechanism tries to read "foo_var" from "foo" globals, to
+  set "bar.foo_var = foo.foo_var"
+
+The last step fails, because Python isn't done with interpreting "foo"
+yet and the global symbol dictionary for "foo" is still empty.
+
+The same thing happens when you use "import foo", and then try to
+access "foo.foo_var" in global code.
+
+There are (at least) three possible workarounds for this problem.
+
+Guido van Rossum recommends avoiding all uses of "from <module> import
+...", and placing all code inside functions.  Initializations of
+global variables and class variables should use constants or built-in
+functions only.  This means everything from an imported module is
+referenced as "<module>.<name>".
+
+Jim Roskind suggests performing steps in the following order in each
+module:
+
+* exports (globals, functions, and classes that don't need imported
+  base classes)
+
+* Declaração "import"
+
+* código ativo (incluindo globais que são inicializadas de valores
+  importados)
+
+Van Rossum doesn't like this approach much because the imports appear
+in a strange place, but it does work.
+
+Matthias Urlichs recommends restructuring your code so that the
+recursive import is not necessary in the first place.
+
+Essas soluções não são mutualmente exclusivas.
+
+
+__import__('x.y.z') returns <module 'x'>; how do I get z?
+---------------------------------------------------------
+
+Consider using the convenience function "import_module()" from
+"importlib" instead:
+
+   z = importlib.import_module('x.y.z')
+
+
+Quando eu edito um módulo importado e o reimporto, as mudanças não aparecem. Por que isso acontece?
+---------------------------------------------------------------------------------------------------
+
+For reasons of efficiency as well as consistency, Python only reads
+the module file on the first time a module is imported.  If it didn't,
+in a program consisting of many modules where each one imports the
+same basic module, the basic module would be parsed and re-parsed many
+times.  To force re-reading of a changed module, do this:
+
+   import importlib
+   import modname
+   importlib.reload(modname)
+
+Aviso: essa técnica não é 100% a prova de falhas. Em particular,
+módulos contendo instruções como
+
+   from modname import some_objects
+
+will continue to work with the old version of the imported objects.
+If the module contains class definitions, existing class instances
+will *not* be updated to use the new class definition.  This can
+result in the following paradoxical behaviour:
+
+   >>> import importlib
+   >>> import cls
+   >>> c = cls.C()                # Create an instance of C
+   >>> importlib.reload(cls)
+   <module 'cls' from 'cls.py'>
+   >>> isinstance(c, cls.C)       # isinstance is false?!?
+   False
+
+A natureza do problema fica clara se você exibir a "identidade" dos
+objetos da classe:
+
+   >>> hex(id(c.__class__))
+   '0x7352a0'
+   >>> hex(id(cls.C))
+   '0x4198d0'

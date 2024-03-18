@@ -1,0 +1,822 @@
+Design e Histórico FAQ
+**********************
+
+
+Por que o Python usa indentação para agrupamento de declarações?
+================================================================
+
+Guido van Rossum acredita que usar indentação para agrupamento é
+extremamente elegante e contribui muito para a clareza de programa
+Python mediano. Muitas pessoas aprendem a amar esta ferramenta depois
+de um tempo.
+
+Uma vez que não há colchetes de início / fim, não pode haver um
+desacordo entre o agrupamento percebido pelo analisador e pelo leitor
+humano. Ocasionalmente, programadores C irão encontrar um fragmento de
+código como este:
+
+   if (x <= y)
+           x++;
+           y--;
+   z++;
+
+Somente a instrução "x++" é executada se a condição for verdadeira,
+mas a indentação leva muitos a acreditarem no contrário. Com
+frequência, até programadores C experientes a observam fixamente por
+um longo tempo, perguntando-se por que "y" está sendo decrementada até
+mesmo para "x > y".
+
+Como não há chaves de início / fim, o Python é muito menos propenso a
+conflitos no estilo de codificação. Em C, existem muitas maneiras
+diferentes de colocar as chaves. Depois de se tornar habitual a
+leitura e escrita de código usando um estilo específico, é normal
+sentir-se um pouco receoso ao ler (ou precisar escrever) em um estilo
+diferente.
+
+Many coding styles place begin/end brackets on a line by themselves.
+This makes programs considerably longer and wastes valuable screen
+space, making it harder to get a good overview of a program.  Ideally,
+a function should fit on one screen (say, 20--30 lines).  20 lines of
+Python can do a lot more work than 20 lines of C.  This is not solely
+due to the lack of begin/end brackets -- the lack of declarations and
+the high-level data types are also responsible -- but the indentation-
+based syntax certainly helps.
+
+
+Por que eu estou recebendo resultados estranhos com simples operações aritméticas?
+==================================================================================
+
+Veja a próxima questão.
+
+
+Por que o calculo de pontos flutuantes são tão imprecisos?
+==========================================================
+
+Usuários são frequentemente surpreendidos por resultados como este:
+
+   >>> 1.2 - 1.0
+   0.19999999999999996
+
+e pensam que isto é um bug do Python. Não é não. Isto tem pouco a ver
+com o Python, e muito mais a ver com como a estrutura da plataforma
+lida com números em ponto flutuante.
+
+The "float" type in CPython uses a C "double" for storage.  A "float"
+object's value is stored in binary floating-point with a fixed
+precision (typically 53 bits) and Python uses C operations, which in
+turn rely on the hardware implementation in the processor, to perform
+floating-point operations. This means that as far as floating-point
+operations are concerned, Python behaves like many popular languages
+including C and Java.
+
+Muitos números podem ser escritos facilmente em notação decimal, mas
+não podem ser expressados exatamente em ponto flutuante binário. Por
+exemplo, após:
+
+   >>> x = 1.2
+
+o valor armazenado para "x" é uma (ótima) aproximação para o valor
+decimal "1.2", mas não é exatamente igual. Em uma máquina típica, o
+valor real armazenado é:
+
+   1.0011001100110011001100110011001100110011001100110011 (binary)
+
+que é exatamente:
+
+   1.1999999999999999555910790149937383830547332763671875 (decimal)
+
+The typical precision of 53 bits provides Python floats with 15--16
+decimal digits of accuracy.
+
+For a fuller explanation, please see the floating point arithmetic
+chapter in the Python tutorial.
+
+
+Por que strings do Python são imutáveis?
+========================================
+
+Existem várias vantagens.
+
+One is performance: knowing that a string is immutable means we can
+allocate space for it at creation time, and the storage requirements
+are fixed and unchanging.  This is also one of the reasons for the
+distinction between tuples and lists.
+
+Another advantage is that strings in Python are considered as
+"elemental" as numbers.  No amount of activity will change the value 8
+to anything else, and in Python, no amount of activity will change the
+string "eight" to anything else.
+
+
+Por que o 'self' deve ser usado explicitamente em definições de método e chamadas?
+==================================================================================
+
+A ideia foi emprestada do Modula-3. Acontece dela ser muito útil, por
+vários motivos.
+
+First, it's more obvious that you are using a method or instance
+attribute instead of a local variable.  Reading "self.x" or
+"self.meth()" makes it absolutely clear that an instance variable or
+method is used even if you don't know the class definition by heart.
+In C++, you can sort of tell by the lack of a local variable
+declaration (assuming globals are rare or easily recognizable) -- but
+in Python, there are no local variable declarations, so you'd have to
+look up the class definition to be sure.  Some C++ and Java coding
+standards call for instance attributes to have an "m_" prefix, so this
+explicitness is still useful in those languages, too.
+
+Second, it means that no special syntax is necessary if you want to
+explicitly reference or call the method from a particular class.  In
+C++, if you want to use a method from a base class which is overridden
+in a derived class, you have to use the "::" operator -- in Python you
+can write "baseclass.methodname(self, <argument list>)".  This is
+particularly useful for "__init__()" methods, and in general in cases
+where a derived class method wants to extend the base class method of
+the same name and thus has to call the base class method somehow.
+
+Finally, for instance variables it solves a syntactic problem with
+assignment: since local variables in Python are (by definition!) those
+variables to which a value is assigned in a function body (and that
+aren't explicitly declared global), there has to be some way to tell
+the interpreter that an assignment was meant to assign to an instance
+variable instead of to a local variable, and it should preferably be
+syntactic (for efficiency reasons).  C++ does this through
+declarations, but Python doesn't have declarations and it would be a
+pity having to introduce them just for this purpose.  Using the
+explicit "self.var" solves this nicely.  Similarly, for using instance
+variables, having to write "self.var" means that references to
+unqualified names inside a method don't have to search the instance's
+directories.  To put it another way, local variables and instance
+variables live in two different namespaces, and you need to tell
+Python which namespace to use.
+
+
+Por que não posso usar uma atribuição em uma expressão?
+=======================================================
+
+A partir do Python 3.8, você pode!
+
+Assignment expressions using the walrus operator ":=" assign a
+variable in an expression:
+
+   while chunk := fp.read(200):
+      print(chunk)
+
+Veja :pep:*572* para mais informações.
+
+
+Por que o Python usa métodos para algumas funcionalidades (ex: lista.index()) mas funções para outras (ex: len(lista))?
+=======================================================================================================================
+
+Como Guido disse:
+
+   (a) For some operations, prefix notation just reads better than
+   postfix -- prefix (and infix!) operations have a long tradition in
+   mathematics which likes notations where the visuals help the
+   mathematician thinking about a problem. Compare the easy with which
+   we rewrite a formula like x*(a+b) into x*a + x*b to the clumsiness
+   of doing the same thing using a raw OO notation.
+
+   (b) When I read code that says len(x) I *know* that it is asking
+   for the length of something. This tells me two things: the result
+   is an integer, and the argument is some kind of container. To the
+   contrary, when I read x.len(), I have to already know that x is
+   some kind of container implementing an interface or inheriting from
+   a class that has a standard len(). Witness the confusion we
+   occasionally have when a class that is not implementing a mapping
+   has a get() or keys() method, or something that isn't a file has a
+   write() method.
+
+   -- https://mail.python.org/pipermail/python-3000/2006-November/004
+   643.html
+
+
+Por que o join() é um método de string em vez de ser um método de lista ou tupla?
+=================================================================================
+
+Strings se tornaram muito parecidas com outros tipos padrão a partir
+do Python 1.6, quando métodos que dão a mesma funcionalidade que
+sempre esteve disponível utilizando as funções do módulo de string
+foram adicionados. A maior parte desses novos métodos foram amplamente
+aceitos, mas o que parece deixar alguns programadores desconfortáveis
+é:
+
+   ", ".join(['1', '2', '4', '8', '16'])
+
+que dá o resultado:
+
+   "1, 2, 4, 8, 16"
+
+Existem dois argumentos comuns contra esse uso.
+
+The first runs along the lines of: "It looks really ugly using a
+method of a string literal (string constant)", to which the answer is
+that it might, but a string literal is just a fixed value. If the
+methods are to be allowed on names bound to strings there is no
+logical reason to make them unavailable on literals.
+
+The second objection is typically cast as: "I am really telling a
+sequence to join its members together with a string constant".  Sadly,
+you aren't.  For some reason there seems to be much less difficulty
+with having "split()" as a string method, since in that case it is
+easy to see that
+
+   "1, 2, 4, 8, 16".split(", ")
+
+is an instruction to a string literal to return the substrings
+delimited by the given separator (or, by default, arbitrary runs of
+white space).
+
+"join()" is a string method because in using it you are telling the
+separator string to iterate over a sequence of strings and insert
+itself between adjacent elements.  This method can be used with any
+argument which obeys the rules for sequence objects, including any new
+classes you might define yourself. Similar methods exist for bytes and
+bytearray objects.
+
+
+O quão rápidas são as exceções?
+===============================
+
+A "try"/"except" block is extremely efficient if no exceptions are
+raised.  Actually catching an exception is expensive.  In versions of
+Python prior to 2.0 it was common to use this idiom:
+
+   try:
+       value = mydict[key]
+   except KeyError:
+       mydict[key] = getvalue(key)
+       value = mydict[key]
+
+Isso somente fazia sentido quando você esperava que o dicionário
+tivesse uma chave quase que toda vez. Se esse não fosse o caso, você
+escrevia desta maneira:
+
+   if key in mydict:
+       value = mydict[key]
+   else:
+       value = mydict[key] = getvalue(key)
+
+For this specific case, you could also use "value =
+dict.setdefault(key, getvalue(key))", but only if the "getvalue()"
+call is cheap enough because it is evaluated in all cases.
+
+
+Por que não existe uma instrução de switch ou case no Python?
+=============================================================
+
+In general, structured switch statements execute one block of code
+when an expression has a particular value or set of values. Since
+Python 3.10 one can easily match literal values, or constants within a
+namespace, with a "match ... case" statement. An older alternative is
+a sequence of "if... elif... elif... else".
+
+For cases where you need to choose from a very large number of
+possibilities, you can create a dictionary mapping case values to
+functions to call.  For example:
+
+   functions = {'a': function_1,
+                'b': function_2,
+                'c': self.method_1}
+
+   func = functions[value]
+   func()
+
+For calling methods on objects, you can simplify yet further by using
+the "getattr()" built-in to retrieve methods with a particular name:
+
+   class MyVisitor:
+       def visit_a(self):
+           ...
+
+       def dispatch(self, value):
+           method_name = 'visit_' + str(value)
+           method = getattr(self, method_name)
+           method()
+
+It's suggested that you use a prefix for the method names, such as
+"visit_" in this example.  Without such a prefix, if values are coming
+from an untrusted source, an attacker would be able to call any method
+on your object.
+
+Imitating switch with fallthrough, as with C's switch-case-default, is
+possible, much harder, and less needed.
+
+
+Can't you emulate threads in the interpreter instead of relying on an OS-specific thread implementation?
+========================================================================================================
+
+Answer 1: Unfortunately, the interpreter pushes at least one C stack
+frame for each Python stack frame.  Also, extensions can call back
+into Python at almost random moments.  Therefore, a complete threads
+implementation requires thread support for C.
+
+Answer 2: Fortunately, there is Stackless Python, which has a
+completely redesigned interpreter loop that avoids the C stack.
+
+
+Por que expressões lambda não podem conter instruções?
+======================================================
+
+Expressões lambda no Python não podem conter instruções porque o
+framework sintático do Python não consegue manipular instruções
+aninhadas dentro de expressões. No entanto, no Python, isso não é um
+problema sério. Diferentemente das formas de lambda em outras
+linguagens, onde elas adicionam funcionalidade, lambdas de Python são
+apenas notações simplificadas se você tiver muita preguiça de definir
+uma função.
+
+Functions are already first class objects in Python, and can be
+declared in a local scope.  Therefore the only advantage of using a
+lambda instead of a locally defined function is that you don't need to
+invent a name for the function -- but that's just a local variable to
+which the function object (which is exactly the same type of object
+that a lambda expression yields) is assigned!
+
+
+O Python pode ser compilado para linguagem de máquina, C ou alguma outra linguagem?
+===================================================================================
+
+Cython compiles a modified version of Python with optional annotations
+into C extensions.  Nuitka is an up-and-coming compiler of Python into
+C++ code, aiming to support the full Python language.
+
+
+Como o Python gerencia memória?
+===============================
+
+The details of Python memory management depend on the implementation.
+The standard implementation of Python, *CPython*, uses reference
+counting to detect inaccessible objects, and another mechanism to
+collect reference cycles, periodically executing a cycle detection
+algorithm which looks for inaccessible cycles and deletes the objects
+involved. The "gc" module provides functions to perform a garbage
+collection, obtain debugging statistics, and tune the collector's
+parameters.
+
+Other implementations (such as Jython or PyPy), however, can rely on a
+different mechanism such as a full-blown garbage collector.  This
+difference can cause some subtle porting problems if your Python code
+depends on the behavior of the reference counting implementation.
+
+In some Python implementations, the following code (which is fine in
+CPython) will probably run out of file descriptors:
+
+   for file in very_long_list_of_files:
+       f = open(file)
+       c = f.read(1)
+
+Indeed, using CPython's reference counting and destructor scheme, each
+new assignment to "f" closes the previous file.  With a traditional
+GC, however, those file objects will only get collected (and closed)
+at varying and possibly long intervals.
+
+If you want to write code that will work with any Python
+implementation, you should explicitly close the file or use the "with"
+statement; this will work regardless of memory management scheme:
+
+   for file in very_long_list_of_files:
+       with open(file) as f:
+           c = f.read(1)
+
+
+Por que o CPython não usa uma forma mais tradicional de esquema de coleta de lixo?
+==================================================================================
+
+For one thing, this is not a C standard feature and hence it's not
+portable. (Yes, we know about the Boehm GC library.  It has bits of
+assembler code for *most* common platforms, not for all of them, and
+although it is mostly transparent, it isn't completely transparent;
+patches are required to get Python to work with it.)
+
+Traditional GC also becomes a problem when Python is embedded into
+other applications.  While in a standalone Python it's fine to replace
+the standard "malloc()" and "free()" with versions provided by the GC
+library, an application embedding Python may want to have its *own*
+substitute for "malloc()" and "free()", and may not want Python's.
+Right now, CPython works with anything that implements "malloc()" and
+"free()" properly.
+
+
+Por que toda memória não é liberada quando o CPython fecha?
+===========================================================
+
+Objects referenced from the global namespaces of Python modules are
+not always deallocated when Python exits.  This may happen if there
+are circular references.  There are also certain bits of memory that
+are allocated by the C library that are impossible to free (e.g. a
+tool like Purify will complain about these).  Python is, however,
+aggressive about cleaning up memory on exit and does try to destroy
+every single object.
+
+If you want to force Python to delete certain things on deallocation
+use the "atexit" module to run a function that will force those
+deletions.
+
+
+Por que existem tipos de dados separados para tuplas e listas?
+==============================================================
+
+Lists and tuples, while similar in many respects, are generally used
+in fundamentally different ways.  Tuples can be thought of as being
+similar to Pascal "records" or C "structs"; they're small collections
+of related data which may be of different types which are operated on
+as a group.  For example, a Cartesian coordinate is appropriately
+represented as a tuple of two or three numbers.
+
+Lists, on the other hand, are more like arrays in other languages.
+They tend to hold a varying number of objects all of which have the
+same type and which are operated on one-by-one.  For example,
+"os.listdir('.')" returns a list of strings representing the files in
+the current directory.  Functions which operate on this output would
+generally not break if you added another file or two to the directory.
+
+Tuples are immutable, meaning that once a tuple has been created, you
+can't replace any of its elements with a new value.  Lists are
+mutable, meaning that you can always change a list's elements.  Only
+immutable elements can be used as dictionary keys, and hence only
+tuples and not lists can be used as keys.
+
+
+Como as listas são implementadas no CPython?
+============================================
+
+CPython's lists are really variable-length arrays, not Lisp-style
+linked lists. The implementation uses a contiguous array of references
+to other objects, and keeps a pointer to this array and the array's
+length in a list head structure.
+
+This makes indexing a list "a[i]" an operation whose cost is
+independent of the size of the list or the value of the index.
+
+When items are appended or inserted, the array of references is
+resized.  Some cleverness is applied to improve the performance of
+appending items repeatedly; when the array must be grown, some extra
+space is allocated so the next few times don't require an actual
+resize.
+
+
+Como são os dicionários implementados no CPython?
+=================================================
+
+CPython's dictionaries are implemented as resizable hash tables.
+Compared to B-trees, this gives better performance for lookup (the
+most common operation by far) under most circumstances, and the
+implementation is simpler.
+
+Dictionaries work by computing a hash code for each key stored in the
+dictionary using the "hash()" built-in function.  The hash code varies
+widely depending on the key and a per-process seed; for example,
+"'Python'" could hash to "-539294296" while "'python'", a string that
+differs by a single bit, could hash to "1142331976".  The hash code is
+then used to calculate a location in an internal array where the value
+will be stored.  Assuming that you're storing keys that all have
+different hash values, this means that dictionaries take constant time
+-- *O*(1), in Big-O notation -- to retrieve a key.
+
+
+Por que chaves de dicionário devem ser imutáveis?
+=================================================
+
+The hash table implementation of dictionaries uses a hash value
+calculated from the key value to find the key.  If the key were a
+mutable object, its value could change, and thus its hash could also
+change.  But since whoever changes the key object can't tell that it
+was being used as a dictionary key, it can't move the entry around in
+the dictionary.  Then, when you try to look up the same object in the
+dictionary it won't be found because its hash value is different. If
+you tried to look up the old value it wouldn't be found either,
+because the value of the object found in that hash bin would be
+different.
+
+If you want a dictionary indexed with a list, simply convert the list
+to a tuple first; the function "tuple(L)" creates a tuple with the
+same entries as the list "L".  Tuples are immutable and can therefore
+be used as dictionary keys.
+
+Algumas soluções inaceitáveis que foram propostas:
+
+* Hash lists by their address (object ID).  This doesn't work because
+  if you construct a new list with the same value it won't be found;
+  e.g.:
+
+     mydict = {[1, 2]: '12'}
+     print(mydict[[1, 2]])
+
+  would raise a "KeyError" exception because the id of the "[1, 2]"
+  used in the second line differs from that in the first line.  In
+  other words, dictionary keys should be compared using "==", not
+  using "is".
+
+* Make a copy when using a list as a key.  This doesn't work because
+  the list, being a mutable object, could contain a reference to
+  itself, and then the copying code would run into an infinite loop.
+
+* Allow lists as keys but tell the user not to modify them.  This
+  would allow a class of hard-to-track bugs in programs when you
+  forgot or modified a list by accident. It also invalidates an
+  important invariant of dictionaries: every value in "d.keys()" is
+  usable as a key of the dictionary.
+
+* Mark lists as read-only once they are used as a dictionary key.  The
+  problem is that it's not just the top-level object that could change
+  its value; you could use a tuple containing a list as a key.
+  Entering anything as a key into a dictionary would require marking
+  all objects reachable from there as read-only -- and again, self-
+  referential objects could cause an infinite loop.
+
+There is a trick to get around this if you need to, but use it at your
+own risk: You can wrap a mutable structure inside a class instance
+which has both a "__eq__()" and a "__hash__()" method. You must then
+make sure that the hash value for all such wrapper objects that reside
+in a dictionary (or other hash based structure), remain fixed while
+the object is in the dictionary (or other structure).
+
+   class ListWrapper:
+       def __init__(self, the_list):
+           self.the_list = the_list
+
+       def __eq__(self, other):
+           return self.the_list == other.the_list
+
+       def __hash__(self):
+           l = self.the_list
+           result = 98767 - len(l)*555
+           for i, el in enumerate(l):
+               try:
+                   result = result + (hash(el) % 9999999) * 1001 + i
+               except Exception:
+                   result = (result % 7777777) + i * 333
+           return result
+
+Note that the hash computation is complicated by the possibility that
+some members of the list may be unhashable and also by the possibility
+of arithmetic overflow.
+
+Furthermore it must always be the case that if "o1 == o2" (ie
+"o1.__eq__(o2) is True") then "hash(o1) == hash(o2)" (ie,
+"o1.__hash__() == o2.__hash__()"), regardless of whether the object is
+in a dictionary or not.  If you fail to meet these restrictions
+dictionaries and other hash based structures will misbehave.
+
+In the case of "ListWrapper", whenever the wrapper object is in a
+dictionary the wrapped list must not change to avoid anomalies.  Don't
+do this unless you are prepared to think hard about the requirements
+and the consequences of not meeting them correctly.  Consider yourself
+warned.
+
+
+Por que lista.sort() não retorna a lista ordenada?
+==================================================
+
+Em situações nas quais desempenho importa, fazer uma cópia da lista só
+para ordenar seria desperdício. Portanto, "lista.sort()" ordena a
+lista. De forma a lembrá-lo desse fato, isso não retorna a lista
+ordenada. Desta forma, você não vai ser confundido a acidentalmente
+sobrescrever uma lista quando você precisar de uma cópia ordenada mas
+também precisar manter a versão não ordenada.
+
+Se você quiser retornar uma nova lista, use a função embutida
+"sorted()" ao invés. Essa função cria uma nova lista a partir de um
+iterável provido, o ordena e retorna. Por exemplo, aqui é como se
+itera em cima das chaves de um dicionário de maneira ordenada:
+
+   for key in sorted(mydict):
+       ...  # do whatever with mydict[key]...
+
+
+How do you specify and enforce an interface spec in Python?
+===========================================================
+
+An interface specification for a module as provided by languages such
+as C++ and Java describes the prototypes for the methods and functions
+of the module.  Many feel that compile-time enforcement of interface
+specifications helps in the construction of large programs.
+
+Python 2.6 adds an "abc" module that lets you define Abstract Base
+Classes (ABCs).  You can then use "isinstance()" and "issubclass()" to
+check whether an instance or a class implements a particular ABC.  The
+"collections.abc" module defines a set of useful ABCs such as
+"Iterable", "Container", and "MutableMapping".
+
+For Python, many of the advantages of interface specifications can be
+obtained by an appropriate test discipline for components.
+
+A good test suite for a module can both provide a regression test and
+serve as a module interface specification and a set of examples.  Many
+Python modules can be run as a script to provide a simple "self test."
+Even modules which use complex external interfaces can often be tested
+in isolation using trivial "stub" emulations of the external
+interface.  The "doctest" and "unittest" modules or third-party test
+frameworks can be used to construct exhaustive test suites that
+exercise every line of code in a module.
+
+An appropriate testing discipline can help build large complex
+applications in Python as well as having interface specifications
+would.  In fact, it can be better because an interface specification
+cannot test certain properties of a program.  For example, the
+"list.append()" method is expected to add new elements to the end of
+some internal list; an interface specification cannot test that your
+"list.append()" implementation will actually do this correctly, but
+it's trivial to check this property in a test suite.
+
+Writing test suites is very helpful, and you might want to design your
+code to make it easily tested. One increasingly popular technique,
+test-driven development, calls for writing parts of the test suite
+first, before you write any of the actual code.  Of course Python
+allows you to be sloppy and not write test cases at all.
+
+
+Why is there no goto?
+=====================
+
+In the 1970s people realized that unrestricted goto could lead to
+messy "spaghetti" code that was hard to understand and revise. In a
+high-level language, it is also unneeded as long as there are ways to
+branch (in Python, with "if" statements and "or", "and", and
+"if"/"else" expressions) and loop (with "while" and "for" statements,
+possibly containing "continue" and "break").
+
+One can also use exceptions to provide a "structured goto" that works
+even across function calls.  Many feel that exceptions can
+conveniently emulate all reasonable uses of the "go" or "goto"
+constructs of C, Fortran, and other languages.  For example:
+
+   class label(Exception): pass  # declare a label
+
+   try:
+       ...
+       if condition: raise label()  # goto label
+       ...
+   except label:  # where to goto
+       pass
+   ...
+
+This doesn't allow you to jump into the middle of a loop, but that's
+usually considered an abuse of "goto" anyway.  Use sparingly.
+
+
+Por que strings brutas (r-strings) não podem terminar com uma contrabarra?
+==========================================================================
+
+More precisely, they can't end with an odd number of backslashes: the
+unpaired backslash at the end escapes the closing quote character,
+leaving an unterminated string.
+
+Raw strings were designed to ease creating input for processors
+(chiefly regular expression engines) that want to do their own
+backslash escape processing. Such processors consider an unmatched
+trailing backslash to be an error anyway, so raw strings disallow
+that.  In return, they allow you to pass on the string quote character
+by escaping it with a backslash.  These rules work well when r-strings
+are used for their intended purpose.
+
+If you're trying to build Windows pathnames, note that all Windows
+system calls accept forward slashes too:
+
+   f = open("/mydir/file.txt")  # works fine!
+
+If you're trying to build a pathname for a DOS command, try e.g. one
+of
+
+   dir = r"\this\is\my\dos\dir" "\\"
+   dir = r"\this\is\my\dos\dir\ "[:-1]
+   dir = "\\this\\is\\my\\dos\\dir\\"
+
+
+Por que o Python não tem uma instrução "with" para atribuição de atributos?
+===========================================================================
+
+Python has a "with" statement that wraps the execution of a block,
+calling code on the entrance and exit from the block.  Some languages
+have a construct that looks like this:
+
+   with obj:
+       a = 1               # equivalent to obj.a = 1
+       total = total + 1   # obj.total = obj.total + 1
+
+In Python, such a construct would be ambiguous.
+
+Outras linguagens, como Object Pascal, Delphi, e C++, usam tipos
+estáticos, então é possível saber, de maneira não ambígua, que membro
+está sendo atribuído. Esse é o principal ponto da tipagem estática --
+o compilador *sempre* sabe o escopo de toda variável em tempo de
+compilação.
+
+O Python usa tipos dinâmicos. É impossível saber com antecedência que
+atributo vai ser referenciado em tempo de execução. Atributos membro
+podem ser adicionados ou removidos de objetos dinamicamente. Isso
+torna impossível saber, de uma leitura simples, que atributo está
+sendo referenciado: um atributo local, um atributo global ou um
+atributo membro?
+
+For instance, take the following incomplete snippet:
+
+   def foo(a):
+       with a:
+           print(x)
+
+The snippet assumes that "a" must have a member attribute called "x".
+However, there is nothing in Python that tells the interpreter this.
+What should happen if "a" is, let us say, an integer?  If there is a
+global variable named "x", will it be used inside the "with" block?
+As you see, the dynamic nature of Python makes such choices much
+harder.
+
+The primary benefit of "with" and similar language features (reduction
+of code volume) can, however, easily be achieved in Python by
+assignment.  Instead of:
+
+   function(args).mydict[index][index].a = 21
+   function(args).mydict[index][index].b = 42
+   function(args).mydict[index][index].c = 63
+
+escreva isso:
+
+   ref = function(args).mydict[index][index]
+   ref.a = 21
+   ref.b = 42
+   ref.c = 63
+
+Isso também tem o efeito colateral de aumentar a velocidade de
+execução por que ligações de nome são resolvidas a tempo de execução
+em Python, e a segunda versão só precisa performar a resolução uma
+vez.
+
+Similar proposals that would introduce syntax to further reduce code
+volume, such as using a 'leading dot', have been rejected in favour of
+explicitness (see https://mail.python.org/pipermail/python-
+ideas/2016-May/040070.html).
+
+
+Por que os geradores não suportam a instrução with?
+===================================================
+
+For technical reasons, a generator used directly as a context manager
+would not work correctly.  When, as is most common, a generator is
+used as an iterator run to completion, no closing is needed.  When it
+is, wrap it as "contextlib.closing(generator)" in the "with"
+statement.
+
+
+Por que dois pontos são necessários para as instruções de if/while/def/class?
+=============================================================================
+
+Os dois pontos são obrigatórios primeiramente para melhorar a leitura
+(um dos resultados da linguagem experimental ABC). Considere isso:
+
+   if a == b
+       print(a)
+
+versus
+
+   if a == b:
+       print(a)
+
+Note como a segunda é ligeiramente mais fácil de ler. Note com mais
+atenção como os dois pontos iniciam o exemplo nessa resposta de
+perguntas frequentes; é um uso padrão em Português.
+
+Outro motivo menor é que os dois pontos deixam mais fácil para os
+editores com realce de sintaxe; eles podem procurar por dois pontos
+para decidir quando a recuo precisa ser aumentada em vez de precisarem
+fazer uma análise mais elaborada do texto do programa.
+
+
+Por que o Python permite vírgulas ao final de listas e tuplas?
+==============================================================
+
+O Python deixa você adicionar uma vírgula ao final de listas, tuplas e
+dicionários:
+
+   [1, 2, 3,]
+   ('a', 'b', 'c',)
+   d = {
+       "A": [1, 5],
+       "B": [6, 7],  # last trailing comma is optional but good style
+   }
+
+Existem várias razões para permitir isso.
+
+Quando você possui um valor literal para uma lista, tupla, ou
+dicionário disposta através de múltiplas linhas, é mais fácil
+adicionar mais elementos porque você não precisa lembrar de adicionar
+uma vírgula na linha anterior. As linhas também podem ser reordenadas
+sem criar um erro de sintaxe.
+
+Acidentalmente omitir a vírgula pode levar a erros que são difíceis de
+diagnosticar. Por exemplo:
+
+   x = [
+     "fee",
+     "fie"
+     "foo",
+     "fum"
+   ]
+
+Essa lista parece ter quatro elementos, mas na verdade contém três:
+"fee", "fiefoo" e "fum". Sempre adicionar a vírgula evita essa fonte
+de erro.
+
+Permitir a vírgula no final também pode deixar a geração de código
+programático mais fácil.
