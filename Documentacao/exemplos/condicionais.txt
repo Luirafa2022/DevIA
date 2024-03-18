@@ -1,0 +1,36 @@
+Exemplo 1: Verificar se um número é positivo
+numero = 10
+if numero > 0:
+print("O número é positivo.")
+else:
+print("O número é negativo ou zero.")
+
+Exemplo 2: Verificar se uma pessoa é maior de idade
+idade = 20
+if idade >= 18:
+print("A pessoa é maior de idade.")
+else:
+print("A pessoa é menor de idade.")
+
+Exemplo 3: Verificar se um número é par ou ímpar
+numero = 7
+if numero % 2 == 0:
+print("O número é par.")
+else:
+print("O número é ímpar.")
+
+Exemplo 4: Verificar se uma string é igual a outra
+fruta = "maçã"
+if fruta == "banana":
+print("A fruta é uma banana.")
+elif fruta == "maçã":
+print("A fruta é uma maçã.")
+else:
+print("A fruta não é uma banana nem uma maçã.")
+
+Exemplo 5: Verificar se um número está dentro de um intervalo
+numero = 15
+if 10 <= numero <= 20:
+print("O número está entre 10 e 20.")
+else:
+print("O número não está entre 10 e 20.")

@@ -1,0 +1,14 @@
+Exemplo 1: Variável do tipo inteiro
+idade = 25
+
+Exemplo 2: Variável do tipo ponto flutuante
+altura = 1.75
+
+Exemplo 3: Variável do tipo string
+nome = "João"
+
+Exemplo 4: Variável do tipo booleano
+is_student = True
+
+Exemplo 5: Variável do tipo lista
+numeros = [1, 2, 3, 4, 5]

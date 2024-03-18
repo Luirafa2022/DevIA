@@ -1,0 +1,16 @@
+Exemplo 1: Criar uma lista vazia
+lista_vazia = []
+
+Exemplo 2: Criar uma lista com elementos
+numeros = [1, 2, 3, 4, 5]
+
+Exemplo 3: Acessar um elemento da lista pelo índice
+print(numeros[0]) # Saída: 1
+
+Exemplo 4: Modificar um elemento da lista
+numeros[2] = 10
+print(numeros) # Saída: [1, 2, 10, 4, 5]
+
+Exemplo 5: Percorrer os elementos de uma lista usando um loop for
+for numero in numeros:
+print(numero)

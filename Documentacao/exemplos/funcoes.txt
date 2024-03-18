@@ -1,0 +1,25 @@
+Exemplo 1: Função que calcula a soma de dois números
+def soma(a, b):
+return a + b
+
+Exemplo 2: Função que verifica se um número é par
+def is_par(numero):
+return numero % 2 == 0
+
+Exemplo 3: Função que retorna o maior valor entre dois números
+def maior_valor(a, b):
+if a > b:
+return a
+else:
+return b
+
+Exemplo 4: Função que imprime "Olá, mundo!"
+def ola_mundo():
+print("Olá, mundo!")
+
+Exemplo 5: Função que calcula o fatorial de um número
+def fatorial(n):
+if n == 0:
+return 1
+else:
+return n * fatorial(n - 1)
