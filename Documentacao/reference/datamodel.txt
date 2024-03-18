@@ -1,0 +1,3010 @@
+3. Modelo de dados
+******************
+
+
+3.1. Objetos, valores e tipos
+=============================
+
+*Objetos* são abstrações do Python para dados. Todos os dados em um
+programa Python são representados por objetos ou por relações entre
+objetos. (De certo modo, e em conformidade com o modelo de Von Neumann
+de um "computador com programa armazenado", código também é
+representado por objetos.)
+
+Every object has an identity, a type and a value.  An object's
+*identity* never changes once it has been created; you may think of it
+as the object's address in memory.  The "is" operator compares the
+identity of two objects; the "id()" function returns an integer
+representing its identity.
+
+**Detalhes da implementação do CPython:** Para CPython, "id(x)" é o
+endereço de memória em que "x" está armazenado.
+
+O tipo de um objeto determina as operações que o objeto implementa
+(por exemplo, "ele tem um tamanho?") e também define os valores
+possíveis para objetos desse tipo. A função "type()" retorna o tipo de
+um objeto (que é também um objeto). Como sua identidade, o *tipo* do
+objeto também é imutável. [1]
+
+O *valor* de alguns objetos pode mudar. Objetos cujos valores podem
+mudar são descritos como *mutáveis*, objetos cujo valor não pode ser
+mudado uma vez que foram criados são chamados *imutáveis*. (O valor de
+um objeto contêiner imutável que contém uma referência a um objeto
+mutável pode mudar quando o valor deste último for mudado; no entanto
+o contêiner é ainda assim considerada imutável, pois a coleção de
+objetos que contém não pode ser mudada. Então a imutabilidade não é
+estritamente o mesmo do que não haver mudanças de valor, é mais
+sutil.) A mutabilidade de um objeto é determinada pelo seu tipo; por
+exemplo, números, strings e tuplas são imutáveis, enquanto dicionários
+e listas são mutáveis.
+
+Os objetos nunca são destruídos explicitamente; no entanto, quando
+eles se tornam inacessíveis, eles podem ser coletados como lixo. Uma
+implementação tem permissão para adiar a coleta de lixo ou omiti-la
+completamente -- é uma questão de detalhe de implementação como a
+coleta de lixo é implementada, desde que nenhum objeto que ainda
+esteja acessível seja coletado.
+
+**Detalhes da implementação do CPython:** CPython atualmente usa um
+esquema de contagem de referências com detecção atrasada (opcional) de
+lixo ligado ciclicamente, que coleta a maioria dos objetos assim que
+eles se tornam inacessíveis, mas não é garantido que coletará lixo
+contendo referências circulares. Veja a documentação do módulo "gc"
+para informações sobre como controlar a coleta de lixo cíclico. Outras
+implementações agem de forma diferente e o CPython pode mudar. Não
+dependa da finalização imediata dos objetos quando eles se tornarem
+inacessíveis (isto é, você deve sempre fechar os arquivos
+explicitamente).
+
+Note that the use of the implementation's tracing or debugging
+facilities may keep objects alive that would normally be collectable.
+Also note that catching an exception with a "try"..."except" statement
+may keep objects alive.
+
+Some objects contain references to "external" resources such as open
+files or windows.  It is understood that these resources are freed
+when the object is garbage-collected, but since garbage collection is
+not guaranteed to happen, such objects also provide an explicit way to
+release the external resource, usually a "close()" method. Programs
+are strongly recommended to explicitly close such objects.  The
+"try"..."finally" statement and the "with" statement provide
+convenient ways to do this.
+
+Alguns objetos contêm referências a outros objetos; eles são chamados
+de *contêineres*. Exemplos de contêineres são tuplas, listas e
+dicionários. As referências fazem parte do valor de um contêiner. Na
+maioria dos casos, quando falamos sobre o valor de um contêiner, nos
+referimos aos valores, não às identidades dos objetos contidos;
+entretanto, quando falamos sobre a mutabilidade de um contêiner,
+apenas as identidades dos objetos contidos imediatamente estão
+implícitas. Portanto, se um contêiner imutável (como uma tupla) contém
+uma referência a um objeto mutável, seu valor muda se esse objeto
+mutável for alterado.
+
+Os tipos afetam quase todos os aspectos do comportamento do objeto.
+Até mesmo a importância da identidade do objeto é afetada em algum
+sentido: para tipos imutáveis, as operações que calculam novos valores
+podem realmente retornar uma referência a qualquer objeto existente
+com o mesmo tipo e valor, enquanto para objetos mutáveis isso não é
+permitido. Por exemplo, após "a = 1; b = 1", "a" e "b" podem ou não se
+referir ao mesmo objeto com o valor um, dependendo da implementação,
+mas após "c = []; d = []", "c" e "d" têm a garantia de referir-se a
+duas listas vazias diferentes e únicas. (Observe que "c = d = []"
+atribui o mesmo objeto para "c" e "d".)
+
+
+3.2. A hierarquia de tipos padrão
+=================================
+
+Abaixo está uma lista dos tipos que são embutidos no Python. Módulos
+de extensão (escritos em C, Java ou outras linguagens, dependendo da
+implementação) podem definir tipos adicionais. Versões futuras do
+Python podem adicionar tipos à hierarquia de tipo (por exemplo,
+números racionais, matrizes de inteiros armazenadas de forma
+eficiente, etc.), embora tais adições sejam frequentemente fornecidas
+por meio da biblioteca padrão.
+
+Algumas das descrições de tipo abaixo contêm um parágrafo listando
+"atributos especiais". Esses são atributos que fornecem acesso à
+implementação e não se destinam ao uso geral. Sua definição pode mudar
+no futuro.
+
+
+3.2.1. None
+-----------
+
+Este tipo possui um único valor. Existe um único objeto com este
+valor. Este objeto é acessado através do nome embutido "None". É usado
+para significar a ausência de um valor em muitas situações, por
+exemplo, ele é retornado de funções que não retornam nada
+explicitamente. Seu valor de verdade é falso.
+
+
+3.2.2. NotImplemented
+---------------------
+
+This type has a single value.  There is a single object with this
+value. This object is accessed through the built-in name
+"NotImplemented". Numeric methods and rich comparison methods should
+return this value if they do not implement the operation for the
+operands provided.  (The interpreter will then try the reflected
+operation, or some other fallback, depending on the operator.)  It
+should not be evaluated in a boolean context.
+
+Veja a documentação Implementando as operações aritméticas para mais
+detalhes.
+
+Alterado na versão 3.9: Evaluating "NotImplemented" in a boolean
+context is deprecated. While it currently evaluates as true, it will
+emit a "DeprecationWarning". It will raise a "TypeError" in a future
+version of Python.
+
+
+3.2.3. Ellipsis
+---------------
+
+Este tipo possui um único valor. Existe um único objeto com este
+valor. Este objeto é acessado através do literal "..." ou do nome
+embutido "Ellipsis" (reticências). Seu valor de verdade é verdadeiro.
+
+
+3.2.4. "numbers.Number"
+-----------------------
+
+Esses são criados por literais numéricos e retornados como resultados
+por operadores aritméticos e funções aritméticas embutidas. Os objetos
+numéricos são imutáveis; uma vez criado, seu valor nunca muda. Os
+números do Python são, obviamente, fortemente relacionados aos números
+matemáticos, mas sujeitos às limitações da representação numérica em
+computadores.
+
+As representações de string das classes numéricas, calculadas por
+"__repr__()" e "__str__()", têm as seguintes propriedades:
+
+* Elas são literais numéricos válidos que, quando passados para seu
+  construtor de classe, produzem um objeto com o valor do numérico
+  original.
+
+* A representação está na base 10, quando possível.
+
+* Os zeros à esquerda, possivelmente com exceção de um único zero
+  antes de um ponto decimal, não são mostrados.
+
+* Os zeros à direita, possivelmente com exceção de um único zero após
+  um ponto decimal, não são mostrados.
+
+* Um sinal é mostrado apenas quando o número é negativo.
+
+Python distingue entre inteiros, números de ponto flutuante e números
+complexos:
+
+
+3.2.4.1. "numbers.Integral"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Estes representam elementos do conjunto matemático de inteiros
+(positivos e negativos).
+
+Nota:
+
+  As regras para representação de inteiros têm como objetivo fornecer
+  a interpretação mais significativa das operações de deslocamento e
+  máscara envolvendo inteiros negativos.
+
+Existem dois tipos de inteiros:
+
+Inteiros ("int")
+   Estes representam números em um intervalo ilimitado, sujeito apenas
+   à memória (virtual) disponível. Para o propósito de operações de
+   deslocamento e máscara, uma representação binária é assumida e os
+   números negativos são representados em uma variante do complemento
+   de 2 que dá a ilusão de uma string infinita de bits de sinal
+   estendendo-se para a esquerda.
+
+Booleanos ("bool")
+   Estes representam os valores da verdade Falsos e Verdadeiros. Os
+   dois objetos que representam os valores "False" e "True" são os
+   únicos objetos booleanos. O tipo booleano é um subtipo do tipo
+   inteiro, e os valores booleanos se comportam como os valores 0 e 1,
+   respectivamente, em quase todos os contextos, com exceção de que,
+   quando convertidos em uma string, as strings ""False"" ou ""True""
+   são retornados, respectivamente.
+
+
+3.2.4.2. "numbers.Real" ("float")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Estes representam números de ponto flutuante de precisão dupla no
+nível da máquina. Você está à mercê da arquitetura da máquina
+subjacente (e implementação C ou Java) para o intervalo aceito e
+tratamento de estouro. Python não oferece suporte a números de ponto
+flutuante de precisão única; a economia no uso do processador e da
+memória, que normalmente é o motivo de usá-los, é ofuscada pela
+sobrecarga do uso de objetos em Python, portanto, não há razão para
+complicar a linguagem com dois tipos de números de ponto flutuante.
+
+
+3.2.4.3. "numbers.Complex" ("complex")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Estes representam números complexos como um par de números de ponto
+flutuante de precisão dupla no nível da máquina. As mesmas
+advertências se aplicam aos números de ponto flutuante. As partes
+reais e imaginárias de um número complexo "z" podem ser obtidas
+através dos atributos somente leitura "z.real" e "z.imag".
+
+
+3.2.5. Sequências
+-----------------
+
+Estes representam conjuntos ordenados finitos indexados por números
+não negativos. A função embutida "len()" retorna o número de itens de
+uma sequência. Quando o comprimento de uma sequência é *n*, o conjunto
+de índices contém os números 0, 1, ..., *n*-1. O item *i* da sequência
+*a* é selecionado por "a[i]".
+
+Sequências também suportam fatiamento: "a[i:j]" seleciona todos os
+itens com índice *k* de forma que *i* "<=" *k* "<" *j*. Quando usada
+como expressão, uma fatia é uma sequência do mesmo tipo. Isso implica
+que o conjunto de índices é renumerado para que comece em 0.
+
+Algumas sequências também suportam "fatiamento estendido" com um
+terceiro parâmetro de "etapa": "a[i:j:k]" seleciona todos os itens de
+*a* com índice *x* onde "x = i + n*k", *n* ">=" "0" e *i* "<=" *x* "<"
+*j*.
+
+As sequências são distinguidas de acordo com sua mutabilidade:
+
+
+3.2.5.1. Sequências imutáveis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Um objeto de um tipo de sequência imutável não pode ser alterado
+depois de criado. (Se o objeto contiver referências a outros objetos,
+esses outros objetos podem ser mutáveis e podem ser alterados; no
+entanto, a coleção de objetos diretamente referenciada por um objeto
+imutável não pode ser alterada.)
+
+Os tipos a seguir são sequências imutáveis:
+
+Strings
+   Uma string é uma sequência de valores que representam pontos de
+   código Unicode. Todos os pontos de código no intervalo "U+0000 -
+   U+10FFFF" podem ser representados em uma string. Python não tem um
+   tipo char; em vez disso, cada ponto de código na string é
+   representado como um objeto string com comprimento "1". A função
+   embutida "ord()" converte um ponto de código de sua forma de string
+   para um inteiro no intervalo "0 - 10FFFF"; "chr()" converte um
+   inteiro no intervalo "0 - 10FFFF" para o objeto de string
+   correspondente de comprimento "1". "str.encode()" pode ser usado
+   para converter uma "str" para "bytes" usando a codificação de texto
+   fornecida, e "bytes.decode()" pode ser usado para conseguir o
+   oposto.
+
+Tuplas
+   Os itens de uma tupla são objetos Python arbitrários. Tuplas de
+   dois ou mais itens são formadas por listas de expressões separadas
+   por vírgulas. Uma tupla de um item (um "singleton") pode ser
+   formada afixando uma vírgula a uma expressão (uma expressão por si
+   só não cria uma tupla, já que os parênteses devem ser usados para
+   agrupamento de expressões). Uma tupla vazia pode ser formada por um
+   par vazio de parênteses.
+
+Bytes
+   Um objeto bytes é um vetor imutável. Os itens são bytes de 8 bits,
+   representados por inteiros no intervalo 0 <= x < 256. Literais de
+   bytes (como "b'abc'") e o construtor embutido "bytes()" podem ser
+   usados para criar objetos bytes. Além disso, os objetos bytes podem
+   ser decodificados em strings através do método "decode()".
+
+
+3.2.5.2. Sequências mutáveis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As sequências mutáveis podem ser alteradas após serem criadas. As
+notações de subscrição e fatiamento podem ser usadas como o destino da
+atribuição e instruções "del" (*delete*, exclusão).
+
+Nota:
+
+  Os módulos "collections" e "array" fornecem exemplos adicionais de
+  tipos de sequência mutáveis.
+
+Atualmente, existem dois tipos de sequência mutável intrínseca:
+
+Listas
+   Os itens de uma lista são objetos Python arbitrários. As listas são
+   formadas colocando uma lista de expressões separada por vírgulas
+   entre colchetes. (Observe que não há casos especiais necessários
+   para formar listas de comprimento 0 ou 1.)
+
+Vetores de bytes
+   Um objeto bytearray é um vetor mutável. Eles são criados pelo
+   construtor embutido "bytearray()". Além de serem mutáveis (e,
+   portanto, não-hasheável), os vetores de bytes fornecem a mesma
+   interface e funcionalidade que os objetos imutáveis "bytes".
+
+
+3.2.6. Tipos de conjuntos
+-------------------------
+
+Estes representam conjuntos finitos e não ordenados de objetos únicos
+e imutáveis. Como tal, eles não podem ser indexados por nenhum
+subscrito. No entanto, eles podem ser iterados, e a função embutida
+"len()" retorna o número de itens em um conjunto. Os usos comuns para
+conjuntos são testes rápidos de associação, remoção de duplicatas de
+uma sequência e computação de operações matemáticas como interseção,
+união, diferença e diferença simétrica.
+
+Para elementos de conjunto, as mesmas regras de imutabilidade se
+aplicam às chaves de dicionário. Observe que os tipos numéricos
+obedecem às regras normais para comparação numérica: se dois números
+forem iguais (por exemplo, "1" e "1.0"), apenas um deles pode estar
+contido em um conjunto.
+
+Atualmente, existem dois tipos de conjuntos intrínsecos:
+
+Conjuntos
+   Estes representam um conjunto mutável. Eles são criados pelo
+   construtor embutido "set()" e podem ser modificados posteriormente
+   por vários métodos, como "add()".
+
+Conjuntos congelados
+   Estes representam um conjunto imutável. Eles são criados pelo
+   construtor embutido "frozenset()". Como um frozenset é imutável e
+   *hasheável*, ele pode ser usado novamente como um elemento de outro
+   conjunto, ou como uma chave de dicionário.
+
+
+3.2.7. Mapeamentos
+------------------
+
+Eles representam conjuntos finitos de objetos indexados por conjuntos
+de índices arbitrários. A notação subscrito "a[k]" seleciona o item
+indexado por "k" do mapeamento "a"; isso pode ser usado em expressões
+e como alvo de atribuições ou instruções "del". A função embutida
+"len()" retorna o número de itens em um mapeamento.
+
+Atualmente, há um único tipo de mapeamento intrínseco:
+
+
+3.2.7.1. Dicionários
+~~~~~~~~~~~~~~~~~~~~
+
+Eles representam conjuntos finitos de objetos indexados por valores
+quase arbitrários. Os únicos tipos de valores não aceitáveis como
+chaves são os valores que contêm listas ou dicionários ou outros tipos
+mutáveis que são comparados por valor em vez de por identidade de
+objeto, o motivo é que a implementação eficiente de dicionários requer
+que o valor de hash de uma chave permaneça constante. Os tipos
+numéricos usados para chaves obedecem às regras normais para
+comparação numérica: se dois números forem iguais (por exemplo, "1" e
+"1.0"), eles podem ser usados alternadamente para indexar a mesma
+entrada do dicionário.
+
+Dicionários preservam a ordem de inserção, o que significa que as
+chaves serão produzidas na mesma ordem em que foram adicionadas
+sequencialmente no dicionário. Substituir uma chave existente não
+altera a ordem, no entanto, remover uma chave e inseri-la novamente
+irá adicioná-la ao final em vez de manter seu lugar anterior.
+
+Os dicionários são mutáveis; eles podem ser criados pela notação
+"{...}" (veja a seção Sintaxes de criação de dicionário).
+
+Os módulos de extensão "dbm.ndbm" e "dbm.gnu" fornecem exemplos
+adicionais de tipos de mapeamento, assim como o módulo "collections".
+
+Alterado na versão 3.7: Dicionários não preservavam a ordem de
+inserção nas versões do Python anteriores à 3.6. No CPython 3.6, a
+ordem de inserção foi preservada, mas foi considerada um detalhe de
+implementação naquela época, em vez de uma garantia da linguagem.
+
+
+3.2.8. Tipos chamáveis
+----------------------
+
+Estes são os tipos aos quais a operação de chamada de função (veja a
+seção Chamadas) pode ser aplicada:
+
+
+3.2.8.1. Funções definidas pelo usuário
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Um objeto função definido pelo usuário será criado pela definição de
+função (veja a seção Definições de função). A mesma deverá ser
+invocada com uma lista de argumentos contendo o mesmo número de itens
+que a lista de parâmetros formais da função.
+
+
+3.2.8.1.1. Special read-only attributes
+"""""""""""""""""""""""""""""""""""""""
+
++----------------------------------------------------+----------------------------------------------------+
+| Atributo                                           | Significado                                        |
+|====================================================|====================================================|
+| function.__globals__                               | A reference to the "dictionary" that holds the     |
+|                                                    | function's global variables -- the global          |
+|                                                    | namespace of the module in which the function was  |
+|                                                    | defined.                                           |
++----------------------------------------------------+----------------------------------------------------+
+| function.__closure__                               | "None" or a "tuple" of cells that contain bindings |
+|                                                    | for the function's free variables.  Um objeto de   |
+|                                                    | célula tem o atributo "cell_contents". Isso pode   |
+|                                                    | ser usado para obter o valor da célula, bem como   |
+|                                                    | definir o valor.                                   |
++----------------------------------------------------+----------------------------------------------------+
+
+
+3.2.8.1.2. Special writable attributes
+""""""""""""""""""""""""""""""""""""""
+
+Most of these attributes check the type of the assigned value:
+
++----------------------------------------------------+----------------------------------------------------+
+| Atributo                                           | Significado                                        |
+|====================================================|====================================================|
+| function.__doc__                                   | The function's documentation string, or "None" if  |
+|                                                    | unavailable. Not inherited by subclasses.          |
++----------------------------------------------------+----------------------------------------------------+
+| function.__name__                                  | The function's name. See also: "__name__           |
+|                                                    | attributes".                                       |
++----------------------------------------------------+----------------------------------------------------+
+| function.__qualname__                              | The function's *qualified name*. See also:         |
+|                                                    | "__qualname__ attributes".  Novo na versão 3.3.    |
++----------------------------------------------------+----------------------------------------------------+
+| function.__module__                                | O nome do módulo em que a função foi definida ou   |
+|                                                    | "None" se indisponível.                            |
++----------------------------------------------------+----------------------------------------------------+
+| function.__defaults__                              | A "tuple" containing default *parameter* values    |
+|                                                    | for those parameters that have defaults, or "None" |
+|                                                    | if no parameters have a default value.             |
++----------------------------------------------------+----------------------------------------------------+
+| function.__code__                                  | The code object representing the compiled function |
+|                                                    | body.                                              |
++----------------------------------------------------+----------------------------------------------------+
+| function.__dict__                                  | The namespace supporting arbitrary function        |
+|                                                    | attributes. See also: "__dict__ attributes".       |
++----------------------------------------------------+----------------------------------------------------+
+| function.__annotations__                           | A "dictionary" containing annotations of           |
+|                                                    | *parameters*. The keys of the dictionary are the   |
+|                                                    | parameter names, and "'return'" for the return     |
+|                                                    | annotation, if provided. See also: Boas Práticas   |
+|                                                    | de Anotação.                                       |
++----------------------------------------------------+----------------------------------------------------+
+| function.__kwdefaults__                            | A "dictionary" containing defaults for keyword-    |
+|                                                    | only *parameters*.                                 |
++----------------------------------------------------+----------------------------------------------------+
+| function.__type_params__                           | A "tuple" containing the type parameters of a      |
+|                                                    | generic function.  Novo na versão 3.12.            |
++----------------------------------------------------+----------------------------------------------------+
+
+Function objects also support getting and setting arbitrary
+attributes, which can be used, for example, to attach metadata to
+functions.  Regular attribute dot-notation is used to get and set such
+attributes.
+
+**Detalhes da implementação do CPython:** CPython's current
+implementation only supports function attributes on user-defined
+functions. Function attributes on built-in functions may be supported
+in the future.
+
+Additional information about a function's definition can be retrieved
+from its code object (accessible via the "__code__" attribute).
+
+
+3.2.8.2. Métodos de instância
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Um objeto método de instância combina uma classe, uma instância de
+classe e qualquer objeto chamável (normalmente uma função definida
+pelo usuário).
+
+Special read-only attributes:
+
++----------------------------------------------------+----------------------------------------------------+
+| method.__self__                                    | Refers to the class instance object to which the   |
+|                                                    | method is bound                                    |
++----------------------------------------------------+----------------------------------------------------+
+| method.__func__                                    | Refers to the original function object             |
++----------------------------------------------------+----------------------------------------------------+
+| method.__doc__                                     | The method's documentation (same as                |
+|                                                    | "method.__func__.__doc__"). A "string" if the      |
+|                                                    | original function had a docstring, else "None".    |
++----------------------------------------------------+----------------------------------------------------+
+| method.__name__                                    | The name of the method (same as                    |
+|                                                    | "method.__func__.__name__")                        |
++----------------------------------------------------+----------------------------------------------------+
+| method.__module__                                  | The name of the module the method was defined in,  |
+|                                                    | or "None" if unavailable.                          |
++----------------------------------------------------+----------------------------------------------------+
+
+Methods also support accessing (but not setting) the arbitrary
+function attributes on the underlying function object.
+
+User-defined method objects may be created when getting an attribute
+of a class (perhaps via an instance of that class), if that attribute
+is a user-defined function object or a "classmethod" object.
+
+When an instance method object is created by retrieving a user-defined
+function object from a class via one of its instances, its "__self__"
+attribute is the instance, and the method object is said to be
+*bound*.  The new method's "__func__" attribute is the original
+function object.
+
+When an instance method object is created by retrieving a
+"classmethod" object from a class or instance, its "__self__"
+attribute is the class itself, and its "__func__" attribute is the
+function object underlying the class method.
+
+When an instance method object is called, the underlying function
+("__func__") is called, inserting the class instance ("__self__") in
+front of the argument list.  For instance, when "C" is a class which
+contains a definition for a function "f()", and "x" is an instance of
+"C", calling "x.f(1)" is equivalent to calling "C.f(x, 1)".
+
+When an instance method object is derived from a "classmethod" object,
+the "class instance" stored in "__self__" will actually be the class
+itself, so that calling either "x.f(1)" or "C.f(1)" is equivalent to
+calling "f(C,1)" where "f" is the underlying function.
+
+Note that the transformation from function object to instance method
+object happens each time the attribute is retrieved from the instance.
+In some cases, a fruitful optimization is to assign the attribute to a
+local variable and call that local variable. Also notice that this
+transformation only happens for user-defined functions; other callable
+objects (and all non-callable objects) are retrieved without
+transformation.  It is also important to note that user-defined
+functions which are attributes of a class instance are not converted
+to bound methods; this *only* happens when the function is an
+attribute of the class.
+
+
+3.2.8.3. Funções geradoras
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uma função ou método que usa a instrução "yield" (veja a seção A
+instrução yield) é chamada de *função geradora*. Tal função, quando
+chamada, sempre retorna um objeto *iterator*  que pode ser usado para
+executar o corpo da função: chamar o método "iterator.__next__()" do
+iterador fará com que a função seja executada até que forneça um valor
+usando a instrução "yield". Quando a função executa uma instrução
+"return" ou sai do fim, uma exceção "StopIteration" é levantada e o
+iterador terá alcançado o fim do conjunto de valores a serem
+retornados.
+
+
+3.2.8.4. Funções de corrotina
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uma função ou um método que é definida(o) usando "async def" é chamado
+de *função de corrotina*. Tal função, quando chamada, retorna um
+objeto de *corrotina*. Ele pode conter expressões "await", bem como
+instruções "async with" e "async for". Veja também a seção Objetos
+corrotina.
+
+
+3.2.8.5. Funções geradoras assíncronas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uma função ou um método que é definida(o) usando "async def" e que usa
+a instrução "yield" é chamada de *função geradora assíncrona*. Tal
+função, quando chamada, retorna um objeto *asynchronous iterator* que
+pode ser usado em uma instrução "async for" para executar o corpo da
+função.
+
+Chamar o método "aiterator.__anext__" do iterador assíncrono retornará
+um *aguardável* que, quando aguardado, será executado até fornecer um
+valor usando a expressão "yield". Quando a função executa uma
+instrução vazia "return" ou chega ao final, uma exceção
+"StopAsyncIteration" é levantada e o iterador assíncrono terá
+alcançado o final do conjunto de valores a serem produzidos.
+
+
+3.2.8.6. Funções embutidas
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A built-in function object is a wrapper around a C function.  Examples
+of built-in functions are "len()" and "math.sin()" ("math" is a
+standard built-in module). The number and type of the arguments are
+determined by the C function. Special read-only attributes:
+
+* "__doc__" is the function's documentation string, or "None" if
+  unavailable. See "function.__doc__".
+
+* "__name__" is the function's name. See "function.__name__".
+
+* "__self__" is set to "None" (but see the next item).
+
+* "__module__" is the name of the module the function was defined in
+  or "None" if unavailable. See "function.__module__".
+
+
+3.2.8.7. Métodos embutidos
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is really a different disguise of a built-in function, this time
+containing an object passed to the C function as an implicit extra
+argument.  An example of a built-in method is "alist.append()",
+assuming *alist* is a list object. In this case, the special read-only
+attribute "__self__" is set to the object denoted by *alist*. (The
+attribute has the same semantics as it does with "other instance
+methods".)
+
+
+3.2.8.8. Classes
+~~~~~~~~~~~~~~~~
+
+Classes are callable.  These objects normally act as factories for new
+instances of themselves, but variations are possible for class types
+that override "__new__()".  The arguments of the call are passed to
+"__new__()" and, in the typical case, to "__init__()" to initialize
+the new instance.
+
+
+3.2.8.9. Instâncias de classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instâncias de classes arbitrárias podem ser tornados chamáveis
+definindo um método "__call__()" em sua classe.
+
+
+3.2.9. Módulos
+--------------
+
+Modules are a basic organizational unit of Python code, and are
+created by the import system as invoked either by the "import"
+statement, or by calling functions such as "importlib.import_module()"
+and built-in "__import__()".  A module object has a namespace
+implemented by a "dictionary" object (this is the dictionary
+referenced by the "__globals__" attribute of functions defined in the
+module).  Attribute references are translated to lookups in this
+dictionary, e.g., "m.x" is equivalent to "m.__dict__["x"]". A module
+object does not contain the code object used to initialize the module
+(since it isn't needed once the initialization is done).
+
+A atribuição de atributo atualiza o dicionário de espaço de nomes do
+módulo, por exemplo, "m.x = 1" é equivalente a "m.__dict__["x"] = 1".
+
+Atributos predefinidos graváveis:
+
+   "__name__"
+      O nome do módulo.
+
+   "__doc__"
+      A string de documentação do módulo, ou "None" se indisponível.
+
+   "__file__"
+      O endereço do caminho do arquivo que o módulo foi carregado, se
+      ele foi carregado a partir de um arquivo. O atributo "__file__"
+      pode estar ausente para certos tipos de módulos, como os módulos
+      C que são estaticamente vinculados ao interpretador. Para
+      extensões de módulos carregadas dinamicamente de uma biblioteca
+      compartilhada, é o endereço do caminho do arquivo da biblioteca
+      compartilhada.
+
+   "__annotations__"
+      Um dicionário contendo *anotações de variável*  coletadas
+      durante a execução do corpo do módulo. Para as melhores práticas
+      sobre como trabalhar com "__annotations__", por favor veja Boas
+      Práticas de Anotação.
+
+Atributo especial somente leitura: "__dict__" é o espaço de nomes do
+módulo como um objeto dicionário.
+
+**Detalhes da implementação do CPython:** Por causa da maneira como
+CPython limpa dicionários de módulos, o dicionário do módulo será
+limpo quando o módulo sair do escopo, mesmo se o dicionário ainda
+tiver referências ativas. Para evitar isso, copie o dicionário ou
+mantenha o módulo por perto enquanto usa seu dicionário diretamente.
+
+
+3.2.10. Classes personalizadas
+------------------------------
+
+Tipos de classe personalizados são tipicamente criados por definições
+de classe (veja a seção Definições de classe). Uma classe possui um
+espaço de nomes implementado por um objeto dicionário. As referências
+de atributos de classe são traduzidas para pesquisas neste dicionário,
+por exemplo, "C.x" é traduzido para "C.__dict__["x"]" (embora haja uma
+série de ganchos que permitem outros meios de localizar atributos).
+Quando o nome do atributo não é encontrado lá, a pesquisa do atributo
+continua nas classes base. Essa pesquisa das classes base usa a ordem
+de resolução de métodos C3, que se comporta corretamente mesmo na
+presença de estruturas de herança "diamante", onde há vários caminhos
+de herança que levam de volta a um ancestral comum. Detalhes
+adicionais sobre a ordem de resolução de métodos C3 usado pelo Python
+podem ser encontrados na documentação que acompanha a versão 2.3 em
+https://www.python.org/download/releases/2.3/mro/.
+
+When a class attribute reference (for class "C", say) would yield a
+class method object, it is transformed into an instance method object
+whose "__self__" attribute is "C". When it would yield a
+"staticmethod" object, it is transformed into the object wrapped by
+the static method object. See section Implementando descritores for
+another way in which attributes retrieved from a class may differ from
+those actually contained in its "__dict__".
+
+As atribuições de atributos de classe atualizam o dicionário da
+classe, nunca o dicionário de uma classe base.
+
+Um objeto classe pode ser chamado (veja acima) para produzir uma
+instância de classe (veja abaixo).
+
+Atributos especiais:
+
+   "__name__"
+      O nome da classe.
+
+   "__module__"
+      O nome do módulo no qual a classe foi definida.
+
+   "__dict__"
+      O dicionário contendo o espaço de nomes da classe.
+
+   "__bases__"
+      Uma tupla contendo a classe base, na ordem de suas ocorrências
+      na lista da classe base.
+
+   "__doc__"
+      A string de documentação da classe, ou "None" se não definida.
+
+   "__annotations__"
+      Um dicionário contendo *anotações de variável* coletadas durante
+      a execução do corpo da classe. Para melhores práticas sobre como
+      trabalhar com "__annotations__", por favor veja Boas Práticas de
+      Anotação.
+
+   "__type_params__"
+      Uma tupla contendo os parâmetos de tipos de uma classe genérica.
+
+
+3.2.11. Instâncias de classe
+----------------------------
+
+A class instance is created by calling a class object (see above).  A
+class instance has a namespace implemented as a dictionary which is
+the first place in which attribute references are searched.  When an
+attribute is not found there, and the instance's class has an
+attribute by that name, the search continues with the class
+attributes.  If a class attribute is found that is a user-defined
+function object, it is transformed into an instance method object
+whose "__self__" attribute is the instance.  Static method and class
+method objects are also transformed; see above under "Classes".  See
+section Implementando descritores for another way in which attributes
+of a class retrieved via its instances may differ from the objects
+actually stored in the class's "__dict__".  If no class attribute is
+found, and the object's class has a "__getattr__()" method, that is
+called to satisfy the lookup.
+
+As atribuições e exclusões de atributos atualizam o dicionário da
+instância, nunca o dicionário de uma classe. Se a classe tem um método
+"__setattr__()" ou "__delattr__()", ele é chamado ao invés de
+atualizar o dicionário da instância diretamente.
+
+As instâncias de classe podem fingir ser números, sequências ou
+mapeamentos se tiverem métodos com certos nomes especiais. Veja a
+seção Nomes de métodos especiais.
+
+Atributos especiais: "__dict__" é o dicionário de atributos;
+"__class__" é a classe da instância.
+
+
+3.2.12. Objetos de E/S (também conhecidos como objetos arquivo)
+---------------------------------------------------------------
+
+O *objeto arquivo* representa um arquivo aberto. Vários atalhos estão
+disponíveis para criar objetos arquivos: a função embutida "open()", e
+também "os.popen()", "os.fdopen()" e o método "makefile()" de objetos
+soquete (e talvez por outras funções ou métodos fornecidos por módulos
+de extensão).
+
+Os objetos "sys.stdin", "sys.stdout" e "sys.stderr" são inicializados
+para objetos arquivo que correspondem aos fluxos de entrada, saída e
+erro padrão do interpretador; eles são todos abertos em modo texto e,
+portanto, seguem a interface definida pela classe abstrata
+"io.TextIOBase".
+
+
+3.2.13. Tipos internos
+----------------------
+
+Alguns tipos usados internamente pelo interpretador são expostos ao
+usuário. Suas definições podem mudar com versões futuras do
+interpretador, mas são mencionadas aqui para fins de integridade.
+
+
+3.2.13.1. Objetos código
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetos código representam código Python executável *compilados em
+bytes* ou *bytecode*. A diferença entre um objeto código e um objeto
+função é que o objeto função contém uma referência explícita aos
+globais da função (o módulo no qual foi definida), enquanto um objeto
+código não contém nenhum contexto; também os valores de argumento
+padrão são armazenados no objeto função, não no objeto código (porque
+eles representam os valores calculados em tempo de execução). Ao
+contrário dos objetos função, os objetos código são imutáveis e não
+contêm referências (direta ou indiretamente) a objetos mutáveis.
+
+
+3.2.13.1.1. Special read-only attributes
+""""""""""""""""""""""""""""""""""""""""
+
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_name                                 | The function name                                  |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_qualname                             | The fully qualified function name  Novo na versão  |
+|                                                    | 3.11.                                              |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_argcount                             | The total number of positional *parameters*        |
+|                                                    | (including positional-only parameters and          |
+|                                                    | parameters with default values) that the function  |
+|                                                    | has                                                |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_posonlyargcount                      | The number of positional-only *parameters*         |
+|                                                    | (including arguments with default values) that the |
+|                                                    | function has                                       |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_kwonlyargcount                       | The number of keyword-only *parameters* (including |
+|                                                    | arguments with default values) that the function   |
+|                                                    | has                                                |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_nlocals                              | The number of local variables used by the function |
+|                                                    | (including parameters)                             |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_varnames                             | A "tuple" containing the names of the local        |
+|                                                    | variables in the function (starting with the       |
+|                                                    | parameter names)                                   |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_cellvars                             | A "tuple" containing the names of local variables  |
+|                                                    | that are referenced by nested functions inside the |
+|                                                    | function                                           |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_freevars                             | A "tuple" containing the names of free variables   |
+|                                                    | in the function                                    |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_code                                 | A string representing the sequence of *bytecode*   |
+|                                                    | instructions in the function                       |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_consts                               | A "tuple" containing the literals used by the      |
+|                                                    | *bytecode* in the function                         |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_names                                | A "tuple" containing the names used by the         |
+|                                                    | *bytecode* in the function                         |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_filename                             | The name of the file from which the code was       |
+|                                                    | compiled                                           |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_firstlineno                          | The line number of the first line of the function  |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_lnotab                               | A string encoding the mapping from *bytecode*      |
+|                                                    | offsets to line numbers. For details, see the      |
+|                                                    | source code of the interpreter.  Obsoleto desde a  |
+|                                                    | versão 3.12: This attribute of code objects is     |
+|                                                    | deprecated, and may be removed in Python 3.14.     |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_stacksize                            | The required stack size of the code object         |
++----------------------------------------------------+----------------------------------------------------+
+| codeobject.co_flags                                | An "integer" encoding a number of flags for the    |
+|                                                    | interpreter.                                       |
++----------------------------------------------------+----------------------------------------------------+
+
+The following flag bits are defined for "co_flags": bit "0x04" is set
+if the function uses the "*arguments" syntax to accept an arbitrary
+number of positional arguments; bit "0x08" is set if the function uses
+the "**keywords" syntax to accept arbitrary keyword arguments; bit
+"0x20" is set if the function is a generator. See Code Objects Bit
+Flags for details on the semantics of each flags that might be
+present.
+
+Future feature declarations ("from __future__ import division") also
+use bits in "co_flags" to indicate whether a code object was compiled
+with a particular feature enabled: bit "0x2000" is set if the function
+was compiled with future division enabled; bits "0x10" and "0x1000"
+were used in earlier versions of Python.
+
+Other bits in "co_flags" are reserved for internal use.
+
+If a code object represents a function, the first item in "co_consts"
+is the documentation string of the function, or "None" if undefined.
+
+
+3.2.13.1.2. Methods on code objects
+"""""""""""""""""""""""""""""""""""
+
+codeobject.co_positions()
+
+   Returns an iterable over the source code positions of each
+   *bytecode* instruction in the code object.
+
+   The iterator returns "tuple"s containing the "(start_line,
+   end_line, start_column, end_column)". The *i-th* tuple corresponds
+   to the position of the source code that compiled to the *i-th*
+   instruction. Column information is 0-indexed utf-8 byte offsets on
+   the given source line.
+
+   A informação posicional pode estar ausente. Veja uma lista não-
+   exaustiva de casos onde isso pode acontecer:
+
+   * Executando o interpretador com "no_debug_ranges" "-X".
+
+   * Carregando um arquivo pyc compilado com "no_debug_ranges" "-X".
+
+   * Tuplas posicionais correspondendo a instruções artificiais.
+
+   * Números de linha e coluna que não podem ser representados devido
+     a limitações específicas de implementação.
+
+   Quando isso ocorre, alguns ou todos elementos da tupla podem ser
+   "None".
+
+   Novo na versão 3.11.
+
+   Nota:
+
+     Esse recurso requer o armazenamento de posições de coluna no
+     objeto código, o que pode resultar em um pequeno aumento no uso
+     de memória do interpretador e no uso de disco para arquivos
+     Python compilados. Para evitar armazenar as informações extras
+     e/ou desativar a exibição das informações extras de rastreamento,
+     use a opção de linha de comando "no_debug_ranges"  "-X" ou a
+     variável de ambiente "PYTHONNODEBUGRANGES".
+
+codeobject.co_lines()
+
+   Returns an iterator that yields information about successive ranges
+   of *bytecode*s. Each item yielded is a "(start, end, lineno)"
+   "tuple":
+
+   * "start" (an "int") represents the offset (inclusive) of the start
+     of the *bytecode* range
+
+   * "end" (an "int") represents the offset (exclusive) of the end of
+     the *bytecode* range
+
+   * "lineno" is an "int" representing the line number of the
+     *bytecode* range, or "None" if the bytecodes in the given range
+     have no line number
+
+   The items yielded will have the following properties:
+
+   * The first range yielded will have a "start" of 0.
+
+   * The "(start, end)" ranges will be non-decreasing and consecutive.
+     That is, for any pair of "tuple"s, the "start" of the second will
+     be equal to the "end" of the first.
+
+   * No range will be backwards: "end >= start" for all triples.
+
+   * The last "tuple" yielded will have "end" equal to the size of the
+     *bytecode*.
+
+   Zero-width ranges, where "start == end", are allowed. Zero-width
+   ranges are used for lines that are present in the source code, but
+   have been eliminated by the *bytecode* compiler.
+
+   Novo na versão 3.10.
+
+   Ver também:
+
+     **PEP 626** - Precise line numbers for debugging and other tools.
+        The PEP that introduced the "co_lines()" method.
+
+codeobject.replace(**kwargs)
+
+   Retorna uma cópia do objeto de código com novos valores para os
+   campos especificados.
+
+   Novo na versão 3.8.
+
+
+3.2.13.2. Objetos quadro
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Frame objects represent execution frames.  They may occur in traceback
+objects, and are also passed to registered trace functions.
+
+
+3.2.13.2.1. Special read-only attributes
+""""""""""""""""""""""""""""""""""""""""
+
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_back                                       | Points to the previous stack frame (towards the    |
+|                                                    | caller), or "None" if this is the bottom stack     |
+|                                                    | frame                                              |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_code                                       | The code object being executed in this frame.      |
+|                                                    | Accessing this attribute raises an auditing event  |
+|                                                    | "object.__getattr__" with arguments "obj" and      |
+|                                                    | ""f_code"".                                        |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_locals                                     | The dictionary used by the frame to look up local  |
+|                                                    | variables                                          |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_globals                                    | The dictionary used by the frame to look up global |
+|                                                    | variables                                          |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_builtins                                   | The dictionary used by the frame to look up built- |
+|                                                    | in (intrinsic) names                               |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_lasti                                      | The "precise instruction" of the frame object      |
+|                                                    | (this is an index into the *bytecode* string of    |
+|                                                    | the code object)                                   |
++----------------------------------------------------+----------------------------------------------------+
+
+
+3.2.13.2.2. Special writable attributes
+"""""""""""""""""""""""""""""""""""""""
+
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_trace                                      | If not "None", this is a function called for       |
+|                                                    | various events during code execution (this is used |
+|                                                    | by debuggers). Normally an event is triggered for  |
+|                                                    | each new source line (see "f_trace_lines").        |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_trace_lines                                | Set this attribute to "False" to disable           |
+|                                                    | triggering a tracing event for each source line.   |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_trace_opcodes                              | Set this attribute to "True" to allow per-opcode   |
+|                                                    | events to be requested. Note that this may lead to |
+|                                                    | undefined interpreter behaviour if exceptions      |
+|                                                    | raised by the trace function escape to the         |
+|                                                    | function being traced.                             |
++----------------------------------------------------+----------------------------------------------------+
+| frame.f_lineno                                     | The current line number of the frame -- writing to |
+|                                                    | this from within a trace function jumps to the     |
+|                                                    | given line (only for the bottom-most frame).  A    |
+|                                                    | debugger can implement a Jump command (aka Set     |
+|                                                    | Next Statement) by writing to this attribute.      |
++----------------------------------------------------+----------------------------------------------------+
+
+
+3.2.13.2.3. Frame object methods
+""""""""""""""""""""""""""""""""
+
+Objetos quadro têm suporte a um método:
+
+frame.clear()
+
+   This method clears all references to local variables held by the
+   frame.  Also, if the frame belonged to a *generator*, the generator
+   is finalized.  This helps break reference cycles involving frame
+   objects (for example when catching an exception and storing its
+   traceback for later use).
+
+   "RuntimeError" é levantada se o quadro estiver em execução.
+
+   Novo na versão 3.4.
+
+
+3.2.13.3. Objetos traceback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Traceback objects represent the stack trace of an exception. A
+traceback object is implicitly created when an exception occurs, and
+may also be explicitly created by calling "types.TracebackType".
+
+Alterado na versão 3.7: Traceback objects can now be explicitly
+instantiated from Python code.
+
+For implicitly created tracebacks, when the search for an exception
+handler unwinds the execution stack, at each unwound level a traceback
+object is inserted in front of the current traceback.  When an
+exception handler is entered, the stack trace is made available to the
+program. (See section A instrução try.) It is accessible as the third
+item of the tuple returned by "sys.exc_info()", and as the
+"__traceback__" attribute of the caught exception.
+
+When the program contains no suitable handler, the stack trace is
+written (nicely formatted) to the standard error stream; if the
+interpreter is interactive, it is also made available to the user as
+"sys.last_traceback".
+
+For explicitly created tracebacks, it is up to the creator of the
+traceback to determine how the "tb_next" attributes should be linked
+to form a full stack trace.
+
+Special read-only attributes:
+
++----------------------------------------------------+----------------------------------------------------+
+| traceback.tb_frame                                 | Points to the execution frame of the current       |
+|                                                    | level.  Accessing this attribute raises an         |
+|                                                    | auditing event "object.__getattr__" with arguments |
+|                                                    | "obj" and ""tb_frame"".                            |
++----------------------------------------------------+----------------------------------------------------+
+| traceback.tb_lineno                                | Gives the line number where the exception occurred |
++----------------------------------------------------+----------------------------------------------------+
+| traceback.tb_lasti                                 | Indicates the "precise instruction".               |
++----------------------------------------------------+----------------------------------------------------+
+
+The line number and last instruction in the traceback may differ from
+the line number of its frame object if the exception occurred in a
+"try" statement with no matching except clause or with a "finally"
+clause.
+
+traceback.tb_next
+
+   The special writable attribute "tb_next" is the next level in the
+   stack trace (towards the frame where the exception occurred), or
+   "None" if there is no next level.
+
+   Alterado na versão 3.7: This attribute is now writable
+
+
+3.2.13.4. Objetos slice
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetos slice são usados para representar fatias para métodos
+"__getitem__()". Eles também são criados pela função embutida
+"slice()".
+
+Atributos especiais de somente leitura: "start" é o limite inferior;
+"stop" é o limite superior; "step" é o valor da diferença entre
+elementos subjacentes; cada um desses atributos é "None" se omitido.
+Esses atributos podem ter qualquer tipo.
+
+Objetos slice têm suporte a um método:
+
+slice.indices(self, length)
+
+   Este método recebe um único argumento inteiro *length* e calcula
+   informações sobre a fatia que o objeto slice descreveria se
+   aplicado a uma sequência de itens de *length*. Ele retorna uma
+   tupla de três inteiros; respectivamente, estes são os índices
+   *start* e *stop* e o *step* ou comprimento de avanços da fatia.
+   Índices ausentes ou fora dos limites são tratados de maneira
+   consistente com fatias regulares.
+
+
+3.2.13.5. Objetos método estático
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetos método estático fornecem uma forma de transformar objetos
+função em objetos métodos descritos acima. Um objeto método estático é
+um invólucro em torno de qualquer outro objeto, comumente um objeto
+método definido pelo usuário. Quando um objeto método estático é
+recuperado de uma classe ou de uma instância de classe, o objeto
+retornado é o objeto encapsulado, do qual não está sujeito a nenhuma
+transformação adicional. Objetos método estático também são chamáveis.
+Objetos método estático são criados pelo construtor embutido
+"staticmethod()".
+
+
+3.2.13.6. Objetos método de classe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A class method object, like a static method object, is a wrapper
+around another object that alters the way in which that object is
+retrieved from classes and class instances. The behaviour of class
+method objects upon such retrieval is described above, under "instance
+methods". Class method objects are created by the built-in
+"classmethod()" constructor.
+
+
+3.3. Nomes de métodos especiais
+===============================
+
+Uma classe pode implementar certas operações que são chamadas por
+sintaxe especial (como operações aritméticas ou indexação e
+fatiamento), definindo métodos com nomes especiais. Esta é a abordagem
+do Python para *sobrecarga de operador*, permitindo que as classes
+definam seu próprio comportamento em relação aos operadores da
+linguagem. Por exemplo, se uma classe define um método chamado
+"__getitem__()", e "x" é uma instância desta classe, então "x[i]" é
+aproximadamente equivalente a "type(x).__getitem__(x, i)". Exceto onde
+mencionado, as tentativas de executar uma operação levantam uma
+exceção quando nenhum método apropriado é definido (tipicamente
+"AttributeError" ou "TypeError").
+
+Definir um método especial para "None" indica que a operação
+correspondente não está disponível. Por exemplo, se uma classe define
+"__iter__()" para "None", a classe não é iterável, então chamar
+"iter()" em suas instâncias irá levantar um "TypeError" (sem
+retroceder para "__getitem__()"). [2]
+
+Ao implementar uma classe que emula qualquer tipo embutido, é
+importante que a emulação seja implementada apenas na medida em que
+faça sentido para o objeto que está sendo modelado. Por exemplo,
+algumas sequências podem funcionar bem com a recuperação de elementos
+individuais, mas extrair uma fatia pode não fazer sentido. (Um exemplo
+disso é a interface "NodeList" no Document Object Model do W3C.)
+
+
+3.3.1. Personalização básica
+----------------------------
+
+object.__new__(cls[, ...])
+
+   Chamado para criar uma nova instância da classe *cls*. "__new__()"
+   é um método estático (é um caso especial, então você não precisa
+   declará-lo como tal) que recebe a classe da qual uma instância foi
+   solicitada como seu primeiro argumento. Os argumentos restantes são
+   aqueles passados para a expressão do construtor do objeto (a
+   chamada para a classe). O valor de retorno de "__new__()" deve ser
+   a nova instância do objeto (geralmente uma instância de *cls*).
+
+   Implementações típicas criam uma nova instância da classe invocando
+   o método "__new__()" da superclasse usando "super().__new__(cls[,
+   ...])" com os argumentos apropriados e, em seguida, modificando a
+   instância recém-criada conforme necessário antes de retorná-la.
+
+   Se "__new__()" é chamado durante a construção do objeto e retorna
+   uma instância de *cls*, então o método "__init__()" da nova
+   instância será chamado como "__init__(self[, ...])", onde *self* é
+   a nova instância e os argumentos restantes são os mesmos que foram
+   passados para o construtor do objeto.
+
+   Se "__new__()" não retornar uma instância de *cls*, então o método
+   "__init__()" da nova instância não será invocado.
+
+   "__new__()" destina-se principalmente a permitir que subclasses de
+   tipos imutáveis (como int, str ou tupla) personalizem a criação de
+   instâncias. Também é comumente substituído em metaclasses
+   personalizadas para personalizar a criação de classes.
+
+object.__init__(self[, ...])
+
+   Chamado após a instância ter sido criada (por "__new__()"), mas
+   antes de ser retornada ao chamador. Os argumentos são aqueles
+   passados para a expressão do construtor da classe. Se uma classe
+   base tem um método "__init__()", o método "__init__()" da classe
+   derivada, se houver, deve chamá-lo explicitamente para garantir a
+   inicialização apropriada da parte da classe base da instância; por
+   exemplo: "super().__init__([args...])".
+
+   Porque "__new__()" e "__init__()" trabalham juntos na construção de
+   objetos ("__new__()" para criá-lo e "__init__()" para
+   personalizá-lo), nenhum valor diferente de "None" pode ser
+   retornado por "__init__()"; fazer isso fará com que uma "TypeError"
+   seja levantada em tempo de execução.
+
+object.__del__(self)
+
+   Chamado quando a instância está prestes a ser destruída. Também é
+   chamada de finalizador ou (incorretamente) de destruidor. Se uma
+   classe base tem um método "__del__()", o método "__del__()" da
+   classe derivada, se houver, deve chamá-lo explicitamente para
+   garantir a exclusão adequada da parte da classe base da instância.
+
+   É possível (embora não recomendado!) para o método "__del__()"
+   adiar a destruição da instância criando uma nova referência a ela.
+   Isso é chamado de *ressurreição* de objeto. Depende se a
+   implementação de "__del__()" é chamado uma segunda vez quando um
+   objeto ressuscitado está prestes a ser destruído; a implementação
+   atual do *CPython* chama-o apenas uma vez.
+
+   Não é garantido que os métodos "__del__()" sejam chamados para
+   objetos que ainda existam quando o interpretador sai.
+
+   Nota:
+
+     "del x" não chama diretamente "x.__del__()" -- o primeiro diminui
+     a contagem de referências para "x" em um, e o segundo só é
+     chamado quando a contagem de referências de "x" atinge zero.
+
+   **Detalhes da implementação do CPython:** É possível que um ciclo
+   de referência impeça que a contagem de referência de um objeto
+   chegue a zero. Neste caso, mais tarde, o ciclo será detectado e
+   deletado pelo *coletor de lixo cíclico*.  Uma causa comum de
+   referências cíclicas é quando uma exceção foi capturada em uma
+   variável local. O locals do quadro então referencia a exceção, que
+   referencia seu próprio traceback, que referencia o locals de todos
+   os quadros capturados no traceback.
+
+   Ver também: Documentação do módulo "gc".
+
+   Aviso:
+
+     Devido às circunstâncias precárias sob as quais os métodos
+     "__del__()" são invocados, as exceções que ocorrem durante sua
+     execução são ignoradas e um aviso é impresso em "sys.stderr" em
+     seu lugar. Em particular:
+
+     * "__del__()" pode ser chamado quando um código arbitrário está
+       sendo executado, incluindo de qualquer thread arbitrária. Se
+       "__del__()" precisa bloquear ou invocar qualquer outro recurso
+       de bloqueio, pode ocorrer um impasse, pois o recurso já pode
+       ter sido levado pelo código que é interrompido para executar
+       "__del__()".
+
+     * "__del__()" pode ser executado durante o encerramento do
+       interpretador. Como consequência, as variáveis globais que ele
+       precisa acessar (incluindo outros módulos) podem já ter sido
+       excluídas ou definidas como "None". Python garante que os
+       globais cujo nome comece com um único sublinhado sejam
+       excluídos de seu módulo antes que outros globais sejam
+       excluídos; se nenhuma outra referência a tais globais existir,
+       isso pode ajudar a garantir que os módulos importados ainda
+       estejam disponíveis no momento em que o método "__del__()" for
+       chamado.
+
+object.__repr__(self)
+
+   Chamado pela função embutida "repr()" para calcular a representação
+   da string "oficial" de um objeto. Se possível, isso deve parecer
+   uma expressão Python válida que pode ser usada para recriar um
+   objeto com o mesmo valor (dado um ambiente apropriado). Se isso não
+   for possível, uma string no formato "<...alguma descrição útil...>"
+   deve ser retornada. O valor de retorno deve ser um objeto string.
+   Se uma classe define "__repr__()", mas não "__str__()", então
+   "__repr__()" também é usado quando uma representação de string
+   "informal" de instâncias daquela classe é necessária.
+
+   Isso é normalmente usado para depuração, portanto, é importante que
+   a representação seja rica em informações e inequívoca.
+
+object.__str__(self)
+
+   Chamado por "str(object)" e as funções embutidas "format()" e
+   "print()" para calcular a representação da string "informal" ou
+   agradável para exibição de um objeto. O valor de retorno deve ser
+   um objeto string.
+
+   Este método difere de "object.__repr__()" por não haver expectativa
+   de que "__str__()" retorne uma expressão Python válida: uma
+   representação mais conveniente ou concisa pode ser usada.
+
+   A implementação padrão definida pelo tipo embutido "object" chama
+   "object.__repr__()".
+
+object.__bytes__(self)
+
+   Chamado por bytes para calcular uma representação de string de
+   bytes de um objeto. Isso deve retornar um objeto "bytes".
+
+object.__format__(self, format_spec)
+
+   Chamado pela função embutida "format()" e, por extensão, avaliação
+   de literais de string formatadas e o método "str.format()", para
+   produzir uma representação de string "formatada" de um objeto. O
+   argumento *format_spec* é uma string que contém uma descrição das
+   opções de formatação desejadas. A interpretação do argumento
+   *format_spec* depende do tipo que implementa "__format__()",
+   entretanto a maioria das classes delegará a formatação a um dos
+   tipos embutidos ou usará uma sintaxe de opção de formatação
+   semelhante.
+
+   Consulte Minilinguagem de especificação de formato para uma
+   descrição da sintaxe de formatação padrão.
+
+   O valor de retorno deve ser um objeto string.
+
+   Alterado na versão 3.4: O método __format__ do próprio "object"
+   levanta uma "TypeError" se passada qualquer string não vazia.
+
+   Alterado na versão 3.7: "object.__format__(x, '')" é agora
+   equivalente a "str(x)" em vez de "format(str(x), '')".
+
+object.__lt__(self, other)
+object.__le__(self, other)
+object.__eq__(self, other)
+object.__ne__(self, other)
+object.__gt__(self, other)
+object.__ge__(self, other)
+
+   Esses são os chamados métodos de "comparação rica". A
+   correspondência entre os símbolos do operador e os nomes dos
+   métodos é a seguinte: "x<y" chama "x.__lt__(y)", "x<=y" chama
+   "x.__le__(y)", "x==y" chama "x.__eq__(y)", "x!=y" chama
+   "x.__ne__(y)", "x>y" chama "x.__gt__(y)" e "x>=y" chama
+   "x.__ge__(y)".
+
+   A rich comparison method may return the singleton "NotImplemented"
+   if it does not implement the operation for a given pair of
+   arguments. By convention, "False" and "True" are returned for a
+   successful comparison. However, these methods can return any value,
+   so if the comparison operator is used in a Boolean context (e.g.,
+   in the condition of an "if" statement), Python will call "bool()"
+   on the value to determine if the result is true or false.
+
+   By default, "object" implements "__eq__()" by using "is", returning
+   "NotImplemented" in the case of a false comparison: "True if x is y
+   else NotImplemented". For "__ne__()", by default it delegates to
+   "__eq__()" and inverts the result unless it is "NotImplemented".
+   There are no other implied relationships among the comparison
+   operators or default implementations; for example, the truth of
+   "(x<y or x==y)" does not imply "x<=y". To automatically generate
+   ordering operations from a single root operation, see
+   "functools.total_ordering()".
+
+   Veja o parágrafo sobre "__hash__()" para algumas notas importantes
+   sobre a criação de objetos *hasheáveis* que implementam operações
+   de comparação personalizadas e são utilizáveis como chaves de
+   dicionário.
+
+   There are no swapped-argument versions of these methods (to be used
+   when the left argument does not support the operation but the right
+   argument does); rather, "__lt__()" and "__gt__()" are each other's
+   reflection, "__le__()" and "__ge__()" are each other's reflection,
+   and "__eq__()" and "__ne__()" are their own reflection. If the
+   operands are of different types, and the right operand's type is a
+   direct or indirect subclass of the left operand's type, the
+   reflected method of the right operand has priority, otherwise the
+   left operand's method has priority.  Virtual subclassing is not
+   considered.
+
+   When no appropriate method returns any value other than
+   "NotImplemented", the "==" and "!=" operators will fall back to
+   "is" and "is not", respectively.
+
+object.__hash__(self)
+
+   Chamado pela função embutida "hash()" e para operações em membros
+   de coleções com hash incluindo "set", "frozenset" e "dict". O
+   método "__hash__()" deve retornar um inteiro. A única propriedade
+   necessária é que os objetos que são comparados iguais tenham o
+   mesmo valor de hash; é aconselhável misturar os valores hash dos
+   componentes do objeto que também desempenham um papel na comparação
+   dos objetos, empacotando-os em uma tupla e fazendo o hash da tupla.
+   Exemplo:
+
+      def __hash__(self):
+          return hash((self.name, self.nick, self.color))
+
+   Nota:
+
+     "hash()" trunca o valor retornado do método "__hash__()"
+     personalizado de um objeto para o tamanho de um "Py_ssize_t".
+     Isso é normalmente 8 bytes em compilações de 64 bits e 4 bytes em
+     compilações de 32 bits. Se o "__hash__()" de um objeto deve
+     interoperar em compilações de tamanhos de bits diferentes,
+     certifique-se de verificar a largura em todas as compilações com
+     suporte. Uma maneira fácil de fazer isso é com "python -c "import
+     sys; print(sys.hash_info.width)"".
+
+   Se uma classe não define um método "__eq__()", ela também não deve
+   definir uma operação "__hash__()"; se define "__eq__()" mas não
+   "__hash__()", suas instâncias não serão utilizáveis como itens em
+   coleções hasheáveis. Se uma classe define objetos mutáveis e
+   implementa um método "__eq__()", ela não deve implementar
+   "__hash__()", uma vez que a implementação de coleções  *hasheáveis*
+   requer que o valor hash de uma chave seja imutável (se o valor hash
+   do objeto mudar, estará no balde de hash errado).
+
+   As classes definidas pelo usuário têm os métodos "__eq__()" e
+   "__hash__()" por padrão; com eles, todos os objetos se comparam
+   desiguais (exceto com eles mesmos) e "x.__hash__()" retorna um
+   valor apropriado tal que "x == y" implica que "x is y" e "hash(x)
+   == hash(y)".
+
+   Uma classe que sobrescreve "__eq__()" e não define "__hash__()"
+   terá seu "__hash__()" implicitamente definido como "None". Quando o
+   método "__hash__()" de uma classe é "None", as instâncias da classe
+   levantam uma "TypeError" apropriada quando um programa tenta
+   recuperar seu valor hash, e também será identificado corretamente
+   como não-hasheável ao verificar "isinstance(obj,
+   collections.abc.Hashable)".
+
+   Se uma classe que sobrescreve "__eq__()" precisa manter a
+   implementação de "__hash__()" de uma classe pai, o interpretador
+   deve ser informado disso explicitamente pela configuração "__hash__
+   = <ClassePai>.__hash__".
+
+   Se uma classe que não substitui "__eq__()" deseja suprimir o
+   suporte a hash, deve incluir "__hash__ = None" na definição de
+   classe. Uma classe que define seu próprio "__hash__()" que levanta
+   explicitamente uma "TypeError" seria incorretamente identificada
+   como hasheável por uma chamada "isinstance(obj,
+   collections.abc.Hashable)".
+
+   Nota:
+
+     Por padrão, os valores "__hash__()" dos objetos str e bytes são
+     "salgados" com um valor aleatório imprevisível. Embora permaneçam
+     constantes em um processo individual do Python, eles não são
+     previsíveis entre invocações repetidas do Python.This is intended
+     to provide protection against a denial-of-service caused by
+     carefully chosen inputs that exploit the worst case performance
+     of a dict insertion, *O*(*n*^2) complexity.  See
+     http://ocert.org/advisories/ocert-2011-003.html for
+     details.Alterar os valores de hash afeta a ordem de iteração dos
+     conjuntos. Python nunca deu garantias sobre essa ordem (e
+     normalmente varia entre compilações de 32 e 64 bits).Consulte
+     também "PYTHONHASHSEED".
+
+   Alterado na versão 3.3: Aleatorização de hash está habilitada por
+   padrão.
+
+object.__bool__(self)
+
+   Chamado para implementar o teste de valor de verdade e a operação
+   embutida "bool()"; deve retornar "False" ou "True". Quando este
+   método não é definido, "__len__()" é chamado, se estiver definido,
+   e o objeto é considerado verdadeiro se seu resultado for diferente
+   de zero. Se uma classe não define "__len__()" nem "__bool__()",
+   todas as suas instâncias são consideradas verdadeiras.
+
+
+3.3.2. Personalizando o acesso aos atributos
+--------------------------------------------
+
+Os seguintes métodos podem ser definidos para personalizar o
+significado do acesso aos atributos (uso, atribuição ou exclusão de
+"x.name") para instâncias de classe.
+
+object.__getattr__(self, name)
+
+   Chamado quando o acesso padrão ao atributo falha com um
+   "AttributeError" (ou "__getattribute__()" levanta uma
+   "AttributeError" porque *name* não é um atributo de instância ou um
+   atributo na árvore de classes para "self"; ou "__get__()" de uma
+   propriedade *name* levanta "AttributeError"). Este método deve
+   retornar o valor do atributo (calculado) ou levantar uma exceção
+   "AttributeError".
+
+   Observe que se o atributo for encontrado através do mecanismo
+   normal, "__getattr__()" não é chamado. (Esta é uma assimetria
+   intencional entre "__getattr__()" e "__setattr__()".) Isso é feito
+   tanto por razões de eficiência quanto porque "__getattr__()" não
+   teria como acessar outros atributos da instância. Observe que pelo
+   menos para variáveis de instâncias, você pode fingir controle total
+   não inserindo nenhum valor no dicionário de atributos de instância
+   (mas, em vez disso, inserindo-os em outro objeto). Veja o método
+   "__getattribute__()" abaixo para uma maneira de realmente obter
+   controle total sobre o acesso ao atributo.
+
+object.__getattribute__(self, name)
+
+   Chamado incondicionalmente para implementar acessos a atributo para
+   instâncias da classe. Se a classe também define "__getattr__()", o
+   último não será chamado a menos que "__getattribute__()" o chame
+   explicitamente ou levante um "AttributeError". Este método deve
+   retornar o valor do atributo (calculado) ou levantar uma exceção
+   "AttributeError". Para evitar recursão infinita neste método, sua
+   implementação deve sempre chamar o método da classe base com o
+   mesmo nome para acessar quaisquer atributos de que necessita, por
+   exemplo, "object.__getattribute__(self, name)".
+
+   Nota:
+
+     Este método ainda pode ser ignorado ao procurar métodos especiais
+     como resultado de invocação implícita por meio da sintaxe da
+     linguagem ou built-in functions. Consulte Pesquisa de método
+     especial.
+
+   Levanta um evento de auditoria "object.__getattr__" com argumentos
+   "obj", "name".
+
+object.__setattr__(self, name, value)
+
+   Chamado quando se tenta efetuar uma atribuição de atributos. Esse
+   método é chamado em vez do mecanismo normal (ou seja, armazena o
+   valor no dicionário da instância). *name* é o nome do atributo,
+   *value* é o valor a ser atribuído a ele.
+
+   Se "__setattr__()" deseja atribuir a um atributo de instância, ele
+   deve chamar o método da classe base com o mesmo nome, por exemplo,
+   "object.__setattr__(self, name, value)".
+
+   Levanta um evento de auditoria "object.__setattr__" com argumentos
+   "obj", "name", "value".
+
+object.__delattr__(self, name)
+
+   Como "__setattr__()", mas para exclusão de atributo em vez de
+   atribuição. Este método só deve ser implementado se "del obj.name"
+   for significativo para o objeto.
+
+   Levanta um evento de auditoria "object.__delattr__" com argumentos
+   "obj", "name".
+
+object.__dir__(self)
+
+   Called when "dir()" is called on the object. An iterable must be
+   returned. "dir()" converts the returned iterable to a list and
+   sorts it.
+
+
+3.3.2.1. Personalizando acesso a atributos de módulos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os nomes especiais "__getattr__" e "__dir__" também podem ser usados
+para personalizar o acesso aos atributos dos módulos. A função
+"__getattr__" no nível do módulo deve aceitar um argumento que é o
+nome de um atributo e retornar o valor calculado ou levantar uma
+exceção "AttributeError". Se um atributo não for encontrado em um
+objeto de módulo por meio da pesquisa normal, por exemplo
+"object.__getattribute__()", então "__getattr__" é pesquisado no
+módulo "__dict__" antes de levantar "AttributeError". Se encontrado,
+ele é chamado com o nome do atributo e o resultado é retornado.
+
+The "__dir__" function should accept no arguments, and return an
+iterable of strings that represents the names accessible on module. If
+present, this function overrides the standard "dir()" search on a
+module.
+
+Para uma personalização mais refinada do comportamento do módulo
+(definição de atributos, propriedades etc.), pode-se definir o
+atributo "__class__" de um objeto de módulo para uma subclasse de
+"types.ModuleType". Por exemplo:
+
+   import sys
+   from types import ModuleType
+
+   class VerboseModule(ModuleType):
+       def __repr__(self):
+           return f'Verbose {self.__name__}'
+
+       def __setattr__(self, attr, value):
+           print(f'Setting {attr}...')
+           super().__setattr__(attr, value)
+
+   sys.modules[__name__].__class__ = VerboseModule
+
+Nota:
+
+  Definir "__getattr__" no módulo e configurar o "__class__" do módulo
+  só afeta as pesquisas feitas usando a sintaxe de acesso ao atributo
+  -- acessar diretamente os globais do módulo (seja por código dentro
+  do módulo, ou por meio de uma referência ao dicionário global do
+  módulo) não tem efeito.
+
+Alterado na versão 3.5: O atributo de módulo "__class__" pode agora
+ser escrito.
+
+Novo na versão 3.7: Atributos de módulo "__getattr__" e "__dir__".
+
+Ver também:
+
+  **PEP 562** - __getattr__ e __dir__ de módulo
+     Descreve as funções "__getattr__" e "__dir__" nos módulos.
+
+
+3.3.2.2. Implementando descritores
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os métodos a seguir se aplicam apenas quando uma instância da classe
+que contém o método (uma classe chamada *descritora*) aparece em uma
+classe proprietária *owner* (o descritor deve estar no dicionário de
+classe do proprietário ou no dicionário de classe para um dos seus
+pais). Nos exemplos abaixo, "o atributo" refere-se ao atributo cujo
+nome é a chave da propriedade no "__dict__" da classe proprietária.
+
+object.__get__(self, instance, owner=None)
+
+   Chamado para obter o atributo da classe proprietária (acesso ao
+   atributo da classe) ou de uma instância dessa classe (acesso ao
+   atributo da instância). O argumento opcional *owner* é a classe
+   proprietária, enquanto *instance* é a instância pela qual o
+   atributo foi acessado, ou "None" quando o atributo é acessado por
+   meio de *owner*.
+
+   Este método deve retornar o valor do atributo calculado ou levantar
+   uma exceção "AttributeError".
+
+   **PEP 252** especifica que "__get__()" é um chamável com um ou dois
+   argumentos. Os próprios descritores embutidos do Python implementam
+   esta especificação; no entanto, é provável que algumas ferramentas
+   de terceiros tenham descritores que requerem ambos os argumentos. A
+   implementação de "__getattribute__()" do próprio Python sempre
+   passa em ambos os argumentos sejam eles requeridos ou não.
+
+object.__set__(self, instance, value)
+
+   Chamado para definir o atributo em uma instância *instance* da
+   classe proprietária para um novo valor, *value*.
+
+   Observe que adicionar "__set__()" ou "__delete__()" altera o tipo
+   de descritor para um "descritor de dados". Consulte Invocando
+   descritores para mais detalhes.
+
+object.__delete__(self, instance)
+
+   Chamado para excluir o atributo em uma instância *instance* da
+   classe proprietária.
+
+Instâncias de descritores também podem ter o atributo "__objclass__"
+presente:
+
+object.__objclass__
+
+   O atributo "__objclass__" é interpretado pelo módulo "inspect" como
+   sendo a classe onde este objeto foi definido (configurar isso
+   apropriadamente pode ajudar na introspecção em tempo de execução
+   dos atributos dinâmicos da classe). Para chamáveis, pode indicar
+   que uma instância do tipo fornecido (ou uma subclasse) é esperada
+   ou necessária como o primeiro argumento posicional (por exemplo,
+   CPython define este atributo para métodos não acoplados que são
+   implementados em C).
+
+
+3.3.2.3. Invocando descritores
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Em geral, um descritor é um atributo de objeto com "comportamento de
+ligação", cujo acesso ao atributo foi substituído por métodos no
+protocolo do descritor: "__get__()", "__set__()" e "__delete__()". Se
+qualquer um desses métodos for definido para um objeto, é considerado
+um descritor.
+
+O comportamento padrão para acesso ao atributo é obter, definir ou
+excluir o atributo do dicionário de um objeto. Por exemplo, "a.x" tem
+uma cadeia de pesquisa começando com "a.__dict__['x']", depois
+"type(a).__dict__['x']", e continunando pelas classes bases de
+"type(a)" excluindo metaclasses.
+
+No entanto, se o valor pesquisado for um objeto que define um dos
+métodos do descritor, Python pode substituir o comportamento padrão e
+invocar o método do descritor. Onde isso ocorre na cadeia de
+precedência depende de quais métodos descritores foram definidos e
+como eles foram chamados.
+
+O ponto de partida para a invocação do descritor é uma ligação, "a.x".
+Como os argumentos são montados depende de "a":
+
+Chamada direta
+   A chamada mais simples e menos comum é quando o código do usuário
+   invoca diretamente um método descritor: "x.__get__(a)".
+
+Ligação de instâncias
+   Se estiver ligando a uma instância de objeto, "a.x" é transformado
+   na chamada: "type(a).__dict__['x'].__get__(a, type(a))".
+
+Ligação de classes
+   Se estiver ligando a uma classe, "A.x" é transformado na chamada:
+   "A.__dict__['x'].__get__(None, A)".
+
+Ligação de super
+   Uma pesquisa pontilhada, ou *dotted lookup*, como "super(A, a).x"
+   procura "a.__class__.__mro__" por uma classe base "B" seguindo "A"
+   e então retorna "B.__dict__['x'].__get__(a, A)". Se não for um
+   descritor, "x" é retornado inalterado.
+
+Para ligações de instâncias, a precedência de invocação do descritor
+depende de quais métodos do descritor são definidos. Um descritor pode
+definir qualquer combinação de "__get__()", "__set__()" e
+"__delete__()". Se ele não definir "__get__()", então acessar o
+atributo retornará o próprio objeto descritor, a menos que haja um
+valor no dicionário de instância do objeto. Se o descritor define
+"__set__()" e/ou "__delete__()", é um descritor de dados; se não
+definir nenhum, é um descritor sem dados. Normalmente, os descritores
+de dados definem "__get__()" e "__set__()", enquanto os descritores
+sem dados têm apenas o método "__get__()". Descritores de dados com
+"__get__()" e "__set__()" (e/ou "__delete__()") definidos sempre
+substituem uma redefinição em um dicionário de instância. Em
+contraste, descritores sem dados podem ser substituídos por
+instâncias.
+
+Os métodos Python (incluindo aqueles decorados com "@staticmethod" and
+"@classmethod") são implementados como descritores sem dados. Assim,
+as instâncias podem redefinir e substituir métodos. Isso permite que
+instâncias individuais adquiram comportamentos que diferem de outras
+instâncias da mesma classe.
+
+A função "property()" é implementada como um descritor de dados. Da
+mesma forma, as instâncias não podem substituir o comportamento de uma
+propriedade.
+
+
+3.3.2.4. __slots__
+~~~~~~~~~~~~~~~~~~
+
+*__slots__* permite-nos declarar explicitamente membros de dados (como
+propriedades) e negar a criação de "__dict__" e *__weakref__* (a menos
+que explicitamente declarado em *__slots__* ou disponível em uma
+classe base.)
+
+O espaço economizado com o uso de "__dict__" pode ser significativo. A
+velocidade de pesquisa de atributos também pode ser significativamente
+melhorada.
+
+object.__slots__
+
+   Esta variável de classe pode ser atribuída a uma string, iterável
+   ou sequência de strings com nomes de variáveis usados por
+   instâncias. *__slots__* reserva espaço para as variáveis declaradas
+   e evita a criação automática de "__dict__" e *__weakref__* para
+   cada instância.
+
+Observações ao uso de *__slots__*:
+
+* Ao herdar de uma classe sem *__slots__*, os atributos "__dict__" e
+  *__weakref__* das instâncias sempre estarão acessíveis.
+
+* Sem uma variável "__dict__", as instâncias não podem ser atribuídas
+  a novas variáveis não listadas na definição *__slots__*. As
+  tentativas de atribuir a um nome de variável não listado levantam
+  "AttributeError". Se a atribuição dinâmica de novas variáveis for
+  desejada, então adicione "'__dict__'" à sequência de strings na
+  declaração de *__slots__*.
+
+* Sem uma variável *__weakref__* para cada instância, as classes que
+  definem *__slots__* não suportam "referências fracas" para suas
+  instâncias. Se for necessário um suporte de referência fraca,
+  adicione "'__weakref__'" à sequência de strings na declaração
+  *__slots__*.
+
+* *__slots__* são implementados no nível de classe criando descritores
+  para cada nome de variável. Como resultado, os atributos de classe
+  não podem ser usados para definir valores padrão para variáveis de
+  instância definidas por *__slots__*; caso contrário, o atributo de
+  classe substituiria a atribuição do descritor.
+
+* A ação de uma declaração *__slots__* se limita à classe em que é
+  definida. *__slots__* declarados em uma classe base estão
+  disponíveis nas subclasses. No entanto, as subclasses receberão um
+  "__dict__" e *__weakref__* a menos que também definam *__slots__*
+  (que deve conter apenas nomes de quaisquer slots *adicionais*).
+
+* Se uma classe define um slot também definido em uma classe base, a
+  variável de instância definida pelo slot da classe base fica
+  inacessível (exceto por recuperar seu descritor diretamente da
+  classe base). Isso torna o significado do programa indefinido. No
+  futuro, uma verificação pode ser adicionada para evitar isso.
+
+* "TypeError" será levantada se *__slots__* não vazios forem definidos
+  para uma classe derivada de um tipo embutido ""variable-length""
+  como "int", "bytes" e "tuple".
+
+* Qualquer *iterável* não string pode ser atribuído a *__slots__*.
+
+* Se um "dicionário" for usado para atribuir *__slots__*, as chaves do
+  dicionário serão usadas como os nomes dos slots. Os valores do
+  dicionário podem ser usados para fornecer strings de documentação
+  (docstrings) por atributo que serão reconhecidos por
+  "inspect.getdoc()" e exibidos na saída de "help()".
+
+* Atribuição de "__class__" funciona apenas se ambas as classes têm o
+  mesmo *__slots__*.
+
+* A herança múltipla com várias classes bases com slots pode ser
+  usada, mas apenas uma classe base tem permissão para ter atributos
+  criados por slots (as outras classes bases devem ter layouts de
+  slots vazios) -- violações levantam "TypeError".
+
+* Se um *iterador* for usado para *__slots__*, um *descritor* é criado
+  para cada um dos valores do iterador. No entanto, o atributo
+  *__slots__* será um iterador vazio.
+
+
+3.3.3. Personalizando a criação de classe
+-----------------------------------------
+
+Sempre que uma classe herda de outra classe, "__init_subclass__()" é
+chamado na classe base. Dessa forma, é possível escrever classes que
+alteram o comportamento das subclasses. Isso está intimamente
+relacionado aos decoradores de classe, mas onde decoradores de classe
+afetam apenas a classe específica à qual são aplicados,
+"__init_subclass__" aplica-se apenas a futuras subclasses da classe
+que define o método.
+
+classmethod object.__init_subclass__(cls)
+
+   Este método é chamado sempre que a classe que contém é uma
+   subclasse. *cls* é então a nova subclasse. Se definido como um
+   método de instância normal, esse método é convertido implicitamente
+   em um método de classe.
+
+   Keyword arguments which are given to a new class are passed to the
+   parent class's "__init_subclass__". For compatibility with other
+   classes using "__init_subclass__", one should take out the needed
+   keyword arguments and pass the others over to the base class, as
+   in:
+
+      class Philosopher:
+          def __init_subclass__(cls, /, default_name, **kwargs):
+              super().__init_subclass__(**kwargs)
+              cls.default_name = default_name
+
+      class AustralianPhilosopher(Philosopher, default_name="Bruce"):
+          pass
+
+   A implementação padrão de "object.__init_subclass__" não faz nada,
+   mas levanta um erro se for chamada com quaisquer argumentos.
+
+   Nota:
+
+     A dica da metaclasse "metaclass" é consumida pelo resto da
+     maquinaria de tipo, e nunca é passada para implementações
+     "__init_subclass__". A metaclasse real (em vez da dica explícita)
+     pode ser acessada como "type(cls)".
+
+   Novo na versão 3.6.
+
+Quando uma classe é criada, "type.__new__()" verifica as variáveis de
+classe e faz chamadas a funções de retorno (callback) para aqueles com
+um gancho "__set_name__()".
+
+object.__set_name__(self, owner, name)
+
+   Chamado automaticamente no momento em que a classe proprietária
+   *owner* é criada. O objeto foi atribuído a *name* nessa classe:
+
+      class A:
+          x = C()  # Automatically calls: x.__set_name__(A, 'x')
+
+   Se a variável de classe for atribuída após a criação da classe,
+   "__set_name__()" não será chamado automaticamente. Se necessário,
+   "__set_name__()" pode ser chamado diretamente:
+
+      class A:
+         pass
+
+      c = C()
+      A.x = c                  # The hook is not called
+      c.__set_name__(A, 'x')   # Manually invoke the hook
+
+   Consulte Criando o objeto classe para mais detalhes.
+
+   Novo na versão 3.6.
+
+
+3.3.3.1. Metaclasses
+~~~~~~~~~~~~~~~~~~~~
+
+Por padrão, as classes são construídas usando "type()". O corpo da
+classe é executado em um novo espaço de nomes e o nome da classe é
+vinculado localmente ao resultado de "type(name, bases, namespace)".
+
+O processo de criação da classe pode ser personalizado passando o
+argumento nomeado "metaclass" na linha de definição da classe, ou
+herdando de uma classe existente que incluiu tal argumento. No exemplo
+a seguir, "MyClass" e "MySubclass" são instâncias de "Meta":
+
+   class Meta(type):
+       pass
+
+   class MyClass(metaclass=Meta):
+       pass
+
+   class MySubclass(MyClass):
+       pass
+
+Quaisquer outros argumentos nomeados especificados na definição de
+classe são transmitidos para todas as operações de metaclasse
+descritas abaixo.
+
+Quando uma definição de classe é executada, as seguintes etapas
+ocorrem:
+
+* entradas de MRO são resolvidas;
+
+* a metaclasse apropriada é determinada;
+
+* o espaço de nomes da classe é preparada;
+
+* o corpo da classe é executado;
+
+* o objeto da classe é criado.
+
+
+3.3.3.2. Resolvendo entradas de MRO
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+object.__mro_entries__(self, bases)
+
+   Se uma classe base que aparece em uma definição de classe não é uma
+   instância de "type", então um método "__mro_entries__()" é
+   procurado na base. Se um método "__mro_entries__()" é encontrado, a
+   base é substituída pelo resultado de uma chamada para
+   "__mro_entries__()" ao criar a classe. O método é chamado com a
+   tupla de bases original passada como parâmetro *bases*, e deve
+   retornar uma tupla de classes que serão usadas no lugar da base. A
+   tupla retornada pode estar vazia: nesses casos, a base original é
+   ignorada.
+
+Ver também:
+
+  "types.resolve_bases()"
+     Dinamicamente resolve bases que não são instâncias de "type".
+
+  "types.get_original_bases()"
+     Recupera as "bases originais" de uma classe antes das
+     modificações feitas por "__mro_entries__()".
+
+  **PEP 560**
+     Suporte básico para módulo typing e tipos genéricos.
+
+
+3.3.3.3. Determinando a metaclasse apropriada
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A metaclasse apropriada para uma definição de classe é determinada da
+seguinte forma:
+
+* se nenhuma classe base e nenhuma metaclasse explícita forem
+  fornecidas, então "type()" é usada;
+
+* se uma metaclasse explícita é fornecida e *não* é uma instância de
+  "type()", então ela é usada diretamente como a metaclasse;
+
+* se uma instância de "type()" é fornecida como a metaclasse
+  explícita, ou classes bases são definidas, então a metaclasse mais
+  derivada é usada.
+
+A metaclasse mais derivada é selecionada a partir da metaclasse
+explicitamente especificada (se houver) e das metaclasses (ou seja,
+"type(cls)") de todas as classes bases especificadas. A metaclasse
+mais derivada é aquela que é um subtipo de *todas* essas metaclasses
+candidatas. Se nenhuma das metaclasses candidatas atender a esse
+critério, a definição de classe falhará com "TypeError".
+
+
+3.3.3.4. Preparando o espaço de nomes da classe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uma vez identificada a metaclasse apropriada, o espaço de nomes da
+classe é preparado. Se a metaclasse tiver um atributo "__prepare__",
+ela será chamada como "namespace = metaclass.__prepare__(name, bases,
+**kwds)" (onde os argumentos nomeados adicionais, se houver, vêm da
+definição de classe). O método "__prepare__" deve ser implementado
+como um "classmethod". O espaço de nomes retornado por "__prepare__" é
+passado para "__new__", mas quando o objeto classe final é criado, o
+espaço de nomes é copiado para um novo "dict".
+
+Se a metaclasse não tiver o atributo "__prepare__", então o espaço de
+nomes da classe é inicializado como um mapeamento ordenado vazio.
+
+Ver também:
+
+  **PEP 3115** - Metaclasses no Python 3000
+     Introduzido o gancho de espaço de nomes "__prepare__"
+
+
+3.3.3.5. Executando o corpo da classe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O corpo da classe é executado (aproximadamente) como "exec(body,
+globals(), namespace)". A principal diferença de uma chamada normal
+para "exec()" é que o escopo léxico permite que o corpo da classe
+(incluindo quaisquer métodos) faça referência a nomes dos escopos
+atual e externo quando a definição de classe ocorre dentro de uma
+função.
+
+No entanto, mesmo quando a definição de classe ocorre dentro da
+função, os métodos definidos dentro da classe ainda não podem ver os
+nomes definidos no escopo da classe. Variáveis de classe devem ser
+acessadas através do primeiro parâmetro de instância ou métodos de
+classe, ou através da referência implícita com escopo léxico
+"__class__" descrita na próxima seção.
+
+
+3.3.3.6. Criando o objeto classe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uma vez que o espaço de nomes da classe tenha sido preenchido
+executando o corpo da classe, o objeto classe é criado chamando
+"metaclass(name, bases, namespace, **kwds)" (os argumentos adicionais
+passados aqui são os mesmos passados para "__prepare__").
+
+Este objeto classe é aquele que será referenciado pela chamada a
+"super()" sem argumentos. "__class__" é uma referência de clausura
+implícita criada pelo compilador se algum método no corpo da classe se
+referir a "__class__" ou "super". Isso permite que a forma de
+argumento zero de "super()" identifique corretamente a classe sendo
+definida com base no escopo léxico, enquanto a classe ou instância que
+foi usada para fazer a chamada atual é identificada com base no
+primeiro argumento passado para o método.
+
+**Detalhes da implementação do CPython:** No CPython 3.6 e posterior,
+a célula "__class__" é passada para a metaclasse como uma entrada de
+"__classcell__" no espaço de nomes da classe. Se estiver presente,
+deve ser propagado até a chamada a "type.__new__" para que a classe
+seja inicializada corretamente. Não fazer isso resultará em um
+"RuntimeError" no Python 3.8.
+
+Quando usada a metaclasse padrão "type", ou qualquer metaclasse que
+chame "type.__new__", as seguintes etapas de personalização adicionais
+são executadas depois da criação do objeto classe:
+
+1. O método "type.__new__" coleta todos os atributos no espaço de
+   nomes da classe que definem um método "__set_name__()";
+
+2. Esses métodos "__set_name__" são chamados com a classe sendo
+   definida e o nome atribuído para este atributo específico;
+
+3. O gancho "__init_subclass__()" é chamado na classe base imediata da
+   nova classe em sua ordem de resolução de método.
+
+Depois que o objeto classe é criado, ele é passado para os decoradores
+de classe incluídos na definição de classe (se houver) e o objeto
+resultante é vinculado ao espaço de nomes local como a classe
+definida.
+
+Quando uma nova classe é criada por "type.__new__", o objeto fornecido
+como o parâmetro do espaço de nomes é copiado para um novo mapeamento
+ordenado e o objeto original é descartado. A nova cópia é envolta em
+um proxy de somente leitura, que se torna o atributo "__dict__" do
+objeto classe.
+
+Ver também:
+
+  **PEP 3135** - Novo super
+     Descreve a referência de clausura implícita de  "__class__"
+
+
+3.3.3.7. Usos para metaclasses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os usos potenciais para metaclasses são ilimitados. Algumas ideias que
+foram exploradas incluem enumeradores, criação de log, verificação de
+interface, delegação automática, criação automática de propriedade,
+proxies, estruturas e bloqueio/sincronização automático/a de recursos.
+
+
+3.3.4. Personalizando verificações de instância e subclasse
+-----------------------------------------------------------
+
+Os seguintes métodos são usados para substituir o comportamento padrão
+das funções embutidas "isinstance()" e "issubclass()".
+
+Em particular, a metaclasse "abc.ABCMeta" implementa esses métodos a
+fim de permitir a adição de classes base abstratas (ABCs) como
+"classes base virtuais" para qualquer classe ou tipo (incluindo tipos
+embutidos), incluindo outras ABCs.
+
+class.__instancecheck__(self, instance)
+
+   Retorna verdadeiro se *instance* deve ser considerada uma instância
+   (direta ou indireta) da classe *class*. Se definido, chamado para
+   implementar "isinstance(instance, class)".
+
+class.__subclasscheck__(self, subclass)
+
+   Retorna verdadeiro se *subclass* deve ser considerada uma subclasse
+   (direta ou indireta) da classe *class*. Se definido, chamado para
+   implementar "issubclass(subclass, class)".
+
+Observe que esses métodos são pesquisados no tipo (metaclasse) de uma
+classe. Eles não podem ser definidos como métodos de classe na classe
+real. Isso é consistente com a pesquisa de métodos especiais que são
+chamados em instâncias, apenas neste caso a própria instância é uma
+classe.
+
+Ver também:
+
+  **PEP 3119** - Introduzindo classes base abstratas
+     Inclui a especificação para personalizar o comportamento de
+     "isinstance()" e "issubclass()" através de "__instancecheck__()"
+     e "__subclasscheck__()", com motivação para esta funcionalidade
+     no contexto da adição de classes base abstratas (veja o módulo
+     "abc") para a linguagem.
+
+
+3.3.5. Emulando tipos genéricos
+-------------------------------
+
+Quando estiver usando *anotações de tipo*, é frequentemente útil
+*parametrizar* um *tipo genérico* usando a notação de colchetes do
+Python. Por exemplo, a anotação "list[int]" pode ser usada para
+indicar uma "list" em que todos os seus elementos são do tipo "int".
+
+Ver também:
+
+  **PEP 484** - Dicas de tipo
+     Apresenta a estrutura do Python para anotações de tipo
+
+  Tipos Generic Alias
+     Documentação de objetos que representam classes genéricas
+     parametrizadas
+
+  Genéricos, genéricos definidos pelo usuário e "typing.Generic"
+     Documentação sobre como implementar classes genéricas que podem
+     ser parametrizadas em tempo de execução e compreendidas por
+     verificadores de tipo estático
+
+Uma classe pode *geralmente* ser parametrizada somente se ela define o
+método de classe especial "__class_getitem__()".
+
+classmethod object.__class_getitem__(cls, key)
+
+   Retorna um objeto que representa a especialização de uma classe
+   genérica por argumentos de tipo encontrados em *key*.
+
+   Quando definido em uma classe, "__class_getitem__()" é
+   automaticamente um método de classe. Assim, não é necessário que
+   seja decorado com "@classmethod" quando de sua definição.
+
+
+3.3.5.1. O propósito de *__class_getitem__*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O propósito de "__class_getitem__()" é permitir a parametrização em
+tempo de execução de classes genéricas da biblioteca padrão, a fim de
+aplicar mais facilmente *dicas de tipo* a essas classes.
+
+Para implementar classes genéricas personalizadas que podem ser
+parametrizadas em tempo de execução e compreendidas por verificadores
+de tipo estáticos, os usuários devem herdar de uma classe da
+biblioteca padrão que já implementa "__class_getitem__()", ou herdar
+de "typing.Generic", que possui sua própria implementação de
+"__class_getitem__()".
+
+Implementações personalizadas de "__class_getitem__()" em classes
+definidas fora da biblioteca padrão podem não ser compreendidas por
+verificadores de tipo de terceiros, como o mypy. O uso de
+"__class_getitem__()" em qualquer classe para fins diferentes de dicas
+de tipo é desencorajado.
+
+
+3.3.5.2. *__class_getitem__* versus *__getitem__*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Normalmente, a subscription de um objeto usando colchetes chamará o
+método de instância "__getitem__()" definido na classe do objeto. No
+entanto, se o objeto sendo subscrito for ele mesmo uma classe, o
+método de classe "__class_getitem__()" pode ser chamado em seu lugar.
+"__class_getitem__()" deve retornar um objeto GenericAlias se estiver
+devidamente definido.
+
+Apresentado com a *expressão* "obj[x]", o interpretador de Python
+segue algo parecido com o seguinte processo para decidir se
+"__getitem__()" ou "__class_getitem__()" deve ser chamado:
+
+   from inspect import isclass
+
+   def subscribe(obj, x):
+       """Return the result of the expression 'obj[x]'"""
+
+       class_of_obj = type(obj)
+
+       # If the class of obj defines __getitem__,
+       # call class_of_obj.__getitem__(obj, x)
+       if hasattr(class_of_obj, '__getitem__'):
+           return class_of_obj.__getitem__(obj, x)
+
+       # Else, if obj is a class and defines __class_getitem__,
+       # call obj.__class_getitem__(x)
+       elif isclass(obj) and hasattr(obj, '__class_getitem__'):
+           return obj.__class_getitem__(x)
+
+       # Else, raise an exception
+       else:
+           raise TypeError(
+               f"'{class_of_obj.__name__}' object is not subscriptable"
+           )
+
+Em Python, todas as classes são elas mesmas instâncias de outras
+classes. A classe de uma classe é conhecida como *metaclasse* dessa
+classe, e a maioria das classes tem a classe "type" como sua
+metaclasse. "type" não define "__getitem__()", o que significa que
+expressões como "list[int]", "dict[str, float]" e "tuple[str, bytes]"
+resultam em chamadas para "__class_getitem__()":
+
+   >>> # list has class "type" as its metaclass, like most classes:
+   >>> type(list)
+   <class 'type'>
+   >>> type(dict) == type(list) == type(tuple) == type(str) == type(bytes)
+   True
+   >>> # "list[int]" calls "list.__class_getitem__(int)"
+   >>> list[int]
+   list[int]
+   >>> # list.__class_getitem__ returns a GenericAlias object:
+   >>> type(list[int])
+   <class 'types.GenericAlias'>
+
+No entanto, se uma classe tiver uma metaclasse personalizada que
+define "__getitem__()", subscrever a classe pode resultar em
+comportamento diferente. Um exemplo disso pode ser encontrado no
+módulo "enum":
+
+   >>> from enum import Enum
+   >>> class Menu(Enum):
+   ...     """A breakfast menu"""
+   ...     SPAM = 'spam'
+   ...     BACON = 'bacon'
+   ...
+   >>> # Enum classes have a custom metaclass:
+   >>> type(Menu)
+   <class 'enum.EnumMeta'>
+   >>> # EnumMeta defines __getitem__,
+   >>> # so __class_getitem__ is not called,
+   >>> # and the result is not a GenericAlias object:
+   >>> Menu['SPAM']
+   <Menu.SPAM: 'spam'>
+   >>> type(Menu['SPAM'])
+   <enum 'Menu'>
+
+Ver também:
+
+  **PEP 560** - Suporte básico para módulo typing e tipos genéricos
+     Introduz "__class_getitem__()", e define quando uma subscrição
+     resulta na chamada de "__class_getitem__()" em vez de
+     "__getitem__()"
+
+
+3.3.6. Emulando objetos chamáveis
+---------------------------------
+
+object.__call__(self[, args...])
+
+   Chamado quando a instância é "chamada" como uma função; se este
+   método for definido, "x(arg1, arg2, ...)" basicamente traduz para
+   "type(x).__call__(x, arg1, ...)".
+
+
+3.3.7. Emulando de tipos contêineres
+------------------------------------
+
+The following methods can be defined to implement container objects.
+Containers usually are *sequences* (such as "lists" or "tuples") or
+*mappings* (like "dictionaries"), but can represent other containers
+as well.  The first set of methods is used either to emulate a
+sequence or to emulate a mapping; the difference is that for a
+sequence, the allowable keys should be the integers *k* for which "0
+<= k < N" where *N* is the length of the sequence, or "slice" objects,
+which define a range of items.  It is also recommended that mappings
+provide the methods "keys()", "values()", "items()", "get()",
+"clear()", "setdefault()", "pop()", "popitem()", "copy()", and
+"update()" behaving similar to those for Python's standard
+"dictionary" objects.  The "collections.abc" module provides a
+"MutableMapping" *abstract base class* to help create those methods
+from a base set of "__getitem__()", "__setitem__()", "__delitem__()",
+and "keys()". Mutable sequences should provide methods "append()",
+"count()", "index()", "extend()", "insert()", "pop()", "remove()",
+"reverse()" and "sort()", like Python standard "list" objects.
+Finally, sequence types should implement addition (meaning
+concatenation) and multiplication (meaning repetition) by defining the
+methods "__add__()", "__radd__()", "__iadd__()", "__mul__()",
+"__rmul__()" and "__imul__()" described below; they should not define
+other numerical operators.  It is recommended that both mappings and
+sequences implement the "__contains__()" method to allow efficient use
+of the "in" operator; for mappings, "in" should search the mapping's
+keys; for sequences, it should search through the values.  It is
+further recommended that both mappings and sequences implement the
+"__iter__()" method to allow efficient iteration through the
+container; for mappings, "__iter__()" should iterate through the
+object's keys; for sequences, it should iterate through the values.
+
+object.__len__(self)
+
+   Called to implement the built-in function "len()".  Should return
+   the length of the object, an integer ">=" 0.  Also, an object that
+   doesn't define a "__bool__()" method and whose "__len__()" method
+   returns zero is considered to be false in a Boolean context.
+
+   **Detalhes da implementação do CPython:** In CPython, the length is
+   required to be at most "sys.maxsize". If the length is larger than
+   "sys.maxsize" some features (such as "len()") may raise
+   "OverflowError".  To prevent raising "OverflowError" by truth value
+   testing, an object must define a "__bool__()" method.
+
+object.__length_hint__(self)
+
+   Called to implement "operator.length_hint()". Should return an
+   estimated length for the object (which may be greater or less than
+   the actual length). The length must be an integer ">=" 0. The
+   return value may also be "NotImplemented", which is treated the
+   same as if the "__length_hint__" method didn't exist at all. This
+   method is purely an optimization and is never required for
+   correctness.
+
+   Novo na versão 3.4.
+
+Nota:
+
+  O fatiamento é feito exclusivamente com os três métodos a seguir.
+  Uma chamada como
+
+     a[1:2] = b
+
+  é traduzida com
+
+     a[slice(1, 2, None)] = b
+
+  e assim por diante. Os itens de fatia ausentes são sempre
+  preenchidos com "None".
+
+object.__getitem__(self, key)
+
+   Called to implement evaluation of "self[key]". For *sequence*
+   types, the accepted keys should be integers. Optionally, they may
+   support "slice" objects as well.  Negative index support is also
+   optional. If *key* is of an inappropriate type, "TypeError" may be
+   raised; if *key* is a value outside the set of indexes for the
+   sequence (after any special interpretation of negative values),
+   "IndexError" should be raised. For *mapping* types, if *key* is
+   missing (not in the container), "KeyError" should be raised.
+
+   Nota:
+
+     Os loops "for" esperam que uma "IndexError" seja levantada para
+     índices ilegais para permitir a detecção apropriada do fim da
+     sequência.
+
+   Nota:
+
+     When subscripting a *class*, the special class method
+     "__class_getitem__()" may be called instead of "__getitem__()".
+     See __class_getitem__ versus __getitem__ for more details.
+
+object.__setitem__(self, key, value)
+
+   Chamado para implementar a atribuição de "self[key]". Mesma nota
+   que para "__getitem__()". Isso só deve ser implementado para
+   mapeamentos se os objetos suportarem alterações nos valores das
+   chaves, ou se novas chaves puderem ser adicionadas, ou para
+   sequências se os elementos puderem ser substituídos. As mesmas
+   exceções devem ser levantadas para valores *key* impróprios do
+   método "__getitem__()".
+
+object.__delitem__(self, key)
+
+   Chamado para implementar a exclusão de "self[key]". Mesma nota que
+   para "__getitem__()". Isso só deve ser implementado para
+   mapeamentos se os objetos suportarem remoções de chaves, ou para
+   sequências se os elementos puderem ser removidos da sequência. As
+   mesmas exceções devem ser levantadas para valores *key* impróprios
+   do método "__getitem__()".
+
+object.__missing__(self, key)
+
+   Chamado por "dict"."__getitem__()" para implementar "self[key]"
+   para subclasses de dicionário quando a chave não estiver no
+   dicionário.
+
+object.__iter__(self)
+
+   This method is called when an *iterator* is required for a
+   container. This method should return a new iterator object that can
+   iterate over all the objects in the container.  For mappings, it
+   should iterate over the keys of the container.
+
+object.__reversed__(self)
+
+   Chamado (se presente) pelo "reversed()" embutido para implementar a
+   iteração reversa. Ele deve retornar um novo objeto iterador que
+   itera sobre todos os objetos no contêiner na ordem reversa.
+
+   Se o método "__reversed__()" não for fornecido, o "reversed()"
+   embutido voltará a usar o protocolo de sequência ("__len__()" e
+   "__getitem__()"). Objetos que suportam o protocolo de sequência só
+   devem fornecer "__reversed__()" se eles puderem fornecer uma
+   implementação que seja mais eficiente do que aquela fornecida por
+   "reversed()".
+
+Os operadores de teste de associação ("in" e "not in") são normalmente
+implementados como uma iteração através de um contêiner. No entanto,
+os objetos contêiner podem fornecer o seguinte método especial com uma
+implementação mais eficiente, que também não requer que o objeto seja
+iterável.
+
+object.__contains__(self, item)
+
+   Chamado para implementar operadores de teste de associação. Deve
+   retornar verdadeiro se *item* estiver em *self*, falso caso
+   contrário. Para objetos de mapeamento, isso deve considerar as
+   chaves do mapeamento em vez dos valores ou pares de itens-chave.
+
+   Para objetos que não definem "__contains__()", o teste de
+   associação primeiro tenta a iteração via "__iter__()", depois o
+   protocolo de iteração de sequência antigo via "__getitem__()",
+   consulte esta seção em a referência da linguagem.
+
+
+3.3.8. Emulando tipos numéricos
+-------------------------------
+
+Os métodos a seguir podem ser definidos para emular objetos numéricos.
+Métodos correspondentes a operações que não são suportadas pelo tipo
+particular de número implementado (por exemplo, operações bit a bit
+para números não inteiros) devem ser deixados indefinidos.
+
+object.__add__(self, other)
+object.__sub__(self, other)
+object.__mul__(self, other)
+object.__matmul__(self, other)
+object.__truediv__(self, other)
+object.__floordiv__(self, other)
+object.__mod__(self, other)
+object.__divmod__(self, other)
+object.__pow__(self, other[, modulo])
+object.__lshift__(self, other)
+object.__rshift__(self, other)
+object.__and__(self, other)
+object.__xor__(self, other)
+object.__or__(self, other)
+
+   These methods are called to implement the binary arithmetic
+   operations ("+", "-", "*", "@", "/", "//", "%", "divmod()",
+   "pow()", "**", "<<", ">>", "&", "^", "|").  For instance, to
+   evaluate the expression "x + y", where *x* is an instance of a
+   class that has an "__add__()" method, "type(x).__add__(x, y)" is
+   called.  The "__divmod__()" method should be the equivalent to
+   using "__floordiv__()" and "__mod__()"; it should not be related to
+   "__truediv__()".  Note that "__pow__()" should be defined to accept
+   an optional third argument if the ternary version of the built-in
+   "pow()" function is to be supported.
+
+   If one of those methods does not support the operation with the
+   supplied arguments, it should return "NotImplemented".
+
+object.__radd__(self, other)
+object.__rsub__(self, other)
+object.__rmul__(self, other)
+object.__rmatmul__(self, other)
+object.__rtruediv__(self, other)
+object.__rfloordiv__(self, other)
+object.__rmod__(self, other)
+object.__rdivmod__(self, other)
+object.__rpow__(self, other[, modulo])
+object.__rlshift__(self, other)
+object.__rrshift__(self, other)
+object.__rand__(self, other)
+object.__rxor__(self, other)
+object.__ror__(self, other)
+
+   These methods are called to implement the binary arithmetic
+   operations ("+", "-", "*", "@", "/", "//", "%", "divmod()",
+   "pow()", "**", "<<", ">>", "&", "^", "|") with reflected (swapped)
+   operands.  These functions are only called if the left operand does
+   not support the corresponding operation [3] and the operands are of
+   different types. [4] For instance, to evaluate the expression "x -
+   y", where *y* is an instance of a class that has an "__rsub__()"
+   method, "type(y).__rsub__(y, x)" is called if "type(x).__sub__(x,
+   y)" returns "NotImplemented".
+
+   Note que ternário "pow()" não tentará chamar "__rpow__()" (as
+   regras de coerção se tornariam muito complicadas).
+
+   Nota:
+
+     Se o tipo do operando direito for uma subclasse do tipo do
+     operando esquerdo e essa subclasse fornecer uma implementação
+     diferente do método refletido para a operação, este método será
+     chamado antes do método não refletido do operando esquerdo. Esse
+     comportamento permite que as subclasses substituam as operações
+     de seus ancestrais.
+
+object.__iadd__(self, other)
+object.__isub__(self, other)
+object.__imul__(self, other)
+object.__imatmul__(self, other)
+object.__itruediv__(self, other)
+object.__ifloordiv__(self, other)
+object.__imod__(self, other)
+object.__ipow__(self, other[, modulo])
+object.__ilshift__(self, other)
+object.__irshift__(self, other)
+object.__iand__(self, other)
+object.__ixor__(self, other)
+object.__ior__(self, other)
+
+   These methods are called to implement the augmented arithmetic
+   assignments ("+=", "-=", "*=", "@=", "/=", "//=", "%=", "**=",
+   "<<=", ">>=", "&=", "^=", "|=").  These methods should attempt to
+   do the operation in-place (modifying *self*) and return the result
+   (which could be, but does not have to be, *self*).  If a specific
+   method is not defined, or if that method returns "NotImplemented",
+   the augmented assignment falls back to the normal methods.  For
+   instance, if *x* is an instance of a class with an "__iadd__()"
+   method, "x += y" is equivalent to "x = x.__iadd__(y)" . If
+   "__iadd__()" does not exist, or if "x.__iadd__(y)" returns
+   "NotImplemented", "x.__add__(y)" and "y.__radd__(x)" are
+   considered, as with the evaluation of "x + y". In certain
+   situations, augmented assignment can result in unexpected errors
+   (see Porque a_tuple[i] += ['item'] levanta uma exceção quando a
+   adição funciona?), but this behavior is in fact part of the data
+   model.
+
+object.__neg__(self)
+object.__pos__(self)
+object.__abs__(self)
+object.__invert__(self)
+
+   Chamado para implementar as operações aritméticas unárias ("-",
+   "+", "abs()" e "~").
+
+object.__complex__(self)
+object.__int__(self)
+object.__float__(self)
+
+   Chamado para implementar as funções embutidas "complex()", "int()"
+   e "float()". Deve retornar um valor do tipo apropriado.
+
+object.__index__(self)
+
+   Chamado para implementar "operator.index()", e sempre que o Python
+   precisar converter sem perdas o objeto numérico em um objeto
+   inteiro (como no fatiamento ou nas funções embutidas "bin()",
+   "hex()" e "oct()"). A presença deste método indica que o objeto
+   numérico é do tipo inteiro. Deve retornar um número inteiro.
+
+   Se "__int__()", "__float__()" e "__complex__()" não estiverem
+   definidos, funções embutidas correspondentes "int()", "float()" e
+   "complex()" recorre a "__index__()".
+
+object.__round__(self[, ndigits])
+object.__trunc__(self)
+object.__floor__(self)
+object.__ceil__(self)
+
+   Chamado para implementar as funções embutidas "round()" e
+   "trunc()", "floor()" e "ceil()" de "math". A menos que *ndigits*
+   sejam passados para "__round__()" todos estes métodos devem
+   retornar o valor do objeto truncado para um "Integral" (tipicamente
+   um "int").
+
+   The built-in function "int()" falls back to "__trunc__()" if
+   neither "__int__()" nor "__index__()" is defined.
+
+   Alterado na versão 3.11: The delegation of "int()" to "__trunc__()"
+   is deprecated.
+
+
+3.3.9. Gerenciadores de contexto da instrução with
+--------------------------------------------------
+
+Um *gerenciador de contexto* é um objeto que define o contexto de
+tempo de execução a ser estabelecido ao executar uma instrução "with".
+O gerenciador de contexto lida com a entrada e a saída do contexto de
+tempo de execução desejado para a execução do bloco de código. Os
+gerenciadores de contexto são normalmente invocados usando a instrução
+"with" (descrita na seção The with statement), mas também podem ser
+usados invocando diretamente seus métodos.
+
+Os usos típicos de gerenciadores de contexto incluem salvar e
+restaurar vários tipos de estado global, bloquear e desbloquear
+recursos, fechar arquivos abertos, etc.
+
+Para obter mais informações sobre gerenciadores de contexto, consulte
+Tipos de Gerenciador de Contexto.
+
+object.__enter__(self)
+
+   Insere o contexto de tempo de execução relacionado a este objeto. A
+   instrução "with" vinculará o valor de retorno deste método ao(s)
+   alvo(s) especificado(s) na cláusula "as" da instrução, se houver.
+
+object.__exit__(self, exc_type, exc_value, traceback)
+
+   Sai do contexto de tempo de execução relacionado a este objeto. Os
+   parâmetros descrevem a exceção que fez com que o contexto fosse
+   encerrado. Se o contexto foi encerrado sem exceção, todos os três
+   argumentos serão "None".
+
+   Se uma exceção for fornecida e o método desejar suprimir a exceção
+   (ou seja, evitar que ela seja propagada), ele deve retornar um
+   valor verdadeiro. Caso contrário, a exceção será processada
+   normalmente ao sair deste método.
+
+   Note that "__exit__()" methods should not reraise the passed-in
+   exception; this is the caller's responsibility.
+
+Ver também:
+
+  **PEP 343** - A instrução "with"
+     A especificação, o histórico e os exemplos para a instrução
+     Python "with".
+
+
+3.3.10. Customizando argumentos posicionais na classe correspondência de padrão
+-------------------------------------------------------------------------------
+
+When using a class name in a pattern, positional arguments in the
+pattern are not allowed by default, i.e. "case MyClass(x, y)" is
+typically invalid without special support in "MyClass". To be able to
+use that kind of pattern, the class needs to define a *__match_args__*
+attribute.
+
+object.__match_args__
+
+   Essa variável de classe pode ser atribuída a uma tupla de strings.
+   Quando essa classe é usada em uma classe padrão com argumentos
+   posicionais, cada argumento posicional será convertido para um
+   argumento nomeado, usando correspondência de valor em
+   *__match_args__* como palavra reservada. A ausência desse atributo
+   é equivalente a defini-lo como "()"
+
+Por exemplo, se "MyClass.__match_args__" é "("left", "center",
+"right")" significa que "case MyClass(x, y)" é equivalente a "case
+MyClass(left=x, center=y)". Note que o número de argumentos no padrão
+deve ser menor ou igual ao número de elementos em *__match_args__*;
+caso seja maior, a tentativa de correspondência de padrão irá levantar
+uma "TypeError".
+
+Novo na versão 3.10.
+
+Ver também:
+
+  **PEP 634** - Correspondência de Padrão Estrutural
+     A especificação para a instrução Python "match"
+
+
+3.3.11. Emulating buffer types
+------------------------------
+
+The buffer protocol provides a way for Python objects to expose
+efficient access to a low-level memory array. This protocol is
+implemented by builtin types such as "bytes" and "memoryview", and
+third-party libraries may define additional buffer types.
+
+While buffer types are usually implemented in C, it is also possible
+to implement the protocol in Python.
+
+object.__buffer__(self, flags)
+
+   Called when a buffer is requested from *self* (for example, by the
+   "memoryview" constructor). The *flags* argument is an integer
+   representing the kind of buffer requested, affecting for example
+   whether the returned buffer is read-only or writable.
+   "inspect.BufferFlags" provides a convenient way to interpret the
+   flags. The method must return a "memoryview" object.
+
+object.__release_buffer__(self, buffer)
+
+   Called when a buffer is no longer needed. The *buffer* argument is
+   a "memoryview" object that was previously returned by
+   "__buffer__()". The method must release any resources associated
+   with the buffer. This method should return "None". Buffer objects
+   that do not need to perform any cleanup are not required to
+   implement this method.
+
+Novo na versão 3.12.
+
+Ver também:
+
+  **PEP 688** - Making the buffer protocol accessible in Python
+     Introduces the Python "__buffer__" and "__release_buffer__"
+     methods.
+
+  "collections.abc.Buffer"
+     ABC for buffer types.
+
+
+3.3.12. Pesquisa de método especial
+-----------------------------------
+
+Para classes personalizadas, as invocações implícitas de métodos
+especiais só têm garantia de funcionar corretamente se definidas em um
+tipo de objeto, não no dicionário de instância do objeto. Esse
+comportamento é o motivo pelo qual o código a seguir levanta uma
+exceção:
+
+   >>> class C:
+   ...     pass
+   ...
+   >>> c = C()
+   >>> c.__len__ = lambda: 5
+   >>> len(c)
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   TypeError: object of type 'C' has no len()
+
+The rationale behind this behaviour lies with a number of special
+methods such as "__hash__()" and "__repr__()" that are implemented by
+all objects, including type objects. If the implicit lookup of these
+methods used the conventional lookup process, they would fail when
+invoked on the type object itself:
+
+   >>> 1 .__hash__() == hash(1)
+   True
+   >>> int.__hash__() == hash(int)
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   TypeError: descriptor '__hash__' of 'int' object needs an argument
+
+A tentativa incorreta de invocar um método não vinculado de uma classe
+dessa maneira é às vezes referida como "confusão de metaclasse" e é
+evitada ignorando a instância ao pesquisar métodos especiais:
+
+   >>> type(1).__hash__(1) == hash(1)
+   True
+   >>> type(int).__hash__(int) == hash(int)
+   True
+
+In addition to bypassing any instance attributes in the interest of
+correctness, implicit special method lookup generally also bypasses
+the "__getattribute__()" method even of the object's metaclass:
+
+   >>> class Meta(type):
+   ...     def __getattribute__(*args):
+   ...         print("Metaclass getattribute invoked")
+   ...         return type.__getattribute__(*args)
+   ...
+   >>> class C(object, metaclass=Meta):
+   ...     def __len__(self):
+   ...         return 10
+   ...     def __getattribute__(*args):
+   ...         print("Class getattribute invoked")
+   ...         return object.__getattribute__(*args)
+   ...
+   >>> c = C()
+   >>> c.__len__()                 # Explicit lookup via instance
+   Class getattribute invoked
+   10
+   >>> type(c).__len__(c)          # Explicit lookup via type
+   Metaclass getattribute invoked
+   10
+   >>> len(c)                      # Implicit lookup
+   10
+
+Bypassing the "__getattribute__()" machinery in this fashion provides
+significant scope for speed optimisations within the interpreter, at
+the cost of some flexibility in the handling of special methods (the
+special method *must* be set on the class object itself in order to be
+consistently invoked by the interpreter).
+
+
+3.4. Corrotinas
+===============
+
+
+3.4.1. Objetos aguardáveis
+--------------------------
+
+An *awaitable* object generally implements an "__await__()" method.
+*Coroutine objects* returned from "async def" functions are awaitable.
+
+Nota:
+
+  The *generator iterator* objects returned from generators decorated
+  with "types.coroutine()" are also awaitable, but they do not
+  implement "__await__()".
+
+object.__await__(self)
+
+   Deve retornar um *iterador*. Deve ser usado para implementar
+   objetos *aguardáveis*. Por exemplo, "asyncio.Future" implementa
+   este método para ser compatível com a expressão "await".
+
+   Nota:
+
+     The language doesn't place any restriction on the type or value
+     of the objects yielded by the iterator returned by "__await__",
+     as this is specific to the implementation of the asynchronous
+     execution framework (e.g. "asyncio") that will be managing the
+     *awaitable* object.
+
+Novo na versão 3.5.
+
+Ver também:
+
+  **PEP 492** para informações adicionais sobre objetos aguardáveis.
+
+
+3.4.2. Objetos corrotina
+------------------------
+
+*Coroutine objects* are *awaitable* objects. A coroutine's execution
+can be controlled by calling "__await__()" and iterating over the
+result.  When the coroutine has finished executing and returns, the
+iterator raises "StopIteration", and the exception's "value" attribute
+holds the return value.  If the coroutine raises an exception, it is
+propagated by the iterator.  Coroutines should not directly raise
+unhandled "StopIteration" exceptions.
+
+As corrotinas também têm os métodos listados abaixo, que são análogos
+aos dos geradores (ver Métodos de iterador gerador). No entanto, ao
+contrário dos geradores, as corrotinas não suportam diretamente a
+iteração.
+
+Alterado na versão 3.5.2: É uma "RuntimeError" para aguardar uma
+corrotina mais de uma vez.
+
+coroutine.send(value)
+
+   Starts or resumes execution of the coroutine.  If *value* is
+   "None", this is equivalent to advancing the iterator returned by
+   "__await__()".  If *value* is not "None", this method delegates to
+   the "send()" method of the iterator that caused the coroutine to
+   suspend.  The result (return value, "StopIteration", or other
+   exception) is the same as when iterating over the "__await__()"
+   return value, described above.
+
+coroutine.throw(value)
+coroutine.throw(type[, value[, traceback]])
+
+   Raises the specified exception in the coroutine.  This method
+   delegates to the "throw()" method of the iterator that caused the
+   coroutine to suspend, if it has such a method.  Otherwise, the
+   exception is raised at the suspension point.  The result (return
+   value, "StopIteration", or other exception) is the same as when
+   iterating over the "__await__()" return value, described above.  If
+   the exception is not caught in the coroutine, it propagates back to
+   the caller.
+
+   Alterado na versão 3.12: A segunda assinatura (tipo[, valor[,
+   traceback]]]) foi descontinuada e pode ser removida em uma versão
+   futura do Python.
+
+coroutine.close()
+
+   Faz com que a corrotina se limpe e saia. Se a corrotina for
+   suspensa, este método primeiro delega para o método "close()" do
+   iterador que causou a suspensão da corrotina, se tiver tal método.
+   Então ele levanta "GeneratorExit" no ponto de suspensão, fazendo
+   com que a corrotina se limpe imediatamente. Por fim, a corrotina é
+   marcada como tendo sua execução concluída, mesmo que nunca tenha
+   sido iniciada.
+
+   Objetos corrotina são fechados automaticamente usando o processo
+   acima quando estão prestes a ser destruídos.
+
+
+3.4.3. Iteradores assíncronos
+-----------------------------
+
+Um *iterador assíncrono* pode chamar código assíncrono em seu método
+"__anext__".
+
+Os iteradores assíncronos podem ser usados ​​em uma instrução "async
+for".
+
+object.__aiter__(self)
+
+   Deve retornar um objeto *iterador assíncrono*.
+
+object.__anext__(self)
+
+   Deve retornar um *aguardável* resultando em um próximo valor do
+   iterador. Deve levantar um erro "StopAsyncIteration" quando a
+   iteração terminar.
+
+Um exemplo de objeto iterável assíncrono:
+
+   class Reader:
+       async def readline(self):
+           ...
+
+       def __aiter__(self):
+           return self
+
+       async def __anext__(self):
+           val = await self.readline()
+           if val == b'':
+               raise StopAsyncIteration
+           return val
+
+Novo na versão 3.5.
+
+Alterado na versão 3.7: Prior to Python 3.7, "__aiter__()" could
+return an *awaitable* that would resolve to an *asynchronous
+iterator*.Starting with Python 3.7, "__aiter__()" must return an
+asynchronous iterator object.  Returning anything else will result in
+a "TypeError" error.
+
+
+3.4.4. Gerenciadores de contexto assíncronos
+--------------------------------------------
+
+Um *gerenciador de contexto assíncrono* é um *gerenciador de contexto*
+que é capaz de suspender a execução em seus métodos "__aenter__" e
+"__aexit__".
+
+Os gerenciadores de contexto assíncronos podem ser usados ​​em uma
+instrução "async with".
+
+object.__aenter__(self)
+
+   Semantically similar to "__enter__()", the only difference being
+   that it must return an *awaitable*.
+
+object.__aexit__(self, exc_type, exc_value, traceback)
+
+   Semantically similar to "__exit__()", the only difference being
+   that it must return an *awaitable*.
+
+Um exemplo de uma classe gerenciadora de contexto assíncrona:
+
+   class AsyncContextManager:
+       async def __aenter__(self):
+           await log('entering context')
+
+       async def __aexit__(self, exc_type, exc, tb):
+           await log('exiting context')
+
+Novo na versão 3.5.
+
+-[ Notas de rodapé ]-
+
+[1] Em alguns casos, *é* possível alterar o tipo de um objeto, sob
+    certas condições controladas. No entanto, geralmente não é uma boa
+    ideia, pois pode levar a um comportamento muito estranho se for
+    tratado incorretamente.
+
+[2] The "__hash__()", "__iter__()", "__reversed__()", and
+    "__contains__()" methods have special handling for this; others
+    will still raise a "TypeError", but may do so by relying on the
+    behavior that "None" is not callable.
+
+[3] "Does not support" here means that the class has no such method,
+    or the method returns "NotImplemented".  Do not set the method to
+    "None" if you want to force fallback to the right operand's
+    reflected method—that will instead have the opposite effect of
+    explicitly *blocking* such fallback.
+
+[4] For operands of the same type, it is assumed that if the non-
+    reflected method -- such as "__add__()" -- fails then the overall
+    operation is not supported, which is why the reflected method is
+    not called.

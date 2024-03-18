@@ -1,0 +1,348 @@
+15. Aritmética de ponto flutuante: problemas e limitações
+*********************************************************
+
+Os números de ponto flutuante são representados no hardware do
+computador como frações de base 2 (binárias). Por exemplo, a fração
+**decimal** "0.625" tem valor 6/10 + 2/100 + 5/1000, e da mesma forma
+a fração **binária** "0.101" tem valor 0/2 + 0/4 + 1/8. Essas duas
+frações têm valores idênticos, a única diferença real é que a primeira
+é escrita em notação fracionária de base 10 e a segunda em base 2.
+
+Infelizmente, muitas frações decimais não podem ser representadas
+precisamente como frações binárias. O resultado é que, em geral, os
+números decimais de ponto flutuante que você digita acabam sendo
+armazenados de forma apenas aproximada, na forma de números binários
+de ponto flutuante.
+
+O problema é mais fácil de entender primeiro em base 10. Considere a
+fração 1/3. Podemos representá-la aproximadamente como uma fração base
+10:
+
+   0.3
+
+ou melhor,
+
+   0.33
+
+ou melhor,
+
+   0.333
+
+e assim por diante. Não importa quantos dígitos você está disposto a
+escrever, o resultado nunca será exatamente 1/3, mas será uma
+aproximação de cada vez melhor de 1/3.
+
+Da mesma forma, não importa quantos dígitos de base 2 estejas disposto
+a usar, o valor decimal 0.1 não pode ser representado exatamente como
+uma fração de base 2. No sistema de base 2, 1/10 é uma fração binária
+que se repete infinitamente:
+
+   0.0001100110011001100110011001100110011001100110011...
+
+Se parares em qualquer número finito de bits, obterás uma aproximação.
+Hoje em dia, na maioria dos computadores, as casas decimais são
+aproximados usando uma fração binária onde o numerado utiliza os
+primeiros 53 bits iniciando no bit mais significativo e tendo como
+denominador uma potência de dois. No caso de 1/10, a fração binária
+seria "602879701896397 / 2 ** 55" o que chega bem perto, mas mesmo
+assim, não é igual ao valor original de 1/10.
+
+É fácil esquecer que o valor armazenado é uma aproximação da fração
+decimal original, devido à forma como os floats são exibidos no
+interpretador interativo. O Python exibe apenas uma aproximação
+decimal do verdadeiro valor decimal da aproximação binária armazenada
+pela máquina. Se o Python exibisse o verdadeiro valor decimal da
+aproximação binária que representa o decimal 0.1, seria necessário
+mostrar:
+
+   >>> 0.1
+   0.1000000000000000055511151231257827021181583404541015625
+
+Contém muito mais dígitos do que é o esperado e utilizado pela grande
+maioria dos desenvolvedores, portanto, o Python limita o número de
+dígitos exibidos, apresentando um valor arredondado, ao invés de
+mostrar todas as casas decimais:
+
+   >>> 1 / 10
+   0.1
+
+Lembre-se, mesmo que o resultado impresso seja o valor exato de 1/10,
+o valor que verdadeiramente estará armazenado será uma fração binária
+representável que mais se aproxima.
+
+Curiosamente, existem muitos números decimais diferentes que
+compartilham a mesma fração binária aproximada. Por exemplo, os
+números "0.1" ou o "0.10000000000000001" e
+"0.1000000000000000055511151231257827021181583404541015625" são todos
+aproximações de "3602879701896397/2 ** 55". Como todos esses valores
+decimais compartilham um mesma de aproximação, qualquer um poderá ser
+exibido enquanto for preservado o invariante "eval(repr(x)) == x".
+
+Historicamente, o prompt do Python e a função embutida "repr()"
+utilizariam o que contivesse 17 dígitos significativos,
+"0.10000000000000001". Desde a versão do Python 3.1, o Python (na
+maioria dos sistemas) agora é possível optar pela forma mais reduzida,
+exibindo simplesmente o número "0.1".
+
+Note que essa é a própria natureza do ponto flutuante binário: não é
+um bug do Python, e nem é um bug do seu código. Essa situação pode ser
+observada em todas as linguagens que usam as instruções aritméticas de
+ponto flutuante do hardware (apesar de algumas linguagens não
+*mostrarem* a diferença, por padrão, ou em todos os modos de saída).
+
+Para obter um valor mais agradável, poderás utilizar a formatação de
+sequência de caracteres sendo capaz de gerar um número limitado de
+dígitos significativos:
+
+   >>> format(math.pi, '.12g')  # give 12 significant digits
+   '3.14159265359'
+
+   >>> format(math.pi, '.2f')   # give 2 digits after the point
+   '3.14'
+
+   >>> repr(math.pi)
+   '3.141592653589793'
+
+É importante perceber que tudo não passa de pura ilusão: estas
+simplesmente arredondando a *exibição* da verdadeira maquinaria do
+valor.
+
+Uma ilusão pode gerar outra. Por exemplo, uma vez que 0,1 não é
+exatamente 1/10, somar três vezes o valor 0.1, não garantirá que o
+resultado seja exatamente 0,3, isso porque:
+
+   >>> 0.1 + 0.1 + 0.1 == 0.3
+   False
+
+Inclusive, uma vez que o 0,1 não consegue aproximar-se do valor exato
+de 1/10 e 0,3 não pode se aproximar mais do valor exato de 3/10, temos
+então que o pré-arredondamento com a função "round()" não servirá como
+ajuda:
+
+   >>> round(0.1, 1) + round(0.1, 1) + round(0.1, 1) == round(0.3, 1)
+   False
+
+Embora os números não possam se aproximar mais dos exatos valores que
+desejamos, a função "math.isclose()" poderá ser útil para comparar
+valores inexatos:
+
+   >>> math.isclose(0.1 + 0.1 + 0.1, 0.3)
+   True
+
+Alternativamente, a função "round()" pode ser usada para comparar
+aproximações aproximadas:
+
+   >>> round(math.pi, ndigits=2) == round(22 / 7, ndigits=2)
+   True
+
+A aritmética binária de ponto flutuante contém muitas surpresas como
+essa. O problema com "0.1" é explicado em detalhes precisos abaixo, na
+seção "Erro de representação". Consulte Exemplos de problemas de ponto
+flutuante (em inglês) para obter um resumo agradável de como o ponto
+flutuante binário funciona e os tipos de problemas comumente
+encontrados na prática. Veja também Os perigos do ponto flutuante (em
+inglês) para um relato mais completo de outras surpresas comuns.
+
+Como dizemos perto do final, "não há respostas fáceis". Ainda assim,
+não se percam indevidamente no uso do ponto flutuante! Os erros nas
+operações do tipo float do Python são heranças do hardware de ponto
+flutuante e, a maioria dos computadores estão na ordem de não mais do
+que 1 parte em 2**53 por operação. Isso é mais do que o suficiente
+para a maioria das tarefas, portanto, é importante lembrar que não se
+trata de uma aritmética decimal e que toda operação com o tipo float
+poderá via a apresentar novos problemas referentes ao arredondamento.
+
+Embora existam casos patológicos, na maior parte das vezes, terás como
+resultado final o valor esperado, se simplesmente arredondares a
+exibição final dos resultados para a quantidade de dígitos decimais
+que esperas a função "str()" geralmente será o suficiente, e , para
+seja necessário um valor refinado, veja os especificadores de formato
+"str.format()" contido na seção Sintaxe das strings de formato.
+
+Para as situações que exijam uma representação decimal exata,
+experimente o módulo "decimal" que possui, a implementação de uma
+adequada aritmética decimal bastante utilizada nas aplicações
+contábeis e pelas aplicações que demandam alta precisão.
+
+Uma outra forma de obter uma aritmética exata tem suporte pelo módulo
+"fracções" que implementa a aritmética baseada em números racionais
+(portanto, os números fracionários como o 1/3 conseguem uma
+representação precisa).
+
+Caso necessites fazer um intenso uso das operações de ponto flutuante,
+é importante que conheças o pacote NumPy e, também é importante dizer,
+que existem diversos pacotes destinados ao trabalho intenso com
+operações matemáticas e estatísticas que são fornecidas pelo projeto
+SciPy. Veja <https://scipy.org>.
+
+O Python fornece ferramentas que podem ajudar nessas raras ocasiões em
+que realmente *faz* necessitas conhecer o valor exato de um float. O
+método "float.as_integer_ratio()" expressa o valor do tipo float em
+sua forma fracionária:
+
+   >>> x = 3.14159
+   >>> x.as_integer_ratio()
+   (3537115888337719, 1125899906842624)
+
+Uma vez que a relação seja exata, será possível utiliza-la para obter,
+sem que haja quaisquer perda o valor original:
+
+   >>> x == 3537115888337719 / 1125899906842624
+   True
+
+O método "float.hex()" expressa um tipo float em hexadecimal (base
+16), o mesmo também conferirá o valor exato pelo computador:
+
+   >>> x.hex()
+   '0x1.921f9f01b866ep+1'
+
+Sua precisa representação hexadecimal poderá ser utilizada para
+reconstruir o valor exato do float:
+
+   >>> x == float.fromhex('0x1.921f9f01b866ep+1')
+   True
+
+Como a representação será exata, é interessante utilizar valores
+confiáveis em diferentes versões do Python (independente da
+plataforma) e a troca de dados entre idiomas diferentes que forneçam o
+mesmo formato (como o Java e o C99).
+
+Uma outra ferramenta que poderá ser útil é a função "sum()" que ajuda
+a mitigar a perda de precisão durante a soma. Ele usa precisão
+estendida para etapas intermediárias de arredondamento, pois os
+valores serão adicionados a um total em execução. Isso poderá fazer a
+diferença na precisão geral de forma que os erros não se acumulem
+chegando ao ponto de afetar o resultado final:
+
+   >>> 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 == 1.0
+   False
+   >>> sum([0.1] * 10) == 1.0
+   True
+
+A função "math.fsum()" vai além e rastreia todos os "dígitos perdidos"
+à medida que os valores são adicionados a um total contínuo, de modo
+que o resultado tenha apenas um único arredondamento. Isso é mais
+lento que "sum()", mas será mais preciso em casos incomuns em que
+entradas de grande magnitude se cancelam, deixando uma soma final
+próxima de zero:
+
+   >>> arr = [-0.10430216751806065, -266310978.67179024, 143401161448607.16,
+   ...        -143401161400469.7, 266262841.31058735, -0.003244936839808227]
+   >>> float(sum(map(Fraction, arr)))   # Exact summation with single rounding
+   8.042173697819788e-13
+   >>> math.fsum(arr)                   # Single rounding
+   8.042173697819788e-13
+   >>> sum(arr)                         # Multiple roundings in extended precision
+   8.042178034628478e-13
+   >>> total = 0.0
+   >>> for x in arr:
+   ...     total += x                   # Multiple roundings in standard precision
+   ...
+   >>> total                            # Straight addition has no correct digits!
+   -0.0051575902860057365
+
+
+15.1. Erro de representação
+===========================
+
+Esta seção explica o exemplo do "0,1" em detalhes, e mostra como
+poderás realizar uma análise exata de casos semelhantes. Assumimos que
+tenhas uma familiaridade básica com a representação binária de ponto
+flutuante.
+
+*Erro de representação* refere-se ao fato de que algumas frações
+decimais (a maioria, na verdade) não podem ser representadas
+exatamente como frações binárias (base 2). Esta é a principal razão
+por que o Python (ou Perl, C, C++, Java, Fortran, e muitas outras)
+frequentemente não exibe o número decimal exato conforme o esperado:
+
+Por que isso acontece? 1/10 não é representado exatamente ​​sendo
+fração binária. Desde pelo menos 2000, quase todas as máquinas usam
+aritmética binária de ponto flutuante da IEEE 754 e quase todas as
+plataformas representam pontos flutuante do Python como valores
+binary64 de "double precision" (dupla precisão) da IEEE 754. Os
+valores binary64 da IEEE 754 têm 53 bits de precisão, por isso na
+entrada o computador se esforça para converter "0.1" para a fração
+mais próxima que puder, na forma *J*/2***N* onde *J* é um número
+inteiro contendo exatamente 53 bits. Reescrevendo:
+
+   1 / 10 ~= J / (2**N)
+
+como
+
+   J ~= 2**N / 10
+
+e recordando que *J* tenha exatamente 53 bits (é ">= 2**52", mas "<
+2**53"), o melhor valor para *N* é 56:
+
+   >>> 2**52 <=  2**56 // 10  < 2**53
+   True
+
+Ou seja, 56 é o único valor de *N* que deixa *J* com exatamente 53
+bits. Portanto, o melhor valor que conseguimos obter pra *J* será
+aquele que possui o quociente arredondado:
+
+   >>> q, r = divmod(2**56, 10)
+   >>> r
+   6
+
+Uma vez que o resto seja maior do que a metade de 10, a melhor
+aproximação que poderá ser obtida se arredondarmos para cima:
+
+   >>> q+1
+   7205759403792794
+
+Portanto, a melhor aproximação possível de 1/10 como um "IEEE 754
+double precision" é:
+
+   7205759403792794 / 2 ** 56
+
+Dividir o numerador e o denominador por dois reduzirá a fração para:
+
+   3602879701896397 / 2 ** 55
+
+Note que, como arredondamos para cima, esse valor é, de fato, um pouco
+maior que 1/10; se não tivéssemos arredondado para cima, o quociente
+teria sido um pouco menor que 1/10. Mas em nenhum caso seria possível
+obter *exatamente* o valor 1/10!
+
+Por isso, o computador nunca "vê" 1/10: o que ele vê é exatamente a
+fração que é obtida pra cima, a melhor aproximação "IEEE 754 double"
+possível é:
+
+   >>> 0.1 * 2 ** 55
+   3602879701896397.0
+
+Se multiplicarmos essa fração por 10**30, podemos ver o valor contendo
+os 55 dígitos mais significativos:
+
+   >>> 3602879701896397 * 10 ** 55 // 2 ** 55
+   1000000000000000055511151231257827021181583404541015625
+
+o que significa que o número exato armazenado no computador é igual ao
+valor decimal
+0.1000000000000000055511151231257827021181583404541015625. Em vez de
+exibir o valor decimal completo, muitas linguagens (incluindo versões
+mais antigas do Python), arredondam o resultado para 17 dígitos
+significativos:
+
+   >>> format(0.1, '.17f')
+   '0.10000000000000001'
+
+Módulos como o "fractions" e o "decimal" tornam esses cálculos muito
+mais fáceis:
+
+   >>> from decimal import Decimal
+   >>> from fractions import Fraction
+
+   >>> Fraction.from_float(0.1)
+   Fraction(3602879701896397, 36028797018963968)
+
+   >>> (0.1).as_integer_ratio()
+   (3602879701896397, 36028797018963968)
+
+   >>> Decimal.from_float(0.1)
+   Decimal('0.1000000000000000055511151231257827021181583404541015625')
+
+   >>> format(Decimal.from_float(0.1), '.17')
+   '0.10000000000000001'

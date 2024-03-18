@@ -1,0 +1,120 @@
+16. Anexo
+*********
+
+
+16.1. Modo interativo
+=====================
+
+
+16.1.1. Tratamento de erros
+---------------------------
+
+Quando um erro ocorre, o interpretador exibe uma mensagem de erro e um
+*stack trace* (rastreamento de pilha). Se estiver no modo interativo,
+ele volta para o prompt primário; se a entrada veio de um arquivo, a
+execução termina com um status de saída *nonzero* (diferente de zero)
+após a exibição do *stack trace*. (Exceções tratadas por uma cláusula
+"except" numa declaração "try" não são consideradas erros, nesse
+contexto.) Alguns erros são irremediavelmente graves e causam términos
+de execução com status de saída *nonzero*; isso pode acontecer devido
+a inconsistências internas e em alguns casos por falta de memória.
+Todas as mensagens de erro são escritas no fluxo de erros padrão; a
+saída normal resultante da execução de comandos é escrita no canal de
+saída padrão.
+
+Digitar o caractere de interrupção (geralmente "Control-C" ou
+"Delete") em prompts primários ou secundários causam a interrupção da
+entrada de dados e o retorno ao prompt primário. [1] Digitar a
+interrupção durante a execução de um comando levanta a exceção
+"KeyboardInterrupt", que pode ser tratada por uma declaração "try".
+
+
+16.1.2. Scripts Python executáveis
+----------------------------------
+
+Em sistemas Unix similares ao BSD, scripts Python podem ser executados
+diretamente, tal como scripts shell, se tiverem a linha de código
+
+   #!/usr/bin/env python3.5
+
+(assumindo que o interpretador está na "PATH" do usuário) no começo do
+script e configurando o arquivo no modo executável. Os dois primeiros
+caracteres do arquivo devem ser "#!". Em algumas plataformas, essa
+primeira linha deve terminar com uma quebra de linha em estilo Unix
+("'\n'"), e não em estilo windows ("'\r\n'"). Note que o caractere
+"'#'" (em inglês chamado de *hash*, ou *pound* etc.), é usado em
+Python para marcar o início de um comentário.
+
+O script pode receber a permissão para atuar em modo executável
+através do comando **chmod**.
+
+   $ chmod +x myscript.py
+
+Em sistemas Windows, não existe a noção de um "modo executável". O
+instalador Python associa automaticamente os arquivos ".py" com o
+"python.exe", de forma que um clique duplo num arquivo Python o
+executará como um script. A extensão pode ser também ".pyw", o que
+omite a janela de console que normalmente aparece.
+
+
+16.1.3. Arquivo de inicialização do modo interativo
+---------------------------------------------------
+
+Quando se usa o Python no modo interativo, pode ser útil definir
+alguns comandos que sejam executados automaticamente toda vez que o
+interpretador for inicializado. Isso pode ser feito configurando-se
+uma variável de ambiente chamada "PYTHONSTARTUP" para que ela aponte
+para o arquivo contendo esses comandos. Isso é similar ao recurso
+".profile" das shells Unix.
+
+Esse arquivo será lido apenas em sessões do modo interativo, e não
+quando Python lê comandos de um script, tampouco quando "/dev/tty" é
+passado explicitamente como a origem dos comandos (neste caso, teremos
+um comportamento similar a uma sessão interativa padrão). Ele é
+executado no mesmo *namespace* (espaço de nomes) em que os comandos
+interativos são executados, de modo que os objetos que ele define ou
+importa possam ser usados sem qualificação na sessão interativa.
+Também é possível alterar os *prompts* "sys.ps1" e "sys.ps2" no mesmo
+arquivo.
+
+Caso deseje usar um arquivo de inicialização adicional a partir do
+atual diretório de trabalho, você pode programá-lo no arquivo de
+inicialização global usando um código parecido com "if
+os.path.isfile('.pythonrc.py'): exec(open('.pythonrc.py').read())". Se
+quiser usar o arquivo de inicialização num script, será necessário
+fazê-lo explicitamente no script:
+
+   import os
+   filename = os.environ.get('PYTHONSTARTUP')
+   if filename and os.path.isfile(filename):
+       with open(filename) as fobj:
+           startup_file = fobj.read()
+       exec(startup_file)
+
+
+16.1.4. Módulos de customização
+-------------------------------
+
+Python oferece dois *hooks* que permitem sua customização:
+sitecustomize e usercustomize. Para entender como funcionam, primeiro
+você deve localizar o diretório site-packages do usuário. Inicie o
+Python e execute este código:
+
+   >>> import site
+   >>> site.getusersitepackages()
+   '/home/user/.local/lib/python3.5/site-packages'
+
+Agora você pode criar um arquivo chamado "usercustomize.py" neste
+diretório e colocar qualquer coisa que quiser dentro. Isto vai afetar
+toda invocação do Python, a menos que seja iniciado com a opção "-s"
+para desabilitar a importação automática.
+
+sitecustomize funciona da mesma forma, mas normalmente é criado por um
+administrador do computador no diretório site-packages global e é
+importado antes de usercustomize. Veja a documentação do módulo "site"
+para mais detalhes.
+
+-[ Notas de rodapé ]-
+
+[1] Um problema com a package GNU Readline pode impedir que isso
+    aconteça.

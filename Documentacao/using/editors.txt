@@ -1,0 +1,9 @@
+6. Editores e IDEs
+******************
+
+Há um grande número de IDEs que suportam a linguagem de programação
+Python. Vários editores e IDEs provêem destaques coloridos de sintaxe,
+ferramentas de depuração, e checagem do código frente à **PEP 8**.
+
+Por favor, vá para Python Editors and Integrated Development
+Environments para obter uma lista completa.

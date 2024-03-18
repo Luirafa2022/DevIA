@@ -1,0 +1,134 @@
+1. Introdução
+*************
+
+Este manual de referência descreve a linguagem de programação Python.
+O mesmo não tem como objetivo de ser um tutorial.
+
+Enquanto estou tentando ser o mais preciso possível, optei por usar
+especificações em inglês e não formal para tudo, exceto para a sintaxe
+e análise léxica. Isso deve tornar o documento mais compreensível para
+o leitor intermediário, mas deixará margem para ambiguidades.
+Consequentemente, caso estivesses vindo de Marte e tentasse
+reimplementar o Python a partir deste documento, sozinho, talvez
+precisarias adivinhar algumas coisas e, na verdade, provavelmente
+acabaria por implementar um linguagem bem diferente. Por outro lado,
+se estiveres usando o Python e se perguntando quais são as regras
+precisas sobre uma determinada área da linguagem, você definitivamente
+encontrá neste documento o que estás procurando. Caso queiras ver uma
+definição mais formal do linguagem, talvez possas oferecer seu tempo
+-- ou inventar uma máquina de clonagem :-).
+
+É perigoso adicionar muitos detalhes de implementação num documento de
+referência de uma linguagem -- a implementação pode mudar e outras
+implementações da mesma linguagem podem funcionar de forma diferente.
+Por outro lado, o CPython é a única implementação de Python em uso de
+forma generalizada (embora as implementações alternativas continuem a
+ganhar suporte), e suas peculiaridades e particulares são por vezes
+dignas de serem mencionadas, especialmente quando a implementação
+impõe limitações adicionais. Portanto, encontrarás poucas "notas sobre
+a implementação" espalhadas neste documento.
+
+Cada implementação do Python vem com vários módulos embutidos e por
+padrão. Estes estão documentados em A Biblioteca Padrão do Python.
+Alguns módulos embutidos são mencionados ao interagirem de forma
+significativa com a definição da linguagem.
+
+
+1.1. Implementações Alternativas
+================================
+
+Embora exista uma implementação do Python que seja, de longe, a mais
+popular, existem algumas implementações alternativas que são de de
+interesse particular e para públicos diferentes.
+
+As implementações conhecidas são:
+
+CPython
+   Esta é a implementação original e a é a versão do Python que mais
+   vem sendo sendo desenvolvido e a mesma está escrita com a linguagem
+   C. Novas funcionalidades ou recursos da linguagem aparecerão por
+   aqui primeiro.
+
+Jython
+   Versão do Python implementado em Java. Esta implementação pode ser
+   usada como linguagem de Script em aplicações Java, ou pode ser
+   usada para criar aplicativos usando as bibliotecas das classes do
+   Java. Também vem sendo bastante utilizado para criar testes
+   unitários para as bibliotecas do Java. Mais informações podem ser
+   encontradas no the Jython website.
+
+Python for .NET
+   Essa implementação utiliza de fato a implementação CPython, mas é
+   uma aplicação gerenciada .NET e disponibilizada como uma
+   bibliotecas .NET. Foi desenvolvida por Brian Lloyd. Para obter mais
+   informações, consulte o site do Python for .NET.
+
+IronPython
+   Um versão alternativa do Python para a plataforma .NET. Ao
+   contrário do Python.NET, esta é uma implementação completa do
+   Python que gera IL e compila o código Python diretamente para
+   assemblies .NET. Foi desenvolvida por Jim Hugunin, o criador
+   original do Jython. Para obter mais informações, consulte o site do
+   IronPython.
+
+PyPy
+   Uma implementação do Python escrita completamente em Python. A
+   mesma suporta vários recursos avançados não encontrados em outras
+   implementações, como suporte sem pilhas e um compilador Just in
+   Time. Um dos objetivos do projeto é incentivar a construção de
+   experimentos com a própria linguagem, facilitando a modificação do
+   interpretador (uma vez que o mesmos está escrito em Python).
+   Informações adicionais estão disponíveis no site do projeto PyPy.
+
+Cada uma dessas implementações varia em alguma forma a linguagem
+conforme documentado neste manual, ou introduz informações específicas
+além do que está coberto na documentação padrão do Python. Consulte a
+documentação específica da implementação para determinar o que é
+necessário sobre a implementação específica que você está usando.
+
+
+1.2. Notação
+============
+
+As descrições de análise léxica e sintaxe usam uma notação de
+gramática de Formalismo de Backus-Naur (BNF) modificada.  Ela usa o
+seguinte estilo de definição:
+
+   name      ::= lc_letter (lc_letter | "_")*
+   lc_letter ::= "a"..."z"
+
+A primeira linha diz que um "name" é um "lc_letter" seguido de uma
+sequência de zero ou mais "lc_letter"s e underscores. Um "lc_letter"
+por sua vez é qualquer um dos caracteres simples "'a'" através de
+"'z'". (Esta regra é aderida pelos nomes definidos nas regras léxicas
+e gramáticas deste documento.)
+
+Cada regra começa com um nome (no caso, o nome definido pela regra) e
+"::=". Uma barra vertical ("|") é usada para separar alternativas; o
+mesmo é o operador menos vinculativo nesta notação. Uma estrela ("*")
+significa zero ou mais repetições do item anterior; da mesma forma, o
+sinal de adição ("+") significa uma ou mais repetições, e uma frase
+entre colchetes ("[ ]") significa zero ou uma ocorrência (em outras
+palavras, a frase anexada é opcional). Os operadores "*" e "+" se
+ligam tão forte quanto possível; parêntesis são usados para o
+agrupamento. Os literais Strings são delimitados por aspas. O espaço
+em branco só é significativo para separar os tokens. As regras
+normalmente estão contidas numa única linha; as regras com muitas
+alternativas podem ser formatadas alternativamente com cada linha após
+o primeiro começo com uma barra vertical.
+
+Nas definições léxicas (como o exemplo acima), são utilizadas mais
+duas convenções: dois caracteres literais separados por três pontos
+significam a escolha de qualquer caractere único na faixa (inclusiva)
+fornecida pelos caracteres ASCII. Uma frase entre colchetes angulares
+("<...>") fornece uma descrição informal do símbolo definido; por
+exemplo, isso poderia ser usado para descrever a notação de 'caractere
+de controle', caso fosse necessário.
+
+Embora a notação utilizada seja quase a mesma, há uma grande diferença
+entre o significado das definições lexicais e sintáticas: uma
+definição lexical opera nos caracteres individuais da fonte de
+entrada, enquanto uma definição de sintaxe opera no fluxo de tokens
+gerados pelo analisador léxico. Todos os usos do BNF no próximo
+capítulo ("Lexical Analysis") são definições léxicas; os usos nos
+capítulos subsequentes são definições sintáticas.

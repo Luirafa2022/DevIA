@@ -1,0 +1,1636 @@
+6. Expressões
+*************
+
+Este capítulo explica o significado dos elementos das expressões em
+Python.
+
+**Notas de sintaxe:** Neste e nos capítulos seguintes, a notação BNF
+estendida será usada para descrever a sintaxe, não a análise lexical.
+Quando (uma alternativa de) uma regra de sintaxe tem a forma
+
+   name ::= othername
+
+e nenhuma semântica é fornecida, a semântica desta forma de "name" é a
+mesma que para "othername".
+
+
+6.1. Conversões aritméticas
+===========================
+
+Quando uma descrição de um operador aritmético abaixo usa a frase "os
+argumentos numéricos são convertidos em um tipo comum", isso significa
+que a implementação do operador para tipos embutidos funciona da
+seguinte maneira:
+
+* Se um dos argumentos for um número complexo, o outro será convertido
+  em complexo;
+
+* caso contrário, se um dos argumentos for um número de ponto
+  flutuante, o outro será convertido em ponto flutuante;
+
+* caso contrário, ambos devem ser inteiros e nenhuma conversão é
+  necessária.
+
+Algumas regras adicionais se aplicam a certos operadores (por exemplo,
+uma string como um argumento à esquerda para o operador '%'). As
+extensões devem definir seu próprio comportamento de conversão.
+
+
+6.2. Átomos
+===========
+
+Os átomos são os elementos mais básicos das expressões. Os átomos mais
+simples são identificadores ou literais. As formas entre parênteses,
+colchetes ou chaves também são categorizadas sintaticamente como
+átomos. A sintaxe para átomos é:
+
+   atom      ::= identifier | literal | enclosure
+   enclosure ::= parenth_form | list_display | dict_display | set_display
+                 | generator_expression | yield_atom
+
+
+6.2.1. Identificadores (Nomes)
+------------------------------
+
+Um identificador que ocorre como um átomo é um nome. Veja a seção
+Identificadores e palavras-chave para a definição lexical e a seção
+Nomeação e ligação para documentação de nomenclatura e ligação.
+
+Quando o nome está vinculado a um objeto, a avaliação do átomo produz
+esse objeto. Quando um nome não está vinculado, uma tentativa de
+avaliá-lo levanta uma exceção "NameError".
+
+**Mangling de nome privado:** Quando um identificador que ocorre
+textualmente em uma definição de classe começa com dois ou mais
+caracteres de sublinhado e não termina em dois ou mais sublinhados,
+ele é considerado um *nome privado* dessa classe. Os nomes privados
+são transformados em um formato mais longo antes que o código seja
+gerado para eles. A transformação insere o nome da classe, com
+sublinhados à esquerda removidos e um único sublinhado inserido na
+frente do nome. Por exemplo, o identificador "__spam" que ocorre em
+uma classe chamada "Ham" será transformado em "_Ham__spam". Essa
+transformação é independente do contexto sintático em que o
+identificador é usado. Se o nome transformado for extremamente longo
+(mais de 255 caracteres), poderá ocorrer truncamento definido pela
+implementação. Se o nome da classe consistir apenas em sublinhados,
+nenhuma transformação será feita.
+
+
+6.2.2. Literais
+---------------
+
+Python oferece suporte a strings e bytes literais e vários literais
+numéricos:
+
+   literal ::= stringliteral | bytesliteral
+               | integer | floatnumber | imagnumber
+
+A avaliação de um literal produz um objeto do tipo fornecido (string,
+bytes, inteiro, número de ponto flutuante, número complexo) com o
+valor fornecido. O valor pode ser aproximado no caso de ponto
+flutuante e literais imaginários (complexos). Veja a seção Literais
+para detalhes.
+
+Todos os literais correspondem a tipos de dados imutáveis e, portanto,
+a identidade do objeto é menos importante que seu valor. Múltiplas
+avaliações de literais com o mesmo valor (seja a mesma ocorrência no
+texto do programa ou uma ocorrência diferente) podem obter o mesmo
+objeto ou um objeto diferente com o mesmo valor.
+
+
+6.2.3. Formas de parênteses
+---------------------------
+
+Um formulário entre parênteses é uma lista de expressões opcional
+entre parênteses:
+
+   parenth_form ::= "(" [starred_expression] ")"
+
+Uma lista de expressões entre parênteses produz tudo o que aquela
+lista de expressões produz: se a lista contiver pelo menos uma
+vírgula, ela produzirá uma tupla; caso contrário, produz a única
+expressão que compõe a lista de expressões.
+
+Um par de parênteses vazio produz um objeto de tupla vazio. Como as
+tuplas são imutáveis, aplicam-se as mesmas regras dos literais (isto
+é, duas ocorrências da tupla vazia podem ou não produzir o mesmo
+objeto).
+
+Observe que as tuplas não são formadas pelos parênteses, mas sim pelo
+uso da vírgula. A exceção é a tupla vazia, para a qual os parênteses
+*são* obrigatórios -- permitir "nada" sem parênteses em expressões
+causaria ambiguidades e permitiria que erros de digitação comuns
+passassem sem serem detectados.
+
+
+6.2.4. Sintaxe de criação de listas, conjuntos e dicionários
+------------------------------------------------------------
+
+Para construir uma lista, um conjunto ou um dicionário, o Python
+fornece uma sintaxe especial chamada "sintaxes de criação" (em inglês,
+*displays*), cada uma delas em dois tipos:
+
+* o conteúdo do contêiner é listado explicitamente ou
+
+* eles são calculados por meio de um conjunto de instruções de laço e
+  filtragem, chamado de *compreensão*.
+
+Elementos de sintaxe comuns para compreensões são:
+
+   comprehension ::= assignment_expression comp_for
+   comp_for      ::= ["async"] "for" target_list "in" or_test [comp_iter]
+   comp_iter     ::= comp_for | comp_if
+   comp_if       ::= "if" or_test [comp_iter]
+
+A compreensão consiste em uma única expressão seguida por pelo menos
+uma cláusula "for" e zero ou mais cláusulas "for" ou "if". Neste caso,
+os elementos do novo contêiner são aqueles que seriam produzidos
+considerando cada uma das cláusulas "for" ou "if" de um bloco,
+aninhando da esquerda para a direita, e avaliando a expressão para
+produzir um elemento cada vez que o bloco mais interno é alcançado.
+
+No entanto, além da expressão iterável na cláusula "for" mais à
+esquerda, a compreensão é executada em um escopo aninhado
+implicitamente separado. Isso garante que os nomes atribuídos na lista
+de destino não "vazem" para o escopo delimitador.
+
+A expressão iterável na cláusula "for" mais à esquerda é avaliada
+diretamente no escopo envolvente e então passada como um argumento
+para o escopo aninhado implicitamente. Cláusulas "for" subsequentes e
+qualquer condição de filtro na cláusula "for" mais à esquerda não
+podem ser avaliadas no escopo delimitador, pois podem depender dos
+valores obtidos do iterável mais à esquerda. Por exemplo: "[x*y for x
+in range(10) for y in range(x, x+10)]".
+
+Para garantir que a compreensão sempre resulte em um contêiner do tipo
+apropriado, as expressões "yield" e "yield from" são proibidas no
+escopo aninhado implicitamente.
+
+Desde o Python 3.6, em uma função "async def", uma cláusula "async
+for" pode ser usada para iterar sobre um *iterador assíncrono*. Uma
+compreensão em uma função "async def" pode consistir em uma cláusula
+"for" ou "async for" seguindo a expressão principal, pode conter "for"
+ou cláusulas "async for", e também pode usar expressões "await". Se
+uma compreensão contém cláusulas "async for" ou expressões "await" ou
+outras compreensões assíncronas, ela é chamada de *compreensão
+assíncrona*. Uma compreensão assíncrona pode suspender a execução da
+função de corrotina na qual ela aparece. Veja também a **PEP 530**.
+
+Novo na versão 3.6: Compreensões assíncronas foram introduzidas.
+
+Alterado na versão 3.8: "yield" e "yield from" proibidos no escopo
+aninhado implícito.
+
+Alterado na versão 3.11: Compreensões assíncronas agora são permitidas
+dentro de compreensões em funções assíncronas. As compreensões
+externas tornam-se implicitamente assíncronas.
+
+
+6.2.5. Sintaxes de criação de lista
+-----------------------------------
+
+Uma sintaxe de criação de lista é uma série possivelmente vazia de
+expressões entre colchetes:
+
+   list_display ::= "[" [starred_list | comprehension] "]"
+
+Uma sintaxe de criação de lista produz um novo objeto de lista, sendo
+o conteúdo especificado por uma lista de expressões ou uma
+compreensão. Quando uma lista de expressões separadas por vírgulas é
+fornecida, seus elementos são avaliados da esquerda para a direita e
+colocados no objeto de lista nessa ordem. Quando uma compreensão é
+fornecida, a lista é construída a partir dos elementos resultantes da
+compreensão.
+
+
+6.2.6. Sintaxes de criação de conjunto
+--------------------------------------
+
+Uma sintaxe de criação definida é denotada por chaves e distinguível
+de sintaxes de criação de dicionário pela falta de caractere de dois
+pontos separando chaves e valores:
+
+   set_display ::= "{" (starred_list | comprehension) "}"
+
+Uma sintaxe de criação de conjunto produz um novo objeto de conjunto
+mutável, sendo o conteúdo especificado por uma sequência de expressões
+ou uma compreensão. Quando uma lista de expressões separadas por
+vírgula é fornecida, seus elementos são avaliados da esquerda para a
+direita e adicionados ao objeto definido. Quando uma compreensão é
+fornecida, o conjunto é construído a partir dos elementos resultantes
+da compreensão.
+
+Um conjunto vazio não pode ser construído com "{}"; este literal
+constrói um dicionário vazio.
+
+
+6.2.7. Sintaxes de criação de dicionário
+----------------------------------------
+
+Uma sintaxe de criação de dicionário é uma série possivelmente vazia
+de itens de dicionário (pares chave/valor) envolto entre chaves:
+
+   dict_display       ::= "{" [dict_item_list | dict_comprehension] "}"
+   dict_item_list     ::= dict_item ("," dict_item)* [","]
+   dict_item          ::= expression ":" expression | "**" or_expr
+   dict_comprehension ::= expression ":" expression comp_for
+
+Uma sintaxe de criação de dicionário produz um novo objeto dicionário.
+
+Se for fornecida uma sequência separada por vírgulas de itens de
+dicionário, eles são avaliados da esquerda para a direita para definir
+as entradas do dicionário: cada objeto chave é usado como uma chave no
+dicionário para armazenar o valor correspondente. Isso significa que
+você pode especificar a mesma chave várias vezes na lista de itens de
+dicionário, e o valor final do dicionário para essa chave será o
+último dado.
+
+Um asterisco duplo "**" denota *desempacotamento do dicionário*. Seu
+operando deve ser um *mapeamento*. Cada item de mapeamento é
+adicionado ao novo dicionário. Os valores posteriores substituem os
+valores já definidos por itens de dicionário anteriores e
+desempacotamentos de dicionário anteriores.
+
+Novo na versão 3.5: Descompactando em sintaxes de criação de
+dicionário, originalmente proposto pela **PEP 448**.
+
+Uma compreensão de dict, em contraste com as compreensões de lista e
+conjunto, precisa de duas expressões separadas por dois pontos,
+seguidas pelas cláusulas usuais "for" e "if". Quando a compreensão é
+executada, os elementos chave e valor resultantes são inseridos no
+novo dicionário na ordem em que são produzidos.
+
+Restrições nos tipos de valores de chave são listadas anteriormente na
+seção A hierarquia de tipos padrão. (Para resumir, o tipo de chave
+deve ser *hasheável*, que exclui todos os objetos mutáveis.) Não são
+detectadas colisões entre chaves duplicadas; o último valor
+(textualmente mais à direita na sintaxe de criação) armazenado para um
+determinado valor de chave prevalece.
+
+Alterado na versão 3.8: Antes do Python 3.8, em compreensões de dict,
+a ordem de avaliação de chave e valor não era bem definida. No
+CPython, o valor foi avaliado antes da chave. A partir de 3.8, a chave
+é avaliada antes do valor, conforme proposto pela **PEP 572**.
+
+
+6.2.8. Expressões geradoras
+---------------------------
+
+Uma expressão geradora é uma notação geradora compacta entre
+parênteses:
+
+   generator_expression ::= "(" expression comp_for ")"
+
+Uma expressão geradora produz um novo objeto gerador. Sua sintaxe é a
+mesma das compreensões, exceto pelo fato de estar entre parênteses em
+vez de colchetes ou chaves.
+
+As variáveis usadas na expressão geradora são avaliadas lentamente
+quando o método "__next__()" é chamado para o objeto gerador (da mesma
+forma que os geradores normais). No entanto, a expressão iterável na
+cláusula "for" mais à esquerda é avaliada imediatamente, de modo que
+um erro produzido por ela será emitido no ponto em que a expressão do
+gerador é definida, em vez de no ponto em que o primeiro valor é
+recuperado. Cláusulas "for" subsequentes e qualquer condição de filtro
+na cláusula "for" mais à esquerda não podem ser avaliadas no escopo
+delimitador, pois podem depender dos valores obtidos do iterável mais
+à esquerda. Por exemplo: "(x*y for x in range(10) for y in range(x,
+x+10))".
+
+Os parênteses podem ser omitidos em chamadas com apenas um argumento.
+Veja a seção Chamadas para detalhes.
+
+Para evitar interferir com a operação esperada da própria expressão
+geradora, as expressões "yield" e "yield from" são proibidas no
+gerador definido implicitamente.
+
+Se uma expressão geradora contém cláusulas "async for" ou expressões
+"await", ela é chamada de *expressão geradora assíncrona*. Uma
+expressão geradora assíncrona retorna um novo objeto gerador
+assíncrono, que é um iterador assíncrono (consulte Iteradores
+assíncronos).
+
+Novo na versão 3.6: Expressões geradoras assíncronas foram
+introduzidas.
+
+Alterado na versão 3.7: Antes do Python 3.7, as expressões geradoras
+assíncronas só podiam aparecer em corrotinas "async def". A partir da
+versão 3.7, qualquer função pode usar expressões geradoras
+assíncronas.
+
+Alterado na versão 3.8: "yield" e "yield from" proibidos no escopo
+aninhado implícito.
+
+
+6.2.9. Expressões yield
+-----------------------
+
+   yield_atom       ::= "(" yield_expression ")"
+   yield_from       ::= "yield" "from" expression
+   yield_expression ::= "yield" expression_list | yield_from
+
+A expressão yield é usada ao definir uma função *generadora* ou uma
+função *geradora assíncrona* e, portanto, só pode ser usada no corpo
+de uma definição de função. Usar uma expressão yield no corpo de uma
+função faz com que essa função seja uma função geradora, e usá-la no
+corpo de uma função "async def" faz com que essa função de corrotina
+seja uma função geradora assíncrona. Por exemplo:
+
+   def gen():  # defines a generator function
+       yield 123
+
+   async def agen(): # defines an asynchronous generator function
+       yield 123
+
+Devido a seus efeitos colaterais no escopo recipiente, as expressões
+"yield" não são permitidas como parte dos escopos definidos
+implicitamente usados para implementar compreensões e expressões
+geradoras.
+
+Alterado na versão 3.8: Expressões yield proibidas nos escopos
+aninhados implicitamente usados para implementar compreensões e
+expressões geradoras.
+
+As funções geradoras são descritas abaixo, enquanto as funções
+geradoras assíncronas são descritas separadamente na seção Funções
+geradoras assíncronas
+
+Quando uma função geradora é chamada, ela retorna um iterador
+conhecido como gerador. Esse gerador então controla a execução da
+função geradora. A execução começa quando um dos métodos do gerador é
+chamado. Nesse momento, a execução segue para a primeira expressão
+yield, onde é suspensa novamente, retornando o valor de
+"expression_list" ao chamador do gerador, ou "None" se
+"expression_list" é omitido. Por suspenso, queremos dizer que todo o
+estado local é retido, incluindo as chamadas atuais de variáveis
+locais, o ponteiro de instrução, a pilha de avaliação interna e o
+estado de qualquer tratamento de exceção. Quando a execução é retomada
+chamando um dos métodos do gerador, a função pode prosseguir
+exatamente como se a expressão yield fosse apenas outra chamada
+externa. O valor da expressão yield após a retomada depende do método
+que retomou a execução. Se "__next__()" for usado (tipicamente através
+de uma "for" ou do "next()" embutido) então o resultado será "None".
+Caso contrário, se "send()" for usado, o resultado será o valor
+passado para esse método.
+
+Tudo isso torna as funções geradoras bastante semelhantes às
+corrotinas; cedem múltiplas vezes, possuem mais de um ponto de entrada
+e sua execução pode ser suspensa. A única diferença é que uma função
+geradora não pode controlar onde a execução deve continuar após o seu
+rendimento; o controle é sempre transferido para o chamador do
+gerador.
+
+Expressões yield são permitidas em qualquer lugar em uma construção
+"try". Se o gerador não for retomado antes de ser finalizado (ao
+atingir uma contagem de referências zero ou ao ser coletado como
+lixo), o método "close()" do iterador de gerador será chamado,
+permitindo que quaisquer cláusulas "finally" pendentes sejam
+executadas.
+
+Quando "yield from <expr>" é usado, a expressão fornecida deve ser
+iterável. Os valores produzidos pela iteração desse iterável são
+passados diretamente para o chamador dos métodos do gerador atual.
+Quaisquer valores passados com "send()" e quaisquer exceções passadas
+com "throw()" são passados para o iterador subjacente se ele tiver os
+métodos apropriados. Se este não for o caso, então "send()" irá
+levantar "AttributeError" ou "TypeError", enquanto "throw()" irá
+apenas levantar a exceção passada imediatamente.
+
+Quando o iterador subjacente estiver completo, o atributo "value" da
+instância "StopIteration" gerada torna-se o valor da expressão yield.
+Ele pode ser definido explicitamente ao levantar "StopIteration" ou
+automaticamente quando o subiterador é um gerador (retornando um valor
+do subgerador).
+
+Alterado na versão 3.3: Adicionado "yield from <expr>" para delegar o
+fluxo de controle a um subiterador.
+
+Os parênteses podem ser omitidos quando a expressão yield é a única
+expressão no lado direito de uma instrução de atribuição.
+
+Ver também:
+
+  **PEP 255** - Geradores simples
+     A proposta para adicionar geradores e a instrução "yield" ao
+     Python.
+
+  **PEP 342** - Corrotinas via Geradores Aprimorados
+     A proposta de aprimorar a API e a sintaxe dos geradores,
+     tornando-os utilizáveis como simples corrotinas.
+
+  **PEP 380** - Sintaxe para Delegar a um Subgerador
+     A proposta de introduzir a sintaxe "yield_from", facilitando a
+     delegação a subgeradores.
+
+  **PEP 525** - Geradores assíncronos
+     A proposta que se expandiu em **PEP 492** adicionando recursos de
+     gerador a funções de corrotina.
+
+
+6.2.9.1. Métodos de iterador gerador
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Esta subseção descreve os métodos de um iterador gerador. Eles podem
+ser usados para controlar a execução de uma função geradora.
+
+Observe que chamar qualquer um dos métodos do gerador abaixo quando o
+gerador já estiver em execução levanta uma exceção "ValueError".
+
+generator.__next__()
+
+   Inicia a execução de uma função geradora ou a retoma na última
+   expressão yield executada. Quando uma função geradora é retomada
+   com um método "__next__()", a expressão yield atual sempre é
+   avaliada como "None". A execução então continua para a próxima
+   expressão yield, onde o gerador é suspenso novamente, e o valor de
+   "expression_list" é retornado para o chamador de "__next__()". Se o
+   gerador sair sem produzir outro valor, uma exceção "StopIteration"
+   será levantada.
+
+   Este método é normalmente chamado implicitamente, por exemplo por
+   um laço "for", ou pela função embutida "next()".
+
+generator.send(value)
+
+   Retoma a execução e "envia" um valor para a função geradora. O
+   argumento *value* torna-se o resultado da expressão yield atual. O
+   método "send()" retorna o próximo valor gerado pelo gerador, ou
+   levanta "StopIteration" se o gerador sair sem produzir outro valor.
+   Quando "send()" é chamado para iniciar o gerador, ele deve ser
+   chamado com "None" como argumento, porque não há nenhuma expressão
+   yield que possa receber o valor.
+
+generator.throw(value)
+generator.throw(type[, value[, traceback]])
+
+   Levanta uma exceção no ponto em que o gerador foi pausado e retorna
+   o próximo valor gerado pela função geradora. Se o gerador sair sem
+   gerar outro valor, uma exceção "StopIteration" será levantada. Se a
+   função geradora não detectar a exceção passada ou levanta uma
+   exceção diferente, essa exceção se propagará para o chamador.
+
+   Em uso típico, isso é chamado com uma única instância de exceção
+   semelhante à forma como a palavra reservada "raise" é usada.
+
+   Para compatibilidade com versões anteriores, no entanto, a segunda
+   assinatura é suportada, seguindo uma convenção de versões mais
+   antigas do Python. O argumento *type* deve ser uma classe de
+   exceção e *value* deve ser uma instância de exceção. Se o *valor*
+   não for fornecido, o construtor *tipo* será chamado para obter uma
+   instância. Se *traceback* for fornecido, ele será definido na
+   exceção, caso contrário, qualquer atributo "__traceback__"
+   existente armazenado em *value* poderá ser limpo.
+
+   Alterado na versão 3.12: A segunda assinatura (tipo[, valor[,
+   traceback]]) foi descontinuada e pode ser removida em uma versão
+   futura do Python.
+
+generator.close()
+
+   Levanta "GeneratorExit" no ponto onde a função geradora foi
+   pausada. Se a função geradora sair normalmente, já estiver fechada
+   ou levantar "GeneratorExit" (por não capturar a exceção), "close"
+   retornará ao seu chamador. Se o gerador produzir um valor, um
+   "RuntimeError" é levantado. Se o gerador levantar qualquer outra
+   exceção, ela será propagada para o chamador. "close()" não faz nada
+   se o gerador já saiu devido a uma exceção ou saída normal.
+
+
+6.2.9.2. Exemplos
+~~~~~~~~~~~~~~~~~
+
+Aqui está um exemplo simples que demonstra o comportamento de
+geradores e funções geradoras:
+
+   >>> def echo(value=None):
+   ...     print("Execution starts when 'next()' is called for the first time.")
+   ...     try:
+   ...         while True:
+   ...             try:
+   ...                 value = (yield value)
+   ...             except Exception as e:
+   ...                 value = e
+   ...     finally:
+   ...         print("Don't forget to clean up when 'close()' is called.")
+   ...
+   >>> generator = echo(1)
+   >>> print(next(generator))
+   Execution starts when 'next()' is called for the first time.
+   1
+   >>> print(next(generator))
+   None
+   >>> print(generator.send(2))
+   2
+   >>> generator.throw(TypeError, "spam")
+   TypeError('spam',)
+   >>> generator.close()
+   Don't forget to clean up when 'close()' is called.
+
+Para exemplos usando "yield from", consulte a PEP 380: Syntax for
+Delegating to a Subgenerator em "O que há de novo no Python."
+
+
+6.2.9.3. Funções geradoras assíncronas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A presença de uma expressão yield em uma função ou método definido
+usando a "async def" define ainda mais a função como uma função
+*geradora assíncrona*.
+
+Quando uma função geradora assíncrona é chamada, ela retorna um
+iterador assíncrono conhecido como objeto gerador assíncrono. Esse
+objeto controla a execução da função geradora. Um objeto gerador
+assíncrono é normalmente usado em uma instrução "async for" em uma
+função de corrotina de forma análoga a como um objeto gerador seria
+usado em uma instrução "for".
+
+A chamada de um dos métodos do gerador assíncrono retorna um objeto
+*aguardável*, e a execução começa quando esse objeto é aguardado.
+Nesse momento, a execução prossegue até a primeira expressão yield,
+onde é suspensa novamente, retornando o valor de "expression_list"
+para a corrotina em aguardo. Assim como ocorre com um gerador, a
+suspensão significa que todo o estado local é mantido, inclusive as
+ligações atuais das variáveis locais, o ponteiro de instruções, a
+pilha de avaliação interna e o estado de qualquer tratamento de
+exceção. Quando a execução é retomada, aguardando o próximo objeto
+retornado pelos métodos do gerador assíncrono, a função pode
+prosseguir exatamente como se a expressão de rendimento fosse apenas
+outra chamada externa. O valor da expressão yield após a retomada
+depende do método que retomou a execução.  Se "__anext__()" for usado,
+o resultado será "None". Caso contrário, se "asend()" for usado, o
+resultado será o valor passado para esse método.
+
+Se um gerador assíncrono encerrar mais cedo por "break", pela tarefa
+que fez sua chamada ser cancelada ou por outras exceções, o código de
+limpeza assíncrona do gerador será executado e possivelmente levantará
+alguma exceção ou acessará as variáveis de contexto em um contexto
+inesperado -- talvez após o tempo de vida das tarefas das quais ele
+depende, ou durante o laço de eventos de encerramento quando o gancho
+de coleta de lixo do gerador assíncrono for chamado. Para prevenir
+isso, o chamador deve encerrar explicitamente o gerador assíncrono
+chamando o método "aclose()" para finalizar o gerador e, por fim,
+desconectá-lo do laço de eventos.
+
+Em uma função geradora assíncrona, expressões de yield são permitidas
+em qualquer lugar em uma construção "try". No entanto, se um gerador
+assíncrono não for retomado antes de ser finalizado (alcançando uma
+contagem de referência zero ou sendo coletado pelo coletor de lixo),
+então uma expressão de yield dentro de um construção "try" pode
+resultar em uma falha na execução das cláusulas pendentes de
+"finally". Nesse caso, é responsabilidade do laço de eventos ou
+escalonador que executa o gerador assíncrono chamar o método
+"aclose()" do gerador iterador assíncrono e executar o objeto
+corrotina resultante, permitindo assim que quaisquer cláusulas
+pendentes de "finally" sejam executadas.
+
+Para cuidar da finalização após o término do laço de eventos, um laço
+de eventos deve definir uma função *finalizer* que recebe um gerador
+assíncrono e provavelmente chama "aclose()" e executa a corrotina.
+Este *finalizer* pode ser registrado chamando
+"sys.set_asyncgen_hooks()". Quando iterado pela primeira vez, um
+gerador assíncrono armazenará o *finalizer* registrado para ser
+chamado na finalização. Para um exemplo de referência de um método
+*finalizer*, consulte a implementação de
+"asyncio.Loop.shutdown_asyncgens" em Lib/asyncio/base_events.py.
+
+O expressão "yield from <expr>" é um erro de sintaxe quando usado em
+uma função geradora assíncrona.
+
+
+6.2.9.4. Métodos geradores-iteradores assíncronos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Esta subseção descreve os métodos de um iterador gerador assíncrono,
+que são usados para controlar a execução de uma função geradora.
+
+coroutine agen.__anext__()
+
+   Retorna um objeto aguardável que, quando executado, começa a
+   executar o gerador assíncrono ou o retoma na última expressão yield
+   executada. Quando uma função geradora assíncrona é retomada com o
+   método "__anext__()", a expressão yield atual sempre avalia para
+   "None" no objeto aguardável retornado, que, quando executado,
+   continuará para a próxima expressão yield. O valor de
+   "expression_list" da expressão yield é o valor da exceção
+   "StopIteration" levantada pela corrotina em conclusão. Se o gerador
+   assíncrono sair sem produzir outro valor, o objeto aguardável em
+   vez disso levanta uma exceção "StopAsyncIteration", sinalizando que
+   a iteração assíncrona foi concluída.
+
+   Este método é normalmente chamado implicitamente por um laço "async
+   for".
+
+coroutine agen.asend(value)
+
+   Retorna um objeto aguardável que, quando executado, retoma a
+   execução do gerador assíncrono. Assim como o método "send()" para
+   um gerador, isso "envia" um valor para a função geradora
+   assíncrona, e o argumento *value* se torna o resultado da expressão
+   de yield atual. O objeto aguardável retornado pelo método "asend()"
+   retornará o próximo valor produzido pelo gerador como o valor da
+   exceção "StopIteration" levantada, ou lança "StopAsyncIteration" se
+   o gerador assíncrono sair sem produzir outro valor. Quando
+   "asend()" é chamado para iniciar o gerador assíncrono, ele deve ser
+   chamado com "None" como argumento, pois não há expressão yield que
+   possa receber o valor.
+
+coroutine agen.athrow(value)
+coroutine agen.athrow(type[, value[, traceback]])
+
+   Retorna um objeto aguardável que gera uma exceção do tipo "type" no
+   ponto em que o gerador assíncrono foi pausado, e retorna o próximo
+   valor produzido pela função geradora como o valor da exceção
+   "StopIteration" levantada. Se o gerador assíncrono terminar sem
+   produzir outro valor, uma exceção "StopAsyncIteration" é levantada
+   pelo objeto aguardável. Se a função geradora não capturar a exceção
+   passada ou gerar uma exceção diferente, então quando o objeto
+   aguardável for executado, essa exceção se propagará para o chamador
+   do objeto aguardável.
+
+   Alterado na versão 3.12: A segunda assinatura (tipo[, valor[,
+   traceback]]) foi descontinuada e pode ser removida em uma versão
+   futura do Python.
+
+coroutine agen.aclose()
+
+   Retorna um objeto aguardável que, quando executado, levantará uma
+   "GeneratorExit" na função geradora assíncrona no ponto em que foi
+   pausada. Se a função geradora assíncrona sair de forma normal, se
+   estiver já estiver fechada ou levantar "GeneratorExit" (não
+   capturando a exceção), então o objeto aguardável retornado
+   levantará uma exceção "StopIteration". Quaisquer outros objetos
+   aguardáveis retornados por chamadas subsequentes à função geradora
+   assíncrona levantarão uma exceção "StopAsyncIteration". Se a função
+   geradora assíncrona levantar um valor, um "RuntimeError" será
+   lançado pelo objeto aguardável. Se a função geradora assíncrona
+   levantar qualquer outra exceção, ela será propagada para o chamador
+   do objeto aguardável. Se a função geradora assíncrona já tiver
+   saído devido a uma exceção ou saída normal, então chamadas
+   posteriores ao método "aclose()" retornarão um objeto aguardável
+   que não faz nada.
+
+
+6.3. Primárias
+==============
+
+Primárias representam as operações mais fortemente vinculadas da
+linguagem. Sua sintaxe é:
+
+   primary ::= atom | attributeref | subscription | slicing | call
+
+
+6.3.1. Referências de atributo
+------------------------------
+
+Uma referência de atributo é um primário seguido de um ponto e um
+nome.
+
+   attributeref ::= primary "." identifier
+
+A primária deve avaliar para um objeto de um tipo que tem suporte a
+referências de atributo, o que a maioria dos objetos faz. Este objeto
+é então solicitado a produzir o atributo cujo nome é o identificador.
+O tipo e o valor produzido são determinados pelo objeto. Várias
+avaliações da mesma referência de atributo podem produzir diferentes
+objetos.
+
+Esta produção pode ser personalizada substituindo o método
+"__getattribute__()" ou o método "__getattr__()". O método
+"__getattribute__()" é chamado primeiro e retorna um valor ou levanta
+uma "AttributeError" se o atributo não estiver disponível.
+
+Se for levantada uma "AttributeError" e o objeto tiver um método
+"__getattr__()", esse método será chamado como alternativa.
+
+
+6.3.2. Subscrições
+------------------
+
+A subscrição de uma instância de uma classe de classe de contêiner
+geralmente selecionará um elemento do contêiner. A subscrição de uma
+*classe genérica* geralmente retornará um objeto GenericAlias.
+
+   subscription ::= primary "[" expression_list "]"
+
+When an object is subscripted, the interpreter will evaluate the
+primary and the expression list.
+
+The primary must evaluate to an object that supports subscription. An
+object may support subscription through defining one or both of
+"__getitem__()" and "__class_getitem__()". When the primary is
+subscripted, the evaluated result of the expression list will be
+passed to one of these methods. For more details on when
+"__class_getitem__" is called instead of "__getitem__", see
+__class_getitem__ versus __getitem__.
+
+If the expression list contains at least one comma, it will evaluate
+to a "tuple" containing the items of the expression list. Otherwise,
+the expression list will evaluate to the value of the list's sole
+member.
+
+For built-in objects, there are two types of objects that support
+subscription via "__getitem__()":
+
+1. Mappings. If the primary is a *mapping*, the expression list must
+   evaluate to an object whose value is one of the keys of the
+   mapping, and the subscription selects the value in the mapping that
+   corresponds to that key. An example of a builtin mapping class is
+   the "dict" class.
+
+2. Sequences. If the primary is a *sequence*, the expression list must
+   evaluate to an "int" or a "slice" (as discussed in the following
+   section). Examples of builtin sequence classes include the "str",
+   "list" and "tuple" classes.
+
+The formal syntax makes no special provision for negative indices in
+*sequences*. However, built-in sequences all provide a "__getitem__()"
+method that interprets negative indices by adding the length of the
+sequence to the index so that, for example, "x[-1]" selects the last
+item of "x". The resulting value must be a nonnegative integer less
+than the number of items in the sequence, and the subscription selects
+the item whose index is that value (counting from zero). Since the
+support for negative indices and slicing occurs in the object's
+"__getitem__()" method, subclasses overriding this method will need to
+explicitly add that support.
+
+A "string" is a special kind of sequence whose items are *characters*.
+A character is not a separate data type but a string of exactly one
+character.
+
+
+6.3.3. Fatiamentos
+------------------
+
+A slicing selects a range of items in a sequence object (e.g., a
+string, tuple or list).  Slicings may be used as expressions or as
+targets in assignment or "del" statements.  The syntax for a slicing:
+
+   slicing      ::= primary "[" slice_list "]"
+   slice_list   ::= slice_item ("," slice_item)* [","]
+   slice_item   ::= expression | proper_slice
+   proper_slice ::= [lower_bound] ":" [upper_bound] [ ":" [stride] ]
+   lower_bound  ::= expression
+   upper_bound  ::= expression
+   stride       ::= expression
+
+There is ambiguity in the formal syntax here: anything that looks like
+an expression list also looks like a slice list, so any subscription
+can be interpreted as a slicing.  Rather than further complicating the
+syntax, this is disambiguated by defining that in this case the
+interpretation as a subscription takes priority over the
+interpretation as a slicing (this is the case if the slice list
+contains no proper slice).
+
+The semantics for a slicing are as follows.  The primary is indexed
+(using the same "__getitem__()" method as normal subscription) with a
+key that is constructed from the slice list, as follows.  If the slice
+list contains at least one comma, the key is a tuple containing the
+conversion of the slice items; otherwise, the conversion of the lone
+slice item is the key.  The conversion of a slice item that is an
+expression is that expression.  The conversion of a proper slice is a
+slice object (see section A hierarquia de tipos padrão) whose "start",
+"stop" and "step" attributes are the values of the expressions given
+as lower bound, upper bound and stride, respectively, substituting
+"None" for missing expressions.
+
+
+6.3.4. Chamadas
+---------------
+
+A call calls a callable object (e.g., a *function*) with a possibly
+empty series of *arguments*:
+
+   call                 ::= primary "(" [argument_list [","] | comprehension] ")"
+   argument_list        ::= positional_arguments ["," starred_and_keywords]
+                       ["," keywords_arguments]
+                     | starred_and_keywords ["," keywords_arguments]
+                     | keywords_arguments
+   positional_arguments ::= positional_item ("," positional_item)*
+   positional_item      ::= assignment_expression | "*" expression
+   starred_and_keywords ::= ("*" expression | keyword_item)
+                            ("," "*" expression | "," keyword_item)*
+   keywords_arguments   ::= (keyword_item | "**" expression)
+                          ("," keyword_item | "," "**" expression)*
+   keyword_item         ::= identifier "=" expression
+
+An optional trailing comma may be present after the positional and
+keyword arguments but does not affect the semantics.
+
+The primary must evaluate to a callable object (user-defined
+functions, built-in functions, methods of built-in objects, class
+objects, methods of class instances, and all objects having a
+"__call__()" method are callable).  All argument expressions are
+evaluated before the call is attempted.  Please refer to section
+Definições de função for the syntax of formal *parameter* lists.
+
+If keyword arguments are present, they are first converted to
+positional arguments, as follows.  First, a list of unfilled slots is
+created for the formal parameters.  If there are N positional
+arguments, they are placed in the first N slots.  Next, for each
+keyword argument, the identifier is used to determine the
+corresponding slot (if the identifier is the same as the first formal
+parameter name, the first slot is used, and so on).  If the slot is
+already filled, a "TypeError" exception is raised. Otherwise, the
+argument is placed in the slot, filling it (even if the expression is
+"None", it fills the slot).  When all arguments have been processed,
+the slots that are still unfilled are filled with the corresponding
+default value from the function definition.  (Default values are
+calculated, once, when the function is defined; thus, a mutable object
+such as a list or dictionary used as default value will be shared by
+all calls that don't specify an argument value for the corresponding
+slot; this should usually be avoided.)  If there are any unfilled
+slots for which no default value is specified, a "TypeError" exception
+is raised.  Otherwise, the list of filled slots is used as the
+argument list for the call.
+
+**Detalhes da implementação do CPython:** An implementation may
+provide built-in functions whose positional parameters do not have
+names, even if they are 'named' for the purpose of documentation, and
+which therefore cannot be supplied by keyword.  In CPython, this is
+the case for functions implemented in C that use "PyArg_ParseTuple()"
+to parse their arguments.
+
+If there are more positional arguments than there are formal parameter
+slots, a "TypeError" exception is raised, unless a formal parameter
+using the syntax "*identifier" is present; in this case, that formal
+parameter receives a tuple containing the excess positional arguments
+(or an empty tuple if there were no excess positional arguments).
+
+If any keyword argument does not correspond to a formal parameter
+name, a "TypeError" exception is raised, unless a formal parameter
+using the syntax "**identifier" is present; in this case, that formal
+parameter receives a dictionary containing the excess keyword
+arguments (using the keywords as keys and the argument values as
+corresponding values), or a (new) empty dictionary if there were no
+excess keyword arguments.
+
+If the syntax "*expression" appears in the function call, "expression"
+must evaluate to an *iterable*.  Elements from these iterables are
+treated as if they were additional positional arguments.  For the call
+"f(x1, x2, *y, x3, x4)", if *y* evaluates to a sequence *y1*, ...,
+*yM*, this is equivalent to a call with M+4 positional arguments *x1*,
+*x2*, *y1*, ..., *yM*, *x3*, *x4*.
+
+A consequence of this is that although the "*expression" syntax may
+appear *after* explicit keyword arguments, it is processed *before*
+the keyword arguments (and any "**expression" arguments -- see below).
+So:
+
+   >>> def f(a, b):
+   ...     print(a, b)
+   ...
+   >>> f(b=1, *(2,))
+   2 1
+   >>> f(a=1, *(2,))
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   TypeError: f() got multiple values for keyword argument 'a'
+   >>> f(1, *(2,))
+   1 2
+
+It is unusual for both keyword arguments and the "*expression" syntax
+to be used in the same call, so in practice this confusion does not
+often arise.
+
+If the syntax "**expression" appears in the function call,
+"expression" must evaluate to a *mapping*, the contents of which are
+treated as additional keyword arguments. If a parameter matching a key
+has already been given a value (by an explicit keyword argument, or
+from another unpacking), a "TypeError" exception is raised.
+
+When "**expression" is used, each key in this mapping must be a
+string. Each value from the mapping is assigned to the first formal
+parameter eligible for keyword assignment whose name is equal to the
+key. A key need not be a Python identifier (e.g. ""max-temp °F"" is
+acceptable, although it will not match any formal parameter that could
+be declared). If there is no match to a formal parameter the key-value
+pair is collected by the "**" parameter, if there is one, or if there
+is not, a "TypeError" exception is raised.
+
+Formal parameters using the syntax "*identifier" or "**identifier"
+cannot be used as positional argument slots or as keyword argument
+names.
+
+Alterado na versão 3.5: Function calls accept any number of "*" and
+"**" unpackings, positional arguments may follow iterable unpackings
+("*"), and keyword arguments may follow dictionary unpackings ("**").
+Originally proposed by **PEP 448**.
+
+A call always returns some value, possibly "None", unless it raises an
+exception.  How this value is computed depends on the type of the
+callable object.
+
+Se for---
+
+uma função definida por usuário:
+   The code block for the function is executed, passing it the
+   argument list.  The first thing the code block will do is bind the
+   formal parameters to the arguments; this is described in section
+   Definições de função.  When the code block executes a "return"
+   statement, this specifies the return value of the function call.
+
+a built-in function or method:
+   The result is up to the interpreter; see Funções embutidas for the
+   descriptions of built-in functions and methods.
+
+um objeto classe:
+   A new instance of that class is returned.
+
+a class instance method:
+   The corresponding user-defined function is called, with an argument
+   list that is one longer than the argument list of the call: the
+   instance becomes the first argument.
+
+a class instance:
+   The class must define a "__call__()" method; the effect is then the
+   same as if that method was called.
+
+
+6.4. Expressão await
+====================
+
+Suspend the execution of *coroutine* on an *awaitable* object. Can
+only be used inside a *coroutine function*.
+
+   await_expr ::= "await" primary
+
+Novo na versão 3.5.
+
+
+6.5. O operador de potência
+===========================
+
+O operador de potência vincula-se com mais força do que os operadores
+unários à sua esquerda; ele se vincula com menos força do que os
+operadores unários à sua direita. A sintaxe é:
+
+   power ::= (await_expr | primary) ["**" u_expr]
+
+Assim, em uma sequência sem parênteses de operadores de potência e
+unários, os operadores são avaliados da direita para a esquerda (isso
+não restringe a ordem de avaliação dos operandos): "-1**2" resulta em
+"-1" .
+
+O operador de potência tem a mesma semântica que a função embutida
+"pow()", quando chamado com dois argumentos: ele produz seu argumento
+esquerdo elevado à potência de seu argumento direito. Os argumentos
+numéricos são primeiro convertidos em um tipo comum e o resultado é
+desse tipo.
+
+For int operands, the result has the same type as the operands unless
+the second argument is negative; in that case, all arguments are
+converted to float and a float result is delivered. For example,
+"10**2" returns "100", but "10**-2" returns "0.01".
+
+Raising "0.0" to a negative power results in a "ZeroDivisionError".
+Raising a negative number to a fractional power results in a "complex"
+number. (In earlier versions it raised a "ValueError".)
+
+This operation can be customized using the special "__pow__()" method.
+
+
+6.6. Unary arithmetic and bitwise operations
+============================================
+
+All unary arithmetic and bitwise operations have the same priority:
+
+   u_expr ::= power | "-" u_expr | "+" u_expr | "~" u_expr
+
+The unary "-" (minus) operator yields the negation of its numeric
+argument; the operation can be overridden with the "__neg__()" special
+method.
+
+The unary "+" (plus) operator yields its numeric argument unchanged;
+the operation can be overridden with the "__pos__()" special method.
+
+The unary "~" (invert) operator yields the bitwise inversion of its
+integer argument.  The bitwise inversion of "x" is defined as
+"-(x+1)".  It only applies to integral numbers or to custom objects
+that override the "__invert__()" special method.
+
+In all three cases, if the argument does not have the proper type, a
+"TypeError" exception is raised.
+
+
+6.7. Binary arithmetic operations
+=================================
+
+As operações aritméticas binárias possuem os níveis de prioridade
+convencionais. Observe que algumas dessas operações também se aplicam
+a determinados tipos não numéricos. Além do operador potência, existem
+apenas dois níveis, um para operadores multiplicativos e outro para
+operadores aditivos:
+
+   m_expr ::= u_expr | m_expr "*" u_expr | m_expr "@" m_expr |
+              m_expr "//" u_expr | m_expr "/" u_expr |
+              m_expr "%" u_expr
+   a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
+
+O operador "*" (multiplicação) produz o produto de seus argumentos. Os
+argumentos devem ser números ou um argumento deve ser um número
+inteiro e o outro deve ser uma sequência. No primeiro caso, os números
+são convertidos para um tipo comum e depois multiplicados. Neste
+último caso, é realizada a repetição da sequência; um fator de
+repetição negativo produz uma sequência vazia.
+
+This operation can be customized using the special "__mul__()" and
+"__rmul__()" methods.
+
+O operador "@" (arroba) deve ser usado para multiplicação de matrizes.
+Nenhum tipo embutido do Python implementa este operador.
+
+Novo na versão 3.5.
+
+Os operadores "/" (divisão) e "//" (divisão pelo piso) produzem o
+quociente de seus argumentos. Os argumentos numéricos são primeiro
+convertidos em um tipo comum. A divisão de inteiros produz um ponto
+flutuante, enquanto a divisão pelo piso de inteiros resulta em um
+inteiro; o resultado é o da divisão matemática com a função 'floor'
+aplicada ao resultado. A divisão por zero levanta a exceção
+"ZeroDivisionError".
+
+This operation can be customized using the special "__truediv__()" and
+"__floordiv__()" methods.
+
+O operador "%" (módulo) produz o restante da divisão do primeiro
+argumento pelo segundo. Os argumentos numéricos são primeiro
+convertidos em um tipo comum. Um argumento zero à direita levanta a
+exceção "ZeroDivisionError". Os argumentos podem ser números de ponto
+flutuante, por exemplo, "3.14%0.7" é igual a "0.34" (já que "3.14" é
+igual a "4*0.7 + 0.34".) O operador módulo sempre produz um resultado
+com o mesmo sinal do seu segundo operando (ou zero); o valor absoluto
+do resultado é estritamente menor que o valor absoluto do segundo
+operando [1].
+
+Os operadores de divisão pelo piso e módulo são conectados pela
+seguinte identidade: "x == (x//y)*y + (x%y)". A divisão pelo piso e o
+módulo também estão conectados com a função embutida "divmod()":
+"divmod(x, y) == (x//y, x%y)". [2].
+
+Além de realizar a operação de módulo em números, o operador "%"
+também é sobrecarregado por objetos string para realizar a formatação
+de string no estilo antigo (também conhecida como interpolação). A
+sintaxe para formatação de string é descrita na Referência da
+Biblioteca Python, seção Formatação de String no Formato no estilo
+printf.
+
+The *modulo* operation can be customized using the special "__mod__()"
+method.
+
+O operador de divisão pelo piso, o operador de módulo e a função
+"divmod()" não são definidos para números complexos. Em vez disso,
+converta para um número de ponto flutuante usando a função "abs()" se
+apropriado.
+
+O operador "+" (adição) produz a soma de seus argumentos. Os
+argumentos devem ser números ou sequências do mesmo tipo. No primeiro
+caso, os números são convertidos para um tipo comum e depois somados.
+Neste último caso, as sequências são concatenadas.
+
+This operation can be customized using the special "__add__()" and
+"__radd__()" methods.
+
+O operador "-" (subtração) produz a diferença de seus argumentos. Os
+argumentos numéricos são primeiro convertidos em um tipo comum.
+
+This operation can be customized using the special "__sub__()" method.
+
+
+6.8. Shifting operations
+========================
+
+The shifting operations have lower priority than the arithmetic
+operations:
+
+   shift_expr ::= a_expr | shift_expr ("<<" | ">>") a_expr
+
+Esses operadores aceitam números inteiros como argumentos. Eles
+deslocam o primeiro argumento para a esquerda ou para a direita pelo
+número de bits fornecido pelo segundo argumento.
+
+This operation can be customized using the special "__lshift__()" and
+"__rshift__()" methods.
+
+A right shift by *n* bits is defined as floor division by "pow(2,n)".
+A left shift by *n* bits is defined as multiplication with "pow(2,n)".
+
+
+6.9. Operações binárias bit a bit
+=================================
+
+Each of the three bitwise operations has a different priority level:
+
+   and_expr ::= shift_expr | and_expr "&" shift_expr
+   xor_expr ::= and_expr | xor_expr "^" and_expr
+   or_expr  ::= xor_expr | or_expr "|" xor_expr
+
+The "&" operator yields the bitwise AND of its arguments, which must
+be integers or one of them must be a custom object overriding
+"__and__()" or "__rand__()" special methods.
+
+The "^" operator yields the bitwise XOR (exclusive OR) of its
+arguments, which must be integers or one of them must be a custom
+object overriding "__xor__()" or "__rxor__()" special methods.
+
+The "|" operator yields the bitwise (inclusive) OR of its arguments,
+which must be integers or one of them must be a custom object
+overriding "__or__()" or "__ror__()" special methods.
+
+
+6.10. Comparações
+=================
+
+Unlike C, all comparison operations in Python have the same priority,
+which is lower than that of any arithmetic, shifting or bitwise
+operation.  Also unlike C, expressions like "a < b < c" have the
+interpretation that is conventional in mathematics:
+
+   comparison    ::= or_expr (comp_operator or_expr)*
+   comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!="
+                     | "is" ["not"] | ["not"] "in"
+
+Comparisons yield boolean values: "True" or "False". Custom *rich
+comparison methods* may return non-boolean values. In this case Python
+will call "bool()" on such value in boolean contexts.
+
+Comparisons can be chained arbitrarily, e.g., "x < y <= z" is
+equivalent to "x < y and y <= z", except that "y" is evaluated only
+once (but in both cases "z" is not evaluated at all when "x < y" is
+found to be false).
+
+Formalmente, se *a*, *b*, *c*, ..., *y*, *z* são expressões e *op1*,
+*op2*, ..., *opN* são operadores de comparação, então "a op1 b op2 c
+... y opN z" é equivalente a "a op1 b e b op2 c e ... y opN z", exceto
+que cada expressão é avaliada no máximo uma vez.
+
+Note that "a op1 b op2 c" doesn't imply any kind of comparison between
+*a* and *c*, so that, e.g., "x < y > z" is perfectly legal (though
+perhaps not pretty).
+
+
+6.10.1. Comparações de valor
+----------------------------
+
+Os operadores "<", ">", "==", ">=", "<=" e "!=" comparam os valores de
+dois objetos. Os objetos não precisam ser do mesmo tipo.
+
+Chapter Objetos, valores e tipos states that objects have a value (in
+addition to type and identity).  The value of an object is a rather
+abstract notion in Python: For example, there is no canonical access
+method for an object's value.  Also, there is no requirement that the
+value of an object should be constructed in a particular way, e.g.
+comprised of all its data attributes. Comparison operators implement a
+particular notion of what the value of an object is.  One can think of
+them as defining the value of an object indirectly, by means of their
+comparison implementation.
+
+Because all types are (direct or indirect) subtypes of "object", they
+inherit the default comparison behavior from "object".  Types can
+customize their comparison behavior by implementing *rich comparison
+methods* like "__lt__()", described in Personalização básica.
+
+The default behavior for equality comparison ("==" and "!=") is based
+on the identity of the objects.  Hence, equality comparison of
+instances with the same identity results in equality, and equality
+comparison of instances with different identities results in
+inequality.  A motivation for this default behavior is the desire that
+all objects should be reflexive (i.e. "x is y" implies "x == y").
+
+A default order comparison ("<", ">", "<=", and ">=") is not provided;
+an attempt raises "TypeError".  A motivation for this default behavior
+is the lack of a similar invariant as for equality.
+
+The behavior of the default equality comparison, that instances with
+different identities are always unequal, may be in contrast to what
+types will need that have a sensible definition of object value and
+value-based equality.  Such types will need to customize their
+comparison behavior, and in fact, a number of built-in types have done
+that.
+
+The following list describes the comparison behavior of the most
+important built-in types.
+
+* Numbers of built-in numeric types (Tipos numéricos --- int, float,
+  complex) and of the standard library types "fractions.Fraction" and
+  "decimal.Decimal" can be compared within and across their types,
+  with the restriction that complex numbers do not support order
+  comparison.  Within the limits of the types involved, they compare
+  mathematically (algorithmically) correct without loss of precision.
+
+  The not-a-number values "float('NaN')" and "decimal.Decimal('NaN')"
+  are special.  Any ordered comparison of a number to a not-a-number
+  value is false. A counter-intuitive implication is that not-a-number
+  values are not equal to themselves.  For example, if "x =
+  float('NaN')", "3 < x", "x < 3" and "x == x" are all false, while "x
+  != x" is true.  This behavior is compliant with IEEE 754.
+
+* "None" and "NotImplemented" are singletons.  **PEP 8** advises that
+  comparisons for singletons should always be done with "is" or "is
+  not", never the equality operators.
+
+* Binary sequences (instances of "bytes" or "bytearray") can be
+  compared within and across their types.  They compare
+  lexicographically using the numeric values of their elements.
+
+* Strings (instances of "str") compare lexicographically using the
+  numerical Unicode code points (the result of the built-in function
+  "ord()") of their characters. [3]
+
+  Strings and binary sequences cannot be directly compared.
+
+* Sequences (instances of "tuple", "list", or "range") can be compared
+  only within each of their types, with the restriction that ranges do
+  not support order comparison.  Equality comparison across these
+  types results in inequality, and ordering comparison across these
+  types raises "TypeError".
+
+  Sequences compare lexicographically using comparison of
+  corresponding elements.  The built-in containers typically assume
+  identical objects are equal to themselves.  That lets them bypass
+  equality tests for identical objects to improve performance and to
+  maintain their internal invariants.
+
+  Lexicographical comparison between built-in collections works as
+  follows:
+
+  * For two collections to compare equal, they must be of the same
+    type, have the same length, and each pair of corresponding
+    elements must compare equal (for example, "[1,2] == (1,2)" is
+    false because the type is not the same).
+
+  * Collections that support order comparison are ordered the same as
+    their first unequal elements (for example, "[1,2,x] <= [1,2,y]"
+    has the same value as "x <= y").  If a corresponding element does
+    not exist, the shorter collection is ordered first (for example,
+    "[1,2] < [1,2,3]" is true).
+
+* Mappings (instances of "dict") compare equal if and only if they
+  have equal "(key, value)" pairs. Equality comparison of the keys and
+  values enforces reflexivity.
+
+  Order comparisons ("<", ">", "<=", and ">=") raise "TypeError".
+
+* Sets (instances of "set" or "frozenset") can be compared within and
+  across their types.
+
+  They define order comparison operators to mean subset and superset
+  tests.  Those relations do not define total orderings (for example,
+  the two sets "{1,2}" and "{2,3}" are not equal, nor subsets of one
+  another, nor supersets of one another).  Accordingly, sets are not
+  appropriate arguments for functions which depend on total ordering
+  (for example, "min()", "max()", and "sorted()" produce undefined
+  results given a list of sets as inputs).
+
+  Comparison of sets enforces reflexivity of its elements.
+
+* Most other built-in types have no comparison methods implemented, so
+  they inherit the default comparison behavior.
+
+User-defined classes that customize their comparison behavior should
+follow some consistency rules, if possible:
+
+* Equality comparison should be reflexive. In other words, identical
+  objects should compare equal:
+
+     "x is y" implies "x == y"
+
+* Comparison should be symmetric. In other words, the following
+  expressions should have the same result:
+
+     "x == y" and "y == x"
+
+     "x != y" and "y != x"
+
+     "x < y" and "y > x"
+
+     "x <= y" and "y >= x"
+
+* Comparison should be transitive. The following (non-exhaustive)
+  examples illustrate that:
+
+     "x > y and y > z" implies "x > z"
+
+     "x < y and y <= z" implies "x < z"
+
+* Inverse comparison should result in the boolean negation. In other
+  words, the following expressions should have the same result:
+
+     "x == y" and "not x != y"
+
+     "x < y" and "not x >= y" (for total ordering)
+
+     "x > y" and "not x <= y" (for total ordering)
+
+  The last two expressions apply to totally ordered collections (e.g.
+  to sequences, but not to sets or mappings). See also the
+  "total_ordering()" decorator.
+
+* The "hash()" result should be consistent with equality. Objects that
+  are equal should either have the same hash value, or be marked as
+  unhashable.
+
+Python does not enforce these consistency rules. In fact, the
+not-a-number values are an example for not following these rules.
+
+
+6.10.2. Membership test operations
+----------------------------------
+
+The operators "in" and "not in" test for membership.  "x in s"
+evaluates to "True" if *x* is a member of *s*, and "False" otherwise.
+"x not in s" returns the negation of "x in s".  All built-in sequences
+and set types support this as well as dictionary, for which "in" tests
+whether the dictionary has a given key. For container types such as
+list, tuple, set, frozenset, dict, or collections.deque, the
+expression "x in y" is equivalent to "any(x is e or x == e for e in
+y)".
+
+For the string and bytes types, "x in y" is "True" if and only if *x*
+is a substring of *y*.  An equivalent test is "y.find(x) != -1".
+Empty strings are always considered to be a substring of any other
+string, so """ in "abc"" will return "True".
+
+For user-defined classes which define the "__contains__()" method, "x
+in y" returns "True" if "y.__contains__(x)" returns a true value, and
+"False" otherwise.
+
+For user-defined classes which do not define "__contains__()" but do
+define "__iter__()", "x in y" is "True" if some value "z", for which
+the expression "x is z or x == z" is true, is produced while iterating
+over "y". If an exception is raised during the iteration, it is as if
+"in" raised that exception.
+
+Lastly, the old-style iteration protocol is tried: if a class defines
+"__getitem__()", "x in y" is "True" if and only if there is a non-
+negative integer index *i* such that "x is y[i] or x == y[i]", and no
+lower integer index raises the "IndexError" exception.  (If any other
+exception is raised, it is as if "in" raised that exception).
+
+The operator "not in" is defined to have the inverse truth value of
+"in".
+
+
+6.10.3. Comparações de identidade
+---------------------------------
+
+The operators "is" and "is not" test for an object's identity: "x is
+y" is true if and only if *x* and *y* are the same object.  An
+Object's identity is determined using the "id()" function.  "x is not
+y" yields the inverse truth value. [4]
+
+
+6.11. Operações booleanas
+=========================
+
+   or_test  ::= and_test | or_test "or" and_test
+   and_test ::= not_test | and_test "and" not_test
+   not_test ::= comparison | "not" not_test
+
+In the context of Boolean operations, and also when expressions are
+used by control flow statements, the following values are interpreted
+as false: "False", "None", numeric zero of all types, and empty
+strings and containers (including strings, tuples, lists,
+dictionaries, sets and frozensets).  All other values are interpreted
+as true.  User-defined objects can customize their truth value by
+providing a "__bool__()" method.
+
+The operator "not" yields "True" if its argument is false, "False"
+otherwise.
+
+The expression "x and y" first evaluates *x*; if *x* is false, its
+value is returned; otherwise, *y* is evaluated and the resulting value
+is returned.
+
+The expression "x or y" first evaluates *x*; if *x* is true, its value
+is returned; otherwise, *y* is evaluated and the resulting value is
+returned.
+
+Note that neither "and" nor "or" restrict the value and type they
+return to "False" and "True", but rather return the last evaluated
+argument.  This is sometimes useful, e.g., if "s" is a string that
+should be replaced by a default value if it is empty, the expression
+"s or 'foo'" yields the desired value.  Because "not" has to create a
+new value, it returns a boolean value regardless of the type of its
+argument (for example, "not 'foo'" produces "False" rather than "''".)
+
+
+6.12. Expressões de atribuição
+==============================
+
+   assignment_expression ::= [identifier ":="] expression
+
+An assignment expression (sometimes also called a "named expression"
+or "walrus") assigns an "expression" to an "identifier", while also
+returning the value of the "expression".
+
+One common use case is when handling matched regular expressions:
+
+   if matching := pattern.search(data):
+       do_something(matching)
+
+Or, when processing a file stream in chunks:
+
+   while chunk := file.read(9000):
+       process(chunk)
+
+Assignment expressions must be surrounded by parentheses when used as
+expression statements and when used as sub-expressions in slicing,
+conditional, lambda, keyword-argument, and comprehension-if
+expressions and in "assert", "with", and "assignment" statements. In
+all other places where they can be used, parentheses are not required,
+including in "if" and "while" statements.
+
+Novo na versão 3.8: See **PEP 572** for more details about assignment
+expressions.
+
+
+6.13. Expressões condicionais
+=============================
+
+   conditional_expression ::= or_test ["if" or_test "else" expression]
+   expression             ::= conditional_expression | lambda_expr
+
+Conditional expressions (sometimes called a "ternary operator") have
+the lowest priority of all Python operations.
+
+The expression "x if C else y" first evaluates the condition, *C*
+rather than *x*. If *C* is true, *x* is evaluated and its value is
+returned; otherwise, *y* is evaluated and its value is returned.
+
+See **PEP 308** for more details about conditional expressions.
+
+
+6.14. Lambdas
+=============
+
+   lambda_expr ::= "lambda" [parameter_list] ":" expression
+
+Lambda expressions (sometimes called lambda forms) are used to create
+anonymous functions. The expression "lambda parameters: expression"
+yields a function object.  The unnamed object behaves like a function
+object defined with:
+
+   def <lambda>(parameters):
+       return expression
+
+See section Definições de função for the syntax of parameter lists.
+Note that functions created with lambda expressions cannot contain
+statements or annotations.
+
+
+6.15. Listas de expressões
+==========================
+
+   expression_list    ::= expression ("," expression)* [","]
+   starred_list       ::= starred_item ("," starred_item)* [","]
+   starred_expression ::= expression | (starred_item ",")* [starred_item]
+   starred_item       ::= assignment_expression | "*" or_expr
+
+Except when part of a list or set display, an expression list
+containing at least one comma yields a tuple.  The length of the tuple
+is the number of expressions in the list.  The expressions are
+evaluated from left to right.
+
+An asterisk "*" denotes *iterable unpacking*.  Its operand must be an
+*iterable*.  The iterable is expanded into a sequence of items, which
+are included in the new tuple, list, or set, at the site of the
+unpacking.
+
+Novo na versão 3.5: Iterable unpacking in expression lists, originally
+proposed by **PEP 448**.
+
+A trailing comma is required only to create a one-item tuple, such as
+"1,"; it is optional in all other cases. A single expression without a
+trailing comma doesn't create a tuple, but rather yields the value of
+that expression. (To create an empty tuple, use an empty pair of
+parentheses: "()".)
+
+
+6.16. Ordem de avaliação
+========================
+
+Python evaluates expressions from left to right.  Notice that while
+evaluating an assignment, the right-hand side is evaluated before the
+left-hand side.
+
+In the following lines, expressions will be evaluated in the
+arithmetic order of their suffixes:
+
+   expr1, expr2, expr3, expr4
+   (expr1, expr2, expr3, expr4)
+   {expr1: expr2, expr3: expr4}
+   expr1 + expr2 * (expr3 - expr4)
+   expr1(expr2, expr3, *expr4, **expr5)
+   expr3, expr4 = expr1, expr2
+
+
+6.17. Precedência de operadores
+===============================
+
+The following table summarizes the operator precedence in Python, from
+highest precedence (most binding) to lowest precedence (least
+binding).  Operators in the same box have the same precedence.  Unless
+the syntax is explicitly given, operators are binary.  Operators in
+the same box group left to right (except for exponentiation and
+conditional expressions, which group from right to left).
+
+Note that comparisons, membership tests, and identity tests, all have
+the same precedence and have a left-to-right chaining feature as
+described in the Comparações section.
+
++-------------------------------------------------+---------------------------------------+
+| Operador                                        | Descrição                             |
+|=================================================|=======================================|
+| "(expressions...)",  "[expressions...]", "{key: | Binding or parenthesized expression,  |
+| value...}", "{expressions...}"                  | list display, dictionary display, set |
+|                                                 | display                               |
++-------------------------------------------------+---------------------------------------+
+| "x[index]", "x[index:index]",                   | Subscription, slicing, call,          |
+| "x(arguments...)", "x.attribute"                | attribute reference                   |
++-------------------------------------------------+---------------------------------------+
+| "await x"                                       | Expressão await                       |
++-------------------------------------------------+---------------------------------------+
+| "**"                                            | Exponenciação [5]                     |
++-------------------------------------------------+---------------------------------------+
+| "+x", "-x", "~x"                                | Positive, negative, bitwise NOT       |
++-------------------------------------------------+---------------------------------------+
+| "*", "@", "/", "//", "%"                        | Multiplication, matrix                |
+|                                                 | multiplication, division, floor       |
+|                                                 | division, remainder [6]               |
++-------------------------------------------------+---------------------------------------+
+| "+", "-"                                        | Addition and subtraction              |
++-------------------------------------------------+---------------------------------------+
+| "<<", ">>"                                      | Shifts                                |
++-------------------------------------------------+---------------------------------------+
+| "&"                                             | E (AND) bit a bit                     |
++-------------------------------------------------+---------------------------------------+
+| "^"                                             | OU EXCLUSIVO (XOR) bit a bit          |
++-------------------------------------------------+---------------------------------------+
+| "|"                                             | OR bit a bit                          |
++-------------------------------------------------+---------------------------------------+
+| "in", "not in", "is", "is not", "<", "<=", ">", | Comparisons, including membership     |
+| ">=", "!=", "=="                                | tests and identity tests              |
++-------------------------------------------------+---------------------------------------+
+| "not x"                                         | Booleano NEGAÇÃO (NOT)                |
++-------------------------------------------------+---------------------------------------+
+| "and"                                           | Booleano E (AND)                      |
++-------------------------------------------------+---------------------------------------+
+| "or"                                            | Booleano OU (OR)                      |
++-------------------------------------------------+---------------------------------------+
+| "if" -- "else"                                  | Expressão condicional                 |
++-------------------------------------------------+---------------------------------------+
+| "lambda"                                        | Expressão lambda                      |
++-------------------------------------------------+---------------------------------------+
+| ":="                                            | Expressão de atribuição               |
++-------------------------------------------------+---------------------------------------+
+
+-[ Notas de rodapé ]-
+
+[1] While "abs(x%y) < abs(y)" is true mathematically, for floats it
+    may not be true numerically due to roundoff.  For example, and
+    assuming a platform on which a Python float is an IEEE 754 double-
+    precision number, in order that "-1e-100 % 1e100" have the same
+    sign as "1e100", the computed result is "-1e-100 + 1e100", which
+    is numerically exactly equal to "1e100".  The function
+    "math.fmod()" returns a result whose sign matches the sign of the
+    first argument instead, and so returns "-1e-100" in this case.
+    Which approach is more appropriate depends on the application.
+
+[2] If x is very close to an exact integer multiple of y, it's
+    possible for "x//y" to be one larger than "(x-x%y)//y" due to
+    rounding.  In such cases, Python returns the latter result, in
+    order to preserve that "divmod(x,y)[0] * y + x % y" be very close
+    to "x".
+
+[3] The Unicode standard distinguishes between *code points* (e.g.
+    U+0041) and *abstract characters* (e.g. "LATIN CAPITAL LETTER A").
+    While most abstract characters in Unicode are only represented
+    using one code point, there is a number of abstract characters
+    that can in addition be represented using a sequence of more than
+    one code point.  For example, the abstract character "LATIN
+    CAPITAL LETTER C WITH CEDILLA" can be represented as a single
+    *precomposed character* at code position U+00C7, or as a sequence
+    of a *base character* at code position U+0043 (LATIN CAPITAL
+    LETTER C), followed by a *combining character* at code position
+    U+0327 (COMBINING CEDILLA).
+
+    The comparison operators on strings compare at the level of
+    Unicode code points. This may be counter-intuitive to humans.  For
+    example, ""\u00C7" == "\u0043\u0327"" is "False", even though both
+    strings represent the same abstract character "LATIN CAPITAL
+    LETTER C WITH CEDILLA".
+
+    To compare strings at the level of abstract characters (that is,
+    in a way intuitive to humans), use "unicodedata.normalize()".
+
+[4] Due to automatic garbage-collection, free lists, and the dynamic
+    nature of descriptors, you may notice seemingly unusual behaviour
+    in certain uses of the "is" operator, like those involving
+    comparisons between instance methods, or constants.  Check their
+    documentation for more info.
+
+[5] The power operator "**" binds less tightly than an arithmetic or
+    bitwise unary operator on its right, that is, "2**-1" is "0.5".
+
+[6] The "%" operator is also used for string formatting; the same
+    precedence applies.

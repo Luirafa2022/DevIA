@@ -1,0 +1,75 @@
+9. Componentes de Alto Nível
+****************************
+
+O interpretador Python pode receber suas entradas de uma quantidade de
+fontes: de um script passado a ele como entrada padrão ou como um
+argumento do programa, digitado interativamente, de um arquivo fonte
+de um módulo, etc. Este capítulo mostra a sintaxe usada nesses casos.
+
+
+9.1. Programas Python completos
+===============================
+
+Ainda que uma especificação de linguagem não precise prescrever como o
+interpretador da linguagem é invocado, é útil ter uma noção de um
+programa Python completo. Um programa Python completo é executado em
+um ambiente minimamente inicializado: todos os módulos embutidos e
+padrões estão disponíveis, mas nenhum foi inicializado, exceto por
+"sys" (serviços de sistema diversos), "builtins" (funções embutidas,
+exceções e "None") e "__main__". O último é usado para fornecer o
+espaço de nomes global e local para execução de um programa completo.
+
+A sintaxe para um programa Python completo é esta para uma entrada de
+arquivo, descrita na próxima seção.
+
+O interpretador também pode ser invocado no modo interativo; neste
+caso, ele não lê e executa um programa completo, mas lê e executa uma
+instrução (possivelmente composta) por vez. O ambiente inicial é
+idêntico àquele de um programa completo; cada instrução é executada no
+espaço de nomes de "__main__".
+
+Um programa completo pode ser passado ao interpretador de três formas:
+com a opção de linha de comando "-c" *string*, como um arquivo passado
+como o primeiro argumento da linha de comando, ou como uma entrada
+padrão. Se o arquivo ou a entrada padrão é um dispositivo tty, o
+interpretador entra em modo interativo; caso contrário, ele executa o
+arquivo como um programa completo.
+
+
+9.2. Entrada de arquivo
+=======================
+
+Toda entrada lida de arquivos não-interativos têm a mesma forma:
+
+   file_input ::= (NEWLINE | statement)*
+
+Essa sintaxe é usada nas seguintes situações:
+
+* quando analisando um programa Python completo (a partir de um
+  arquivo ou de uma string);
+
+* quando analisando um módulo;
+
+* quando analisando uma string passada à função "exec()";
+
+
+9.3. Entrada interativa
+=======================
+
+A entrada em modo interativo é analisada usando a seguinte gramática:
+
+   interactive_input ::= [stmt_list] NEWLINE | compound_stmt NEWLINE
+
+Note que uma instrução composta (de alto-nível) deve ser seguida por
+uma linha em branco no modo interativo; isso é necessário para ajudar
+o analisador sintático a detectar o fim da entrada.
+
+
+9.4. Entrada de expressão
+=========================
+
+A função "eval()" é usada para uma entrada de expressão. Ela ignora
+espaços à esquerda. O argumento em string para "eval()" deve ter a
+seguinte forma:
+
+   eval_input ::= expression_list NEWLINE*

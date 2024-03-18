@@ -1,0 +1,44 @@
+14. Edição de entrada interativa e substituição de histórico
+************************************************************
+
+Algumas versões do interpretador Python suportam a edição da linha de
+entrada atual e a substituição da história, semelhante às habilidade
+encontradas no shell Korn e no shell GNU Bash. Isso é implementado
+usando a biblioteca GNU Readline, que oferece suporte a vários estilos
+de edição. Esta biblioteca possui sua própria documentação, que não
+vamos duplicar aqui.
+
+
+14.1. Tab Completion e Histórico de Edição
+==========================================
+
+A conclusão dos nomes de variáveis e módulos é ativado automaticamente
+na inicialização do interpretador para que a tecla "Tab" invoque a
+função de conclusão. Ele analisa os nomes das instruções Python, as
+variáveis locais atuais e os nomes dos módulos disponíveis. Para
+expressões pontilhadas como "string.a", ele avaliará a expressão até o
+"'.'" final e então sugerirá conclusões dos atributos do objeto
+resultante. Observe que isso pode executar o código definido pelo
+aplicativo se um objeto com um método "__getattr__()" faz parte da
+expressão. A configuração padrão também guarda seu histórico em um
+arquivo chamado ".python_history" no seu diretório de usuário. O
+histórico estará disponível novamente durante a próxima sessão de
+interpretação interativa.
+
+
+14.2. Alternativas ao interpretador interativo
+==============================================
+
+Esta facilidade é um enorme passo em frente em comparação com as
+versões anteriores do interpretador; No entanto, alguns desejos são
+deixados: seria bom se a indentação adequada fosse sugerida nas linhas
+de continuação (o analisador sabe se é necessário um token de recuo).
+O mecanismo de conclusão pode usar a tabela de símbolos do
+interpretador. Um comando para verificar (ou mesmo sugerir)
+parênteses, aspas, etc., também seria útil.
+
+Um interpretador interativo aprimorado e alternativo que existe há
+algum tempo é o IPython, que apresenta a conclusão da guia, a
+exploração de objetos e o gerenciamento de histórico avançado. Também
+pode ser completamente personalizado e incorporado em outras
+aplicações. Outro ambiente interativo aprimorado similar é bpython.

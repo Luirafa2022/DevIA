@@ -1,0 +1,1044 @@
+5. O sistema de importação
+**************************
+
+O código Python em um *módulo* obtém acesso ao código em outro módulo
+pelo processo de *importação* dele. A instrução "import" é a maneira
+mais comum de chamar o mecanismo de importação, mas não é a única
+maneira. Funções como "importlib.import_module()" e a embutida
+"__import__()" também podem ser usadas para chamar o mecanismo de
+importação.
+
+A instrução "import" combina duas operações; ela procura o módulo
+nomeado e vincula os resultados dessa pesquisa a um nome no escopo
+local. A operação de busca da instrução "import" é definida como uma
+chamada para a função "__import__()", com os argumentos apropriados. O
+valor de retorno de "__import__()" é usado para executar a operação de
+ligação de nome da instrução "import". Veja a instrução "import" para
+os detalhes exatos da operação de ligação desse nome.
+
+Uma chamada direta para "__import__()" realiza apenas a pesquisa do
+módulo e, se encontrada, a operação de criação do módulo. Embora
+certos efeitos colaterais possam ocorrer, como a importação de pacotes
+pai e a atualização de vários caches (incluindo "sys.modules"), apenas
+a instrução "import" realiza uma operação de ligação de nome.
+
+Quando uma instrução "import" é executada, a função embutida padrão
+"__import__()" é chamada. Outros mecanismos para chamar o sistema de
+importação (como "importlib.import_module()") podem optar por ignorar
+"__import__()" e usar suas próprias soluções para implementar a
+semântica de importação.
+
+Quando um módulo é importado pela primeira vez, o Python procura pelo
+módulo e, se encontrado, cria um objeto de módulo [1],
+inicializando-o. Se o módulo nomeado não puder ser encontrado, uma
+"ModuleNotFoundError" será levantada. O Python implementa várias
+estratégias para procurar o módulo nomeado quando o mecanismo de
+importação é chamado. Essas estratégias podem ser modificadas e
+estendidas usando vários ganchos descritos nas seções abaixo.
+
+Alterado na versão 3.3: O sistema de importação foi atualizado para
+implementar completamente a segunda fase da **PEP 302**. Não há mais
+um mecanismo de importação implícito -- o sistema completo de
+importação é exposto através de "sys.meta_path". Além disso, o suporte
+nativo a pacote de espaço de nomes foi implementado (consulte **PEP
+420**).
+
+
+5.1. "importlib"
+================
+
+O módulo "importlib" fornece uma API rica para interagir com o sistema
+de importação. Por exemplo "importlib.import_module()" fornece uma API
+mais simples e recomendada do que a embutida "__import__()" para
+chamar o mecanismo de importação. Consulte a documentação da
+biblioteca "importlib" para obter detalhes adicionais.
+
+
+5.2. Pacotes
+============
+
+O Python possui apenas um tipo de objeto de módulo e todos os módulos
+são desse tipo, independentemente de o módulo estar implementado em
+Python, C ou qualquer outra coisa. Para ajudar a organizar os módulos
+e fornecer uma hierarquia de nomes, o Python tem o conceito de
+*pacotes*.
+
+Você pode pensar em pacotes como os diretórios em um sistema de
+arquivos e os módulos como arquivos nos diretórios, mas não tome essa
+analogia muito literalmente, já que pacotes e módulos não precisam se
+originar do sistema de arquivos. Para os fins desta documentação,
+usaremos essa analogia conveniente de diretórios e arquivos. Como os
+diretórios do sistema de arquivos, os pacotes são organizados
+hierarquicamente e os próprios pacotes podem conter subpacotes e
+módulos regulares.
+
+É importante ter em mente que todos os pacotes são módulos, mas nem
+todos os módulos são pacotes. Ou, dito de outra forma, os pacotes são
+apenas um tipo especial de módulo. Especificamente, qualquer módulo
+que contenha um atributo "__path__" é considerado um pacote.
+
+Todo módulo tem um nome.  Nomes de subpacotes são separados do nome do
+pacote por um ponto, semelhante à sintaxe de acesso aos atributos
+padrão do Python.  Assim pode ter um pacote chamado "email", que por
+sua vez tem um subpacote chamado "email.mime" e um módulo dentro dele
+chamado "email.mime.text".
+
+
+5.2.1. Pacotes regulares
+------------------------
+
+O Python define dois tipos de pacotes, *pacotes regulares* e *pacotes
+de espaço de nomes*. Pacotes regulares são pacotes tradicionais, como
+existiam no Python 3.2 e versões anteriores. Um pacote regular é
+normalmente implementado como um diretório que contém um arquivo
+"__init__.py". Quando um pacote regular é importado, esse arquivo
+"__init__.py" é executado implicitamente, e os objetos que ele define
+são vinculados aos nomes no espaço de nomes do pacote. O arquivo
+"__init__.py" pode conter o mesmo código Python que qualquer outro
+módulo pode conter, e o Python adicionará alguns atributos adicionais
+ao módulo quando ele for importado.
+
+Por exemplo, o layout do sistema de arquivos a seguir define um pacote
+"parent" de nível superior com três subpacotes:
+
+   parent/
+       __init__.py
+       one/
+           __init__.py
+       two/
+           __init__.py
+       three/
+           __init__.py
+
+A importação de "parent.one" vai executar implicitamente
+"parent/__init__.py" e "parent/one/__init__.py".  Importações
+subsequentes de "parent.two" ou "parent.three" vão executar
+"parent/two/__init__.py" e "parent/three/__init__.py",
+respectivamente.
+
+
+5.2.2. Pacotes de espaço de nomes
+---------------------------------
+
+Um pacote de espaço de nomes é um composto de várias *porções*, em que
+cada parte contribui com um subpacote para o pacote pai. Partes podem
+residir em locais diferentes no sistema de arquivos. Partes também
+podem ser encontradas em arquivos zip, na rede ou em qualquer outro
+lugar que o Python pesquisar durante a importação. Os pacotes de
+espaço de nomes podem ou não corresponder diretamente aos objetos no
+sistema de arquivos; eles podem ser módulos virtuais que não têm
+representação concreta.
+
+Os pacotes de espaço de nomes não usam uma lista comum para o atributo
+"__path__". Em vez disso, eles usam um tipo iterável personalizado que
+executará automaticamente uma nova pesquisa por partes do pacote na
+próxima tentativa de importação dentro desse pacote, se o caminho do
+pacote pai (ou "sys.path" para um pacote de nível superior) for
+alterado.
+
+Com pacotes de espaço de nomes, não há arquivo "pai/__init__.py". De
+fato, pode haver vários diretórios "pai" encontrados durante a
+pesquisa de importação, onde cada um é fornecido por uma parte
+diferente. Portanto, "pai/um" pode não estar fisicamente localizado
+próximo a "pai/dois". Nesse caso, o Python criará um pacote de espaço
+de nomes para o pacote "pai" de nível superior sempre que ele ou um de
+seus subpacotes for importado.
+
+Veja também **PEP 420** para a especificação de pacotes de espaço de
+nomes.
+
+
+5.3. Caminho de busca
+=====================
+
+Para iniciar a busca, Python precisa do nome *completo* do módulo (ou
+pacote, mas para o propósito dessa exposição, não há diferença) que se
+quer importar.  Esse nome vem de vários argumentos passados para o
+comando  "import" , ou dos parâmetros  das funções
+"importlib.import_module()" ou "__import__()" .
+
+Esse nome será usado em várias fases da busca do import, e pode ser um
+nome com pontos, para um submódulo, ex. "foo.bar.baz".  Nesse caso,
+Python primeiro tenta importar  "foo", depois "foo.bar", e finalmente
+"foo.bar.baz". Se algum dos imports intermediários falhar, uma exceção
+"ModuleNotFoundError" é levantada.
+
+
+5.3.1. Caches de módulos
+------------------------
+
+A primeira checagem durante a busca do import é feita num dicionário
+chamado "sys.modules".  Esse mapeamento serve como um cache de todos
+os módulos que já foram importados previamente, incluindo os caminhos
+intermediários.  Se "foo.bar.baz" foi previamente importado,
+"sys.modules" conterá entradas para  "foo", "foo.bar", and
+"foo.bar.baz".  Cada chave terá como valor um objeto módulo
+correspondente.
+
+Durante o import, o nome do módulo é procurado em  "sys.modules" e, se
+estiver presente, o valor associado é o módulo que satisfaz o import,
+e o processo termina.  Entretanto, se o valor é "None", uma exceção
+"ModuleNotFoundError" é levantada.  Se o nome do módulo não foi
+encontrado, Python continuará a busca.
+
+É possível alterar "sys.modules".  Apagar uma chave pode não destruir
+o objeto módulo associado (outros módulos podem manter referências
+para ele), mas a entrada do cache será invalidada para o nome daquele
+módulo,  fazendo Python executar nova busca no próximo import. Pode
+ser atribuído "None" para a chave, forçando que o próximo import do
+módulo resulte numa exceção "ModuleNotFoundError".
+
+No entanto, tenha cuidado, pois se você mantiver uma referência para o
+objeto módulo, invalidar sua entrada de cache em "sys.modules" e, em
+seguida, reimportar do módulo nomeado, os dois módulo objetos *não*
+serão os mesmos. Por outro lado, o "importlib.reload()" reutilizará o
+*mesmo* objeto módulo e simplesmente reinicializará o conteúdo do
+módulo executando novamente o código do módulo.
+
+
+5.3.2. Buscadores e carregadores
+--------------------------------
+
+Se o módulo nomeado não for encontrado em "sys.modules", então o
+protocolo de importação do Python é invocado para buscar e carregar o
+módulo.  Este protocolo consiste em dois objetos conceituais,
+*finders* e *loaders*. O trabalho de um buscador é determinar se ele
+pode buscar o módulo nomeado usando qualquer estratégia que ele
+conheça. Objetos que implementam ambas essas interfaces são
+referenciadas como *importers* - elas retornam a si mesmas, quando
+elas encontram a aquela eles podem carregar o módulo requisitado.
+
+Python inclui um número de buscadores e carregadores padrões.  O
+primeiro sabe como localizar módulos embutidos, e o segundo sabe como
+localizar módulos congelados.  Um terceiro buscador padrão procura um
+*import path* por módulos.  O *import path* é uma lista de
+localizações que podem nomear caminhos de sistema de arquivo ou
+arquivos zip.  Ele também pode ser extendido para buscar por qualquer
+recurso localizável, tais como aqueles identificados por URLs.
+
+O maquinário de importação é extensível, então novos buscadores podem
+ser adicionados para extender o alcance e o escopo de buscar módulos.
+
+Buscadores na verdade não carregam módulos.  Se eles podem encontrar o
+módulo nomeado, eles retornam um *module spec*, um encapsulamento da
+informação relacionada a importação do módulo, a qual o maquinário de
+importação então usa quando o módulo é carregado.
+
+As seguintes seções descrevem o protocolo para buscadores e
+carregadores em mais detalhes, incluindo como você pode criar e
+registrar novos para extender o maquinário de importação.
+
+Alterado na versão 3.4: Em versões anteriores do Python, buscadores
+retornavam *carregadores* diretamente, enquanto hoje eles retornam
+especificações de um módulo, o qual *contém* carregadores.
+Carregadores ainda são usados durante a importação, mas possuem menos
+responsabilidades.
+
+
+5.3.3. Ganchos de importação
+----------------------------
+
+O maquinário de importação é desenhado para ser extensível; o
+mecanismo primário para isso são os *ganchos de importação*.  Existem
+dois tipos de ganchos de importação: *meta ganchos* e *ganchos de
+importação de caminho*.
+
+Meta ganchos são chamados no início do processo de importação, antes
+que qualquer outro processo de importação tenha ocorrido, que não seja
+busca de cache de "sys.modules". Isso permite que meta ganchos
+substituam processamento de "sys.path", módulos congelados ou mesmo
+módulos embutidos. Meta ganchos são registrados adicionando novos
+objetos buscadores a "sys.meta_path", conforme descrito abaixo.
+
+Ganchos de importação de caminhos são chamados como parte do
+processamento de "sys.path" (ou "package.__path__"), no ponto onde é
+encontrado o item do caminho associado.  Ganchos de importação de
+caminho são registrados adicionando novas chamadas para
+"sys.path_hooks", conforme descrito abaixo.
+
+
+5.3.4. O meta caminho
+---------------------
+
+Quando o módulo nomeado não é encontrado em "sys.modules", Python em
+seguida busca "sys.meta_path", o qual contém uma lista de objetos
+localizador de metacaminho. Esses buscadores são consultados a fim de
+verificar se eles sabem como manipular o módulo nomeado. Os
+localizadores de metacaminho devem implementar um método chamado
+"find_spec()", o qual recebe tres argumentos: um nome, um caminho de
+importação, e (opcionalmente) um módulo alvo. O localizador de
+metacaminho pode usar qualquer estratégia que ele quiser para
+determinar se ele pode manipular o módulo nomeado ou não.
+
+Se o buscador de meta caminho souber como tratar o módulo nomeado, ele
+retorna um objeto com especificações.  Se ele não puder tratar o
+módulo nomeado, ele retorna "None".  Se o processamento de
+"sys.meta_path" alcançar o fim da sua lista sem retornar uma
+especificação, então "ModuleNotFoundError" é levantado.  Qualquer
+outras exceções levantadas são simplesmente propagadas para cima,
+abortando o processo de importação.
+
+O método "find_spec()" dos buscadores de meta caminhos é chamado com
+dois ou tres argumentos.  O primeiro é o nome totalmente qualificado
+do módulo sendo importado, por exemplo "foo.bar.baz". O segundo
+argumento é o caminho de entradas para usar para a busca do módulo.
+Para módulos de alto-nível, o segundo argumento é "None", mas para
+sub-módulos ou sub-pacotes, o segundo argumento é o valor do atributo
+"__path__" do pacote pai. Se o atributo "__path__" apropriado não
+puder ser acessado, um "ModuleNotFoundError" é levantado.  O terceiro
+argumento é um objeto módulo existente que será o alvo do carregamento
+posteriormente. O sistema de importação passa um módulo alvo apenas
+durante o recarregamento.
+
+O meta caminho pode ser percorrido múltiplas vezes para uma requisição
+de importação individual. Por exemplo, assumindo que nenhum dos
+módulos envolvidos já tenha sido cacheado, importar``foo.bar.baz`` irá
+primeiro executar uma importação de alto-nível, chamando
+"mpf.find_spec("foo", None, None)" em cada buscador de meta caminho
+("mpf"). Depois que "foo" foi importado, "foo.bar" será importado
+percorrendo o meta caminho uma segunda vez,
+chamando``mpf.find_spec("foo.bar", foo.__path__, None)``. Uma vez que
+"foo.bar" tenha sido importado, a travessia final irá chamar
+"mpf.find_spec("foo.bar.baz", foo.bar.__path__, None)".
+
+Alguns buscadores de meta caminho apenas suportam importações de alto-
+nível. Estes importadores sempre retornarão "None" quando qualquer
+coisa diferente de "None" for passada como o segundo argumento.
+
+O "sys.meta_path" padrão do Python possui tres buscadores de meta
+caminhos, um que sabe como importar módulos embutidos, um que sabe
+como importar módulos congelados, e outro que sabe como importar
+módulos de um *import path* (ex: o *path based finder*).
+
+Alterado na versão 3.4: The "find_spec()" method of meta path finders
+replaced "find_module()", which is now deprecated.  While it will
+continue to work without change, the import machinery will try it only
+if the finder does not implement "find_spec()".
+
+Alterado na versão 3.10: O uso de "find_module()" pelo sistema de
+importação agora levanta "ImportWarning".
+
+Alterado na versão 3.12: "find_module()" has been removed. Use
+"find_spec()" instead.
+
+
+5.4. Carregando
+===============
+
+Se e quando uma especificação de módulo for encontrada, o maquinário
+de importação irá usá-lo (e o carregador que ele contém) durante o
+carregamento do módulo.  Aqui está uma aproximação do que acontece
+durante a etapa de carregamento de uma importação:
+
+   module = None
+   if spec.loader is not None and hasattr(spec.loader, 'create_module'):
+       # It is assumed 'exec_module' will also be defined on the loader.
+       module = spec.loader.create_module(spec)
+   if module is None:
+       module = ModuleType(spec.name)
+   # The import-related module attributes get set here:
+   _init_module_attrs(spec, module)
+
+   if spec.loader is None:
+       # unsupported
+       raise ImportError
+   if spec.origin is None and spec.submodule_search_locations is not None:
+       # namespace package
+       sys.modules[spec.name] = module
+   elif not hasattr(spec.loader, 'exec_module'):
+       module = spec.loader.load_module(spec.name)
+   else:
+       sys.modules[spec.name] = module
+       try:
+           spec.loader.exec_module(module)
+       except BaseException:
+           try:
+               del sys.modules[spec.name]
+           except KeyError:
+               pass
+           raise
+   return sys.modules[spec.name]
+
+Perceba os seguintes detalhes:
+
+* Se houver um objeto módulo existente com o nome fornecido em
+  "sys.modules", a importação já tera retornado ele.
+
+* O módulo irá existir em "sys.modules" antes do carregador executar o
+  código do módulo. Isso é crucial porque o código do módulo pode
+  (direta ou indiretamente) importar a si mesmo; adicioná-lo a
+  "sys.modules" antecipadamente previne recursão infinita no pior caso
+  e múltiplos carregamentos no melhor caso.
+
+* Se o carregamento falhar, o módulo com falha -- e apenas o módulo
+  com falha -- é removido de "sys.modules". Qualquer módulo já
+  presente no cache de "sys.modules", e qualquer módulo que tenha sido
+  carregado com sucesso como um efeito colateral, deve permanecer no
+  cache. Isso contrasta com recarregamento, onde mesmo o módulo com
+  falha é mantido em "sys.modules".
+
+* Depois que o módulo é criado, mas antes da execução, o maquinário de
+  importação define os atributos de módulo relacionados a importação
+  ("_init_module_attrs" no exemplo de pseudo-código acima), assim como
+  foi resumido em uma seção posterior.
+
+* Execução de módulo é o momento chave do carregamento, no qual o
+  espaço de nomes do módulo é populado.  Execução é inteiramente
+  delegada para o carregador, o qual pode decidir o que será populado
+  e como.
+
+* O módulo criado durante o carregamento e passado para exec_module()
+  pode não ser aquele retornado ao final da importação [2].
+
+Alterado na versão 3.4: O sistema de importação tem tomado conta das
+responsabilidades padrões dos carregadores.  Essas responsabilidades
+eram anteriormente executadas pelo método
+"importlib.abc.Loader.load_module()".
+
+
+5.4.1. Loaders
+--------------
+
+Module loaders provide the critical function of loading: module
+execution. The import machinery calls the
+"importlib.abc.Loader.exec_module()" method with a single argument,
+the module object to execute.  Any value returned from "exec_module()"
+is ignored.
+
+Loaders must satisfy the following requirements:
+
+* If the module is a Python module (as opposed to a built-in module or
+  a dynamically loaded extension), the loader should execute the
+  module's code in the module's global name space ("module.__dict__").
+
+* If the loader cannot execute the module, it should raise an
+  "ImportError", although any other exception raised during
+  "exec_module()" will be propagated.
+
+In many cases, the finder and loader can be the same object; in such
+cases the "find_spec()" method would just return a spec with the
+loader set to "self".
+
+Module loaders may opt in to creating the module object during loading
+by implementing a "create_module()" method. It takes one argument, the
+module spec, and returns the new module object to use during loading.
+"create_module()" does not need to set any attributes on the module
+object.  If the method returns "None", the import machinery will
+create the new module itself.
+
+Novo na versão 3.4: The "create_module()" method of loaders.
+
+Alterado na versão 3.4: The "load_module()" method was replaced by
+"exec_module()" and the import machinery assumed all the boilerplate
+responsibilities of loading.For compatibility with existing loaders,
+the import machinery will use the "load_module()" method of loaders if
+it exists and the loader does not also implement "exec_module()".
+However, "load_module()" has been deprecated and loaders should
+implement "exec_module()" instead.The "load_module()" method must
+implement all the boilerplate loading functionality described above in
+addition to executing the module.  All the same constraints apply,
+with some additional clarification:
+
+* If there is an existing module object with the given name in
+  "sys.modules", the loader must use that existing module. (Otherwise,
+  "importlib.reload()" will not work correctly.)  If the named module
+  does not exist in "sys.modules", the loader must create a new module
+  object and add it to "sys.modules".
+
+* The module *must* exist in "sys.modules" before the loader executes
+  the module code, to prevent unbounded recursion or multiple loading.
+
+* If loading fails, the loader must remove any modules it has inserted
+  into "sys.modules", but it must remove **only** the failing
+  module(s), and only if the loader itself has loaded the module(s)
+  explicitly.
+
+Alterado na versão 3.5: A "DeprecationWarning" is raised when
+"exec_module()" is defined but "create_module()" is not.
+
+Alterado na versão 3.6: An "ImportError" is raised when
+"exec_module()" is defined but "create_module()" is not.
+
+Alterado na versão 3.10: Use of "load_module()" will raise
+"ImportWarning".
+
+
+5.4.2. Submódulos
+-----------------
+
+When a submodule is loaded using any mechanism (e.g. "importlib" APIs,
+the "import" or "import-from" statements, or built-in "__import__()")
+a binding is placed in the parent module's namespace to the submodule
+object. For example, if package "spam" has a submodule "foo", after
+importing "spam.foo", "spam" will have an attribute "foo" which is
+bound to the submodule.  Let's say you have the following directory
+structure:
+
+   spam/
+       __init__.py
+       foo.py
+
+and "spam/__init__.py" has the following line in it:
+
+   from .foo import Foo
+
+then executing the following puts name bindings for "foo" and "Foo" in
+the "spam" module:
+
+   >>> import spam
+   >>> spam.foo
+   <module 'spam.foo' from '/tmp/imports/spam/foo.py'>
+   >>> spam.Foo
+   <class 'spam.foo.Foo'>
+
+Given Python's familiar name binding rules this might seem surprising,
+but it's actually a fundamental feature of the import system.  The
+invariant holding is that if you have "sys.modules['spam']" and
+"sys.modules['spam.foo']" (as you would after the above import), the
+latter must appear as the "foo" attribute of the former.
+
+
+5.4.3. Module spec
+------------------
+
+The import machinery uses a variety of information about each module
+during import, especially before loading.  Most of the information is
+common to all modules.  The purpose of a module's spec is to
+encapsulate this import-related information on a per-module basis.
+
+Using a spec during import allows state to be transferred between
+import system components, e.g. between the finder that creates the
+module spec and the loader that executes it.  Most importantly, it
+allows the import machinery to perform the boilerplate operations of
+loading, whereas without a module spec the loader had that
+responsibility.
+
+The module's spec is exposed as the "__spec__" attribute on a module
+object. See "ModuleSpec" for details on the contents of the module
+spec.
+
+Novo na versão 3.4.
+
+
+5.4.4. Import-related module attributes
+---------------------------------------
+
+The import machinery fills in these attributes on each module object
+during loading, based on the module's spec, before the loader executes
+the module.
+
+It is **strongly** recommended that you rely on "__spec__" and its
+attributes instead of any of the other individual attributes listed
+below.
+
+__name__
+
+   The "__name__" attribute must be set to the fully qualified name of
+   the module.  This name is used to uniquely identify the module in
+   the import system.
+
+__loader__
+
+   The "__loader__" attribute must be set to the loader object that
+   the import machinery used when loading the module.  This is mostly
+   for introspection, but can be used for additional loader-specific
+   functionality, for example getting data associated with a loader.
+
+   It is **strongly** recommended that you rely on "__spec__" instead
+   of this attribute.
+
+   Alterado na versão 3.12: The value of "__loader__" is expected to
+   be the same as "__spec__.loader".  The use of "__loader__" is
+   deprecated and slated for removal in Python 3.14.
+
+__package__
+
+   The module's "__package__" attribute may be set.  Its value must be
+   a string, but it can be the same value as its "__name__".  When the
+   module is a package, its "__package__" value should be set to its
+   "__name__".  When the module is not a package, "__package__" should
+   be set to the empty string for top-level modules, or for
+   submodules, to the parent package's name.  See **PEP 366** for
+   further details.
+
+   This attribute is used instead of "__name__" to calculate explicit
+   relative imports for main modules, as defined in **PEP 366**.
+
+   It is **strongly** recommended that you rely on "__spec__" instead
+   of this attribute.
+
+   Alterado na versão 3.6: The value of "__package__" is expected to
+   be the same as "__spec__.parent".
+
+   Alterado na versão 3.10: "ImportWarning" is raised if import falls
+   back to "__package__" instead of "parent".
+
+   Alterado na versão 3.12: Raise "DeprecationWarning" instead of
+   "ImportWarning" when falling back to "__package__".
+
+__spec__
+
+   The "__spec__" attribute must be set to the module spec that was
+   used when importing the module. Setting "__spec__" appropriately
+   applies equally to modules initialized during interpreter startup.
+   The one exception is "__main__", where "__spec__" is set to None in
+   some cases.
+
+   When "__spec__.parent" is not set, "__package__" is used as a
+   fallback.
+
+   Novo na versão 3.4.
+
+   Alterado na versão 3.6: "__spec__.parent" is used as a fallback
+   when "__package__" is not defined.
+
+__path__
+
+   If the module is a package (either regular or namespace), the
+   module object's "__path__" attribute must be set.  The value must
+   be iterable, but may be empty if "__path__" has no further
+   significance. If "__path__" is not empty, it must produce strings
+   when iterated over. More details on the semantics of "__path__" are
+   given below.
+
+   Non-package modules should not have a "__path__" attribute.
+
+__file__
+
+__cached__
+
+   "__file__" is optional (if set, value must be a string). It
+   indicates the pathname of the file from which the module was loaded
+   (if loaded from a file), or the pathname of the shared library file
+   for extension modules loaded dynamically from a shared library. It
+   might be missing for certain types of modules, such as C modules
+   that are statically linked into the interpreter, and the import
+   system may opt to leave it unset if it has no semantic meaning
+   (e.g. a module loaded from a database).
+
+   If "__file__" is set then the "__cached__" attribute might also be
+   set,  which is the path to any compiled version of the code (e.g.
+   byte-compiled file). The file does not need to exist to set this
+   attribute; the path can simply point to where the compiled file
+   would exist (see **PEP 3147**).
+
+   Note that "__cached__" may be set even if "__file__" is not set.
+   However, that scenario is quite atypical.  Ultimately, the loader
+   is what makes use of the module spec provided by the finder (from
+   which "__file__" and "__cached__" are derived).  So if a loader can
+   load from a cached module but otherwise does not load from a file,
+   that atypical scenario may be appropriate.
+
+   It is **strongly** recommended that you rely on "__spec__" instead
+   of "__cached__".
+
+
+5.4.5. module.__path__
+----------------------
+
+By definition, if a module has a "__path__" attribute, it is a
+package.
+
+A package's "__path__" attribute is used during imports of its
+subpackages. Within the import machinery, it functions much the same
+as "sys.path", i.e. providing a list of locations to search for
+modules during import. However, "__path__" is typically much more
+constrained than "sys.path".
+
+"__path__" must be an iterable of strings, but it may be empty. The
+same rules used for "sys.path" also apply to a package's "__path__",
+and "sys.path_hooks" (described below) are consulted when traversing a
+package's "__path__".
+
+A package's "__init__.py" file may set or alter the package's
+"__path__" attribute, and this was typically the way namespace
+packages were implemented prior to **PEP 420**.  With the adoption of
+**PEP 420**, namespace packages no longer need to supply "__init__.py"
+files containing only "__path__" manipulation code; the import
+machinery automatically sets "__path__" correctly for the namespace
+package.
+
+
+5.4.6. Module reprs
+-------------------
+
+By default, all modules have a usable repr, however depending on the
+attributes set above, and in the module's spec, you can more
+explicitly control the repr of module objects.
+
+If the module has a spec ("__spec__"), the import machinery will try
+to generate a repr from it.  If that fails or there is no spec, the
+import system will craft a default repr using whatever information is
+available on the module.  It will try to use the "module.__name__",
+"module.__file__", and "module.__loader__" as input into the repr,
+with defaults for whatever information is missing.
+
+Here are the exact rules used:
+
+* If the module has a "__spec__" attribute, the information in the
+  spec is used to generate the repr.  The "name", "loader", "origin",
+  and "has_location" attributes are consulted.
+
+* If the module has a "__file__" attribute, this is used as part of
+  the module's repr.
+
+* If the module has no "__file__" but does have a "__loader__" that is
+  not "None", then the loader's repr is used as part of the module's
+  repr.
+
+* Otherwise, just use the module's "__name__" in the repr.
+
+Alterado na versão 3.12: Use of "module_repr()", having been
+deprecated since Python 3.4, was removed in Python 3.12 and is no
+longer called during the resolution of a module's repr.
+
+
+5.4.7. Cached bytecode invalidation
+-----------------------------------
+
+Before Python loads cached bytecode from a ".pyc" file, it checks
+whether the cache is up-to-date with the source ".py" file. By
+default, Python does this by storing the source's last-modified
+timestamp and size in the cache file when writing it. At runtime, the
+import system then validates the cache file by checking the stored
+metadata in the cache file against the source's metadata.
+
+Python also supports "hash-based" cache files, which store a hash of
+the source file's contents rather than its metadata. There are two
+variants of hash-based ".pyc" files: checked and unchecked. For
+checked hash-based ".pyc" files, Python validates the cache file by
+hashing the source file and comparing the resulting hash with the hash
+in the cache file. If a checked hash-based cache file is found to be
+invalid, Python regenerates it and writes a new checked hash-based
+cache file. For unchecked hash-based ".pyc" files, Python simply
+assumes the cache file is valid if it exists. Hash-based ".pyc" files
+validation behavior may be overridden with the "--check-hash-based-
+pycs" flag.
+
+Alterado na versão 3.7: Added hash-based ".pyc" files. Previously,
+Python only supported timestamp-based invalidation of bytecode caches.
+
+
+5.5. The Path Based Finder
+==========================
+
+As mentioned previously, Python comes with several default meta path
+finders. One of these, called the *path based finder* ("PathFinder"),
+searches an *import path*, which contains a list of *path entries*.
+Each path entry names a location to search for modules.
+
+The path based finder itself doesn't know how to import anything.
+Instead, it traverses the individual path entries, associating each of
+them with a path entry finder that knows how to handle that particular
+kind of path.
+
+The default set of path entry finders implement all the semantics for
+finding modules on the file system, handling special file types such
+as Python source code (".py" files), Python byte code (".pyc" files)
+and shared libraries (e.g. ".so" files). When supported by the
+"zipimport" module in the standard library, the default path entry
+finders also handle loading all of these file types (other than shared
+libraries) from zipfiles.
+
+Path entries need not be limited to file system locations.  They can
+refer to URLs, database queries, or any other location that can be
+specified as a string.
+
+The path based finder provides additional hooks and protocols so that
+you can extend and customize the types of searchable path entries.
+For example, if you wanted to support path entries as network URLs,
+you could write a hook that implements HTTP semantics to find modules
+on the web.  This hook (a callable) would return a *path entry finder*
+supporting the protocol described below, which was then used to get a
+loader for the module from the web.
+
+A word of warning: this section and the previous both use the term
+*finder*, distinguishing between them by using the terms *meta path
+finder* and *path entry finder*.  These two types of finders are very
+similar, support similar protocols, and function in similar ways
+during the import process, but it's important to keep in mind that
+they are subtly different. In particular, meta path finders operate at
+the beginning of the import process, as keyed off the "sys.meta_path"
+traversal.
+
+By contrast, path entry finders are in a sense an implementation
+detail of the path based finder, and in fact, if the path based finder
+were to be removed from "sys.meta_path", none of the path entry finder
+semantics would be invoked.
+
+
+5.5.1. Path entry finders
+-------------------------
+
+The *path based finder* is responsible for finding and loading Python
+modules and packages whose location is specified with a string *path
+entry*.  Most path entries name locations in the file system, but they
+need not be limited to this.
+
+As a meta path finder, the *path based finder* implements the
+"find_spec()" protocol previously described, however it exposes
+additional hooks that can be used to customize how modules are found
+and loaded from the *import path*.
+
+Three variables are used by the *path based finder*, "sys.path",
+"sys.path_hooks" and "sys.path_importer_cache".  The "__path__"
+attributes on package objects are also used.  These provide additional
+ways that the import machinery can be customized.
+
+"sys.path" contains a list of strings providing search locations for
+modules and packages.  It is initialized from the "PYTHONPATH"
+environment variable and various other installation- and
+implementation-specific defaults.  Entries in "sys.path" can name
+directories on the file system, zip files, and potentially other
+"locations" (see the "site" module) that should be searched for
+modules, such as URLs, or database queries.  Only strings should be
+present on "sys.path"; all other data types are ignored.
+
+The *path based finder* is a *meta path finder*, so the import
+machinery begins the *import path* search by calling the path based
+finder's "find_spec()" method as described previously.  When the
+"path" argument to "find_spec()" is given, it will be a list of string
+paths to traverse - typically a package's "__path__" attribute for an
+import within that package.  If the "path" argument is "None", this
+indicates a top level import and "sys.path" is used.
+
+The path based finder iterates over every entry in the search path,
+and for each of these, looks for an appropriate *path entry finder*
+("PathEntryFinder") for the path entry.  Because this can be an
+expensive operation (e.g. there may be "stat()" call overheads for
+this search), the path based finder maintains a cache mapping path
+entries to path entry finders.  This cache is maintained in
+"sys.path_importer_cache" (despite the name, this cache actually
+stores finder objects rather than being limited to *importer*
+objects). In this way, the expensive search for a particular *path
+entry* location's *path entry finder* need only be done once.  User
+code is free to remove cache entries from "sys.path_importer_cache"
+forcing the path based finder to perform the path entry search again.
+
+If the path entry is not present in the cache, the path based finder
+iterates over every callable in "sys.path_hooks".  Each of the *path
+entry hooks* in this list is called with a single argument, the path
+entry to be searched.  This callable may either return a *path entry
+finder* that can handle the path entry, or it may raise "ImportError".
+An "ImportError" is used by the path based finder to signal that the
+hook cannot find a *path entry finder* for that *path entry*.  The
+exception is ignored and *import path* iteration continues.  The hook
+should expect either a string or bytes object; the encoding of bytes
+objects is up to the hook (e.g. it may be a file system encoding,
+UTF-8, or something else), and if the hook cannot decode the argument,
+it should raise "ImportError".
+
+If "sys.path_hooks" iteration ends with no *path entry finder* being
+returned, then the path based finder's "find_spec()" method will store
+"None" in "sys.path_importer_cache" (to indicate that there is no
+finder for this path entry) and return "None", indicating that this
+*meta path finder* could not find the module.
+
+If a *path entry finder* *is* returned by one of the *path entry hook*
+callables on "sys.path_hooks", then the following protocol is used to
+ask the finder for a module spec, which is then used when loading the
+module.
+
+The current working directory -- denoted by an empty string -- is
+handled slightly differently from other entries on "sys.path". First,
+if the current working directory is found to not exist, no value is
+stored in "sys.path_importer_cache". Second, the value for the current
+working directory is looked up fresh for each module lookup. Third,
+the path used for "sys.path_importer_cache" and returned by
+"importlib.machinery.PathFinder.find_spec()" will be the actual
+current working directory and not the empty string.
+
+
+5.5.2. Path entry finder protocol
+---------------------------------
+
+In order to support imports of modules and initialized packages and
+also to contribute portions to namespace packages, path entry finders
+must implement the "find_spec()" method.
+
+"find_spec()" takes two arguments: the fully qualified name of the
+module being imported, and the (optional) target module.
+"find_spec()" returns a fully populated spec for the module. This spec
+will always have "loader" set (with one exception).
+
+To indicate to the import machinery that the spec represents a
+namespace *portion*, the path entry finder sets
+"submodule_search_locations" to a list containing the portion.
+
+Alterado na versão 3.4: "find_spec()" replaced "find_loader()" and
+"find_module()", both of which are now deprecated, but will be used if
+"find_spec()" is not defined.Older path entry finders may implement
+one of these two deprecated methods instead of "find_spec()".  The
+methods are still respected for the sake of backward compatibility.
+However, if "find_spec()" is implemented on the path entry finder, the
+legacy methods are ignored."find_loader()" takes one argument, the
+fully qualified name of the module being imported.  "find_loader()"
+returns a 2-tuple where the first item is the loader and the second
+item is a namespace *portion*.For backwards compatibility with other
+implementations of the import protocol, many path entry finders also
+support the same, traditional "find_module()" method that meta path
+finders support. However path entry finder "find_module()" methods are
+never called with a "path" argument (they are expected to record the
+appropriate path information from the initial call to the path
+hook).The "find_module()" method on path entry finders is deprecated,
+as it does not allow the path entry finder to contribute portions to
+namespace packages.  If both "find_loader()" and "find_module()" exist
+on a path entry finder, the import system will always call
+"find_loader()" in preference to "find_module()".
+
+Alterado na versão 3.10: Calls to "find_module()" and "find_loader()"
+by the import system will raise "ImportWarning".
+
+Alterado na versão 3.12: "find_module()" and "find_loader()" have been
+removed.
+
+
+5.6. Replacing the standard import system
+=========================================
+
+The most reliable mechanism for replacing the entire import system is
+to delete the default contents of "sys.meta_path", replacing them
+entirely with a custom meta path hook.
+
+If it is acceptable to only alter the behaviour of import statements
+without affecting other APIs that access the import system, then
+replacing the builtin "__import__()" function may be sufficient. This
+technique may also be employed at the module level to only alter the
+behaviour of import statements within that module.
+
+To selectively prevent the import of some modules from a hook early on
+the meta path (rather than disabling the standard import system
+entirely), it is sufficient to raise "ModuleNotFoundError" directly
+from "find_spec()" instead of returning "None". The latter indicates
+that the meta path search should continue, while raising an exception
+terminates it immediately.
+
+
+5.7. Package Relative Imports
+=============================
+
+Relative imports use leading dots. A single leading dot indicates a
+relative import, starting with the current package. Two or more
+leading dots indicate a relative import to the parent(s) of the
+current package, one level per dot after the first. For example, given
+the following package layout:
+
+   package/
+       __init__.py
+       subpackage1/
+           __init__.py
+           moduleX.py
+           moduleY.py
+       subpackage2/
+           __init__.py
+           moduleZ.py
+       moduleA.py
+
+In either "subpackage1/moduleX.py" or "subpackage1/__init__.py", the
+following are valid relative imports:
+
+   from .moduleY import spam
+   from .moduleY import spam as ham
+   from . import moduleY
+   from ..subpackage1 import moduleY
+   from ..subpackage2.moduleZ import eggs
+   from ..moduleA import foo
+
+Absolute imports may use either the "import <>" or "from <> import <>"
+syntax, but relative imports may only use the second form; the reason
+for this is that:
+
+   import XXX.YYY.ZZZ
+
+should expose "XXX.YYY.ZZZ" as a usable expression, but .moduleY is
+not a valid expression.
+
+
+5.8. Special considerations for __main__
+========================================
+
+The "__main__" module is a special case relative to Python's import
+system.  As noted elsewhere, the "__main__" module is directly
+initialized at interpreter startup, much like "sys" and "builtins".
+However, unlike those two, it doesn't strictly qualify as a built-in
+module.  This is because the manner in which "__main__" is initialized
+depends on the flags and other options with which the interpreter is
+invoked.
+
+
+5.8.1. __main__.__spec__
+------------------------
+
+Depending on how "__main__" is initialized, "__main__.__spec__" gets
+set appropriately or to "None".
+
+When Python is started with the "-m" option, "__spec__" is set to the
+module spec of the corresponding module or package. "__spec__" is also
+populated when the "__main__" module is loaded as part of executing a
+directory, zipfile or other "sys.path" entry.
+
+In the remaining cases "__main__.__spec__" is set to "None", as the
+code used to populate the "__main__" does not correspond directly with
+an importable module:
+
+* interactive prompt
+
+* "-c" option
+
+* running from stdin
+
+* running directly from a source or bytecode file
+
+Note that "__main__.__spec__" is always "None" in the last case, *even
+if* the file could technically be imported directly as a module
+instead. Use the "-m" switch if valid module metadata is desired in
+"__main__".
+
+Note also that even when "__main__" corresponds with an importable
+module and "__main__.__spec__" is set accordingly, they're still
+considered *distinct* modules. This is due to the fact that blocks
+guarded by "if __name__ == "__main__":" checks only execute when the
+module is used to populate the "__main__" namespace, and not during
+normal import.
+
+
+5.9. Referências
+================
+
+The import machinery has evolved considerably since Python's early
+days.  The original specification for packages is still available to
+read, although some details have changed since the writing of that
+document.
+
+The original specification for "sys.meta_path" was **PEP 302**, with
+subsequent extension in **PEP 420**.
+
+**PEP 420** introduced *namespace packages* for Python 3.3.  **PEP
+420** also introduced the "find_loader()" protocol as an alternative
+to "find_module()".
+
+**PEP 366** describes the addition of the "__package__" attribute for
+explicit relative imports in main modules.
+
+**PEP 328** introduced absolute and explicit relative imports and
+initially proposed "__name__" for semantics **PEP 366** would
+eventually specify for "__package__".
+
+**PEP 338** defines executing modules as scripts.
+
+**PEP 451** adds the encapsulation of per-module import state in spec
+objects.  It also off-loads most of the boilerplate responsibilities
+of loaders back onto the import machinery.  These changes allow the
+deprecation of several APIs in the import system and also addition of
+new methods to finders and loaders.
+
+-[ Notas de rodapé ]-
+
+[1] See "types.ModuleType".
+
+[2] The importlib implementation avoids using the return value
+    directly. Instead, it gets the module object by looking the module
+    name up in "sys.modules".  The indirect effect of this is that an
+    imported module may replace itself in "sys.modules".  This is
+    implementation-specific behavior that is not guaranteed to work in
+    other Python implementations.

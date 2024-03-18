@@ -1,0 +1,1389 @@
+4. Utilizando Python no Windows
+*******************************
+
+Este documento pretende dar uma visão geral do comportamento
+específico do Windows que você deve conhecer quando fores utilizar o
+Python no sistema operacional Microsoft Windows.
+
+Unlike most Unix systems and services, Windows does not include a
+system supported installation of Python. To make Python available, the
+CPython team has compiled Windows installers with every release for
+many years. These installers are primarily intended to add a per-user
+installation of Python, with the core interpreter and library being
+used by a single user. The installer is also able to install for all
+users of a single machine, and a separate ZIP file is available for
+application-local distributions.
+
+Como especificado na **PEP 11**, uma versão Python suporta apenas uma
+plataforma Windows enquanto a Microsoft considera a plataforma sob
+suporte estendido. Isso significa que o Python 3.12 suporta Windows
+8.1 ou superiores. Se você requer suporte à Windows 7, por favor
+instale o Python 3.8.
+
+Há uma quantidade de instaladores diferentes disponíveis para Windows,
+cada um com algumas vantagens e desvantagens.
+
+O instalador completo contém todos os componentes e é a melhor opção
+para desenvolvedores usando Python para qualquer tipo de projeto.
+
+O pacote Microsoft Store é uma instalação simples do Python que é
+adequada para executar scripts e pacotes, e para usar a IDLE ou outros
+ambientes de desenvolvimento. Ela requer Windows 10 e superior, mas
+pode ser instalada de forma segura sem corromper outros programas. Ela
+também fornece vários comandos convenientes para iniciar o Python e
+suas ferramentas.
+
+Os pacotes nuget.org são instalações leves criadas para integração
+contínua de sistemas. Elas podem ser usadas para construir pacotes
+Python ou executar scripts, mas não são atualizáveis e não possuem
+ferramentas de interface de usuário.
+
+O pacote embutível é um pacote mínimo de Python adequado para ser
+incorporado em uma aplicação maior.
+
+
+4.1. O instalador completo
+==========================
+
+
+4.1.1. Etapas de instalação
+---------------------------
+
+Quatro instaladores Python 3.12 estão disponíveis para download - dois
+de cada para as versões 32-bit e 64-bit do interpretador. O
+*instalador web* é um download inicial menor, e ele irá
+automaticamente fazer o download dos componentes solicitados na medida
+do necessário. O *instalador offline* inclui os componentes
+necessários para uma instalação padrão e requer apenas uma conexão de
+internet para recursos opcionais. Veja Instalando Sem Download para
+outras formas de evitar o download durante a instalação.
+
+Após iniciar o instalador, uma de duas opções deve ser selecionada:
+
+[imagem]
+
+Se você selecionar "Install Now":
+
+* Você *não* precisará ser um administrador (a menos que uma
+  atualização de sistema para a Biblioteca em Tempo de Execução C seja
+  necessária ou que você instale o Inicializador Python para Windows
+  para todos os usuários)
+
+* Python será instalado dentro do seu diretório de usuário
+
+* O Inicializador Python para Windows será instalado de acordo com a
+  opção ao final da primeira página
+
+* A biblioteca padrão, a suíte de testes, o inicializador e o pip
+  serão instalados
+
+* Se selecionado, o diretório de instalação será adicionado no seu
+  "PATH"
+
+* Atalhos serão visíveis apenas para o usuário atual
+
+Selecionando "Customize installation" irá permitir que você selecione
+os recursos a serem instalados, o local da instalação e outras opções
+ou ações pós-instalação. Para instalar símbolos de depuração ou
+binários, você precisará usar essa opção.
+
+Para realizar uma instalação para todos os usuários, você deve
+selecionar "Customize installation". Neste caso:
+
+* Você pode ser solicitado a providenciar credenciais administrativas
+  ou aprovação
+
+* Python será instalado dentro do diretório Program Files (Arquivos de
+  Programa)
+
+* O Inicializador Python para Windows será instalado dentro do
+  diretório Windows
+
+* Recursos opcionais podem ser selecionados durante a instalação
+
+* A biblioteca padrão pode ser pré-compilada em bytecode
+
+* Se selecionado, o diretório de instalação será adicionado ao "PATH"
+  do sistema
+
+* Atalhos estão disponíveis para todos os usuários
+
+
+4.1.2. Removendo a Limitação do MAX_PATH
+----------------------------------------
+
+O Windows historicamente tem limitado os comprimentos dos caminhos de
+arquivos em 260 caracteres. Isso significava que caminhos maiores que
+isso não seriam resolvidos e resultariam em erros.
+
+Nas últimas versões do Windows, essa limitação pode ser expandida para
+aproximadamente 32.000 caracteres. Seu administrador irá precisar
+ativar a política de grupo "Enable Win32 long paths", ou definir
+"LongPathsEnabled" para "1" na chave de registro
+"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem".
+
+Isso permite que a função "open()", o módulo "os" e a maior parte das
+outras funcionalidades de caminho aceitem e retornem caminhos maiores
+que 260 caracteres quando usando strings.
+
+Após alterar a opção acima, nenhuma configuração adicional é
+necessária.
+
+Alterado na versão 3.6: Suporte para caminhos longos foi ativado no
+Python.
+
+
+4.1.3. Instalando sem UI
+------------------------
+
+Todas as opções disponíveis na IU do instalador também podem ser
+especificadas a partir da linha de comando, permitindo que
+instaladores por script repliquem uma instalação em várias máquinas
+sem interação do usuário. Essas opções também podem ser definidas sem
+suprimir a IU para alterar alguns dos padrões.
+
+The following options (found by executing the installer with "/?") can
+be passed into the installer:
+
++-----------------------+----------------------------------------------------------+
+| Nome                  | Descrição                                                |
+|=======================|==========================================================|
+| /passive              | to display progress without requiring user interaction   |
++-----------------------+----------------------------------------------------------+
+| /quiet                | to install/uninstall without displaying any UI           |
++-----------------------+----------------------------------------------------------+
+| /simple               | to prevent user customization                            |
++-----------------------+----------------------------------------------------------+
+| /uninstall            | to remove Python (without confirmation)                  |
++-----------------------+----------------------------------------------------------+
+| /layout [directory]   | to pre-download all components                           |
++-----------------------+----------------------------------------------------------+
+| /log [filename]       | to specify log files location                            |
++-----------------------+----------------------------------------------------------+
+
+Todas as outras opções são passadas como "name=value", onde o valor é
+usualmente "0" para desabilitar o recurso, "1" para ativar o recurso,
+ou um caminho. A lista completa de opções disponíveis é mostrada
+abaixo.
+
++-----------------------------+----------------------------------------+----------------------------+
+| Nome                        | Descrição                              | Default (padrão)           |
+|=============================|========================================|============================|
+| InstallAllUsers (Instalar   | Execute uma instalação em todo o       | 0                          |
+| para Todos usuários)        | sistema.                               |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| TargetDir (Diretório Alvo)  | O diretório de instalação              | Selecionado com base em    |
+|                             |                                        | "Instalar para Todos os    |
+|                             |                                        | Usuários"                  |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultAllUsersTargetDir    | O diretório de instalação padrão para  | "%ProgramFiles%\Python     |
+| (Diretório de Destino       | instalações de todos os usuários       | X.Y" or "%ProgramFiles(x8  |
+| Padrão para Todos os        |                                        | 6)%\Python X.Y"            |
+| usuários)                   |                                        |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultJustForMeTargetDir   | O diretório de instalação padrão para  | "%LocalAppData%\Programs\  |
+| (Diretório Alvo Padrão      | instalações just-for-me                | Python\PythonXY" ou "%Loc  |
+| Apenas Para Mim)            |                                        | alAppData%\Programs\Pytho  |
+|                             |                                        | n\PythonXY-32" ou "%Local  |
+|                             |                                        | AppData%\Programs\Python\  |
+|                             |                                        | PythonXY-64"               |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultCustomTargetDir      | Diretório de instalação personalizado  | (vazio)                    |
+| (Diretório de destino       | padrão exibido na interface do usuário |                            |
+| personalizado padrão)       |                                        |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| AssociateFiles (Arquivos    | Criar associações de arquivos se o     | 1                          |
+| Associados)                 | launcher também estiver instalado.     |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| CompileAll (Compilar Tudo)  | Compile todos os arquivos ".py" para   | 0                          |
+|                             | ".pyc".                                |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| PrependPath (path a ser     | Anexa os diretórios de instalação e    | 0                          |
+| percorrido)                 | Scripts ao início de "PATH" e adiciona |                            |
+|                             | ".PY" a "PATHEXT"                      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| AppendPath                  | Anexa os diretórios de instalação e    | 0                          |
+|                             | Scripts ao final de "PATH" e adiciona  |                            |
+|                             | ".PY" a "PATHEXT"                      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Shortcuts (atalhos)         | Crie atalhos para o interpretador,     | 1                          |
+|                             | documentação e IDLE se instalado.      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_doc                 | Install Python manual (Instalação      | 1                          |
+|                             | Manual do Python)                      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_debug (Incluir o    | Instalar binários de Depuração         | 0                          |
+| Modo de Depuração)          |                                        |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_dev                 | Instala cabeçalhos e bibliotecas do    | 1                          |
+|                             | desenvolvedor. Omitir isso pode levar  |                            |
+|                             | a uma instalação inutilizável.         |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_exe                 | Instala "python.exe" e arquivos        | 1                          |
+|                             | relacionados. Omitir isso pode levar a |                            |
+|                             | uma instalação inutilizável.           |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_launcher            | Instalar Inicializador Python para     | 1                          |
+|                             | Windows.                               |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| InstallLauncherAllUsers     | Instala o iniciador para todos os      | 1                          |
+|                             | usuários. Também requer                |                            |
+|                             | "Include_launcher" para ser definido   |                            |
+|                             | como 1                                 |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_lib                 | Instala a biblioteca padrão e os       | 1                          |
+|                             | módulos de extensão. Omitir isso pode  |                            |
+|                             | levar a uma instalação inutilizável.   |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_pip                 | Instale o pacote pip e setuptools      | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_symbols             | Instala símbolos de depuração          | 0                          |
+|                             | ("*.pdb")                              |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_tcltk               | Instale o suporte Tcl/Tk e o IDLE      | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_test                | Instalar o conjunto de testes da       | 1                          |
+|                             | biblioteca padrão                      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_tools               | Instalar scripts com utilitários       | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| LauncherOnly                | Instala apenas o launcher. Isso        | 0                          |
+|                             | substituirá a maioria das outras       |                            |
+|                             | opções.                                |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| SimpleInstall               | Desativar a maioria das UIs de         | 0                          |
+|                             | instalação                             |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| SimpleInstallDescription    | Uma mensagem personalizada para exibir | (vazio)                    |
+|                             | quando a IU de instalação simplificada |                            |
+|                             | é usada.                               |                            |
++-----------------------------+----------------------------------------+----------------------------+
+
+Por exemplo, para instalar silenciosamente uma instalação de Python
+padrão e em todo o sistema, você pode usar o seguinte comando (a
+partir de um terminal de comando autorizado):
+
+   python-3.9.0.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
+
+Para permitir que usuários instalem facilmente uma cópia do Python sem
+a suíte de testes, você pode fornecer um atalho com o seguinte
+comando. Isso irá exibir uma página inicial simplificado e bloquear a
+personalização:
+
+   python-3.9.0.exe InstallAllUsers=0 Include_launcher=0 Include_test=0
+       SimpleInstall=1 SimpleInstallDescription="Just for me, no test suite."
+
+(Observe que omitir o inicializador também omite associações de
+arquivos, e só é recomendado para instalações por usuários quando
+também existe uma instalação por todo o sistema que inclui o
+inicializador.)
+
+As opções listadas acima também podem ser fornecidas em um arquivo
+chamado "unattend.xml" juntamente com o executável. Esse arquivo
+especifica uma lista de opções e valores. Quando um valor é fornecido
+como um atributo, ele será convertido para um número se possível.
+Valores fornecidos como elementos de texto são sempre deixados como
+strings. Esse arquivo de exemplo define as mesmas opções que o exemplo
+anterior:
+
+   <Options>
+       <Option Name="InstallAllUsers" Value="no" />
+       <Option Name="Include_launcher" Value="0" />
+       <Option Name="Include_test" Value="no" />
+       <Option Name="SimpleInstall" Value="yes" />
+       <Option Name="SimpleInstallDescription">Just for me, no test suite</Option>
+   </Options>
+
+
+4.1.4. Instalando Sem Download
+------------------------------
+
+Como alguns recursos do Python não estão inclusos no download inicial
+do instalador, selecionar esses recursos pode exigir uma conexão com a
+internet. Para evitar isso, todos os possíveis componentes podem ser
+baixados sob demanda para criar um *layout* completo que não irá
+precisar de uma conexão de internet independentemente dos recursos
+selecionados. Note que este download pode ser maior que o necessário,
+mas onde um grande número de instalações serão realizadas é bem útil
+ter uma cópia em cache local.
+
+Execute o seguinte comando a partir do Prompt de Comando para fazer o
+download de todos os possíveis arquivos necessários. Lembre-se de
+substituir "python-3.9.0.exe" pelo nome real do seu instalador, e de
+criar layouts nos respectivos diretórios para evitar colisão entre
+arquivos com o mesmo nome.
+
+   python-3.9.0.exe /layout [optional target directory]
+
+Você também pode especificar a opção "/quiet" para esconder o
+acompanhamento de progresso.
+
+
+4.1.5. Modificando uma instalação
+---------------------------------
+
+Uma vez que o Python foi instalado, você pode adicionar ou remover
+recursos através da ferramenta Programas e Recursos que é parte do
+Windows. Selecione o registro do Python e escolha "Uninstall/Change"
+para abrir o instalador no modo de manutenção.
+
+"Modify" permite que você adicione ou remova recursos modificando as
+caixas de entrada - caixas de entrada não modificadas não irão
+instalar ou remover nada. Algumas opções não podem ser modificadas
+dessa forma, como o diretório de instalação; para modificá-las, você
+precisará remover e então reinstalar o Python completamente.
+
+"Repair" irá verificar todos os arquivos que devem ser instalados
+usando as configurações atuais e substituir qualquer um que tiver sido
+removido ou modificado.
+
+"Uninstall" irá remover o Python completamente, com a exceção do
+Inicializador Python para Windows, que tem seu próprio registro nos
+Programas e Recursos.
+
+
+4.2. O pacote Microsoft Store
+=============================
+
+Novo na versão 3.7.2.
+
+O pacote Microsoft Store é um interpretador Python facilmente
+instalável criado principalmente para uso interativo, por exemplo, por
+estudantes.
+
+Para instalar o pacote, certifique-se de que você possui as últimas 10
+atualizações do Windows e procure o app "Python 3.12" na Microsoft
+Store. Certifique-se que o app que você selecionou foi publicado pela
+Python Software Foundation, e instale-o.
+
+Aviso:
+
+  Python sempre estará disponível gratuitamente na Microsoft Store. Se
+  você for solicitado a pagar por ele, você não selecionou o pacote
+  correto.
+
+Após a instalação, o Python pode ser inicializado por pesquisa no menu
+Iniciar. Alternativamente, ele estará disponível a partir de qualquer
+Prompt de Comando ou sessão PowerShell apenas digitando "python". Além
+disso, o pip e a IDLE podem ser usados digitando "pip" ou "idle". A
+IDLE também pode ser encontrada no menu Iniciar.
+
+Todos os três comandos também estão disponíveis com sufixos do número
+da versão, por exemplo, como em "python3.exe" e "python3.x.exe" bem
+como "python.exe" (onde "3.x" é a versão específica que você quer
+iniciar, como a 3.12). Abra o "Gerenciar aliases de execução de
+aplicativo" através do menu Iniciar para selecionar qual versão do
+Python está associada com cada comando. É recomendado que você se
+certifique que "pip" e "idle" são consistentes com qualquer versão do
+"python" que seja selecionada.
+
+Ambientes virtuais podem ser criados com "python -m venv" e ativados e
+usados normalmente.
+
+Se você instalou outra versão do Python e adicionou ela à sua variável
+"PATH", ela estará disponível com "python.exe" ao invés de uma
+instalada pela Microsoft Store. Para acessar a nova instalação, use
+"python3.exe" ou "python3.x.exe".
+
+O instalador "py.exe" irá detectar essa instalação do Python, mas irá
+preferir instalações feitas pelo instalador tradicional.
+
+Para remover o Python, abra as Configurações e use Aplicativos e
+Recursos, ou encontre o Python no menu Iniciar e clique com o botão
+direito para selecionar Desinstalar. A desinstalação irá remover todos
+os pacotes que você instalou diretamente dentro dessa instalação do
+Python, mas não irá remover nenhum ambiente virtual.
+
+
+4.2.1. Problemas conhecidos
+---------------------------
+
+
+4.2.1.1. Redirecionamento de dados locais, registro e caminhos temporários
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Por causa de restrições nos aplicativos da Microsoft Store, scripts
+Python podem não ter acesso de escrita completo em locais
+compartilhados como "TEMP" ou o registro. Ao invés disso, ele irá
+escrever uma cópia privada. Se seus scripts precisam modificar locais
+compartilhados, você terá que instalar o instalador completo.
+
+No tempo de execução, o Python usará uma cópia privada de pastas
+conhecidas do Windows e do registro. Por exemplo, se a variável de
+ambiente "%APPDATA%" for "c:\Users\<user>\AppData\", ao gravar em
+"C:\Users\<user>\AppData\Local" gravará em "C:\Users\<user>\AppData\L
+ocal\Packages\PythonSoftwareFoundation.Python.3.8_qbz5n2kfra8p0\Local
+Cache\Local\"
+
+Ao ler arquivos, o Windows retornará o arquivo da pasta privada ou, se
+não existir, o diretório real do Windows. Por exemplo, ler
+"C:\Windows\System32" retorna o conteúdo de "C:\Windows\System32" mais
+o conteúdo de "C:\Program Files\WindowsApps
+\nome_pacote\VFS\SystemX86".
+
+Você pode encontrar o caminho real de qualquer arquivo existente
+usando "os.path.realpath()":
+
+   >>> import os
+   >>> test_file = 'C:\\Users\\example\\AppData\\Local\\test.txt'
+   >>> os.path.realpath(test_file)
+   'C:\\Users\\example\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.8_qbz5n2kfra8p0\\LocalCache\\Local\\test.txt'
+
+Ao gravar no Registro do Windows, existem os seguintes comportamentos:
+
+* A leitura de "HKLM\\Software" é permitida e os resultados são
+  mesclados com o arquivo "registry.dat" no pacote.
+
+* Gravar em "HKLM\\Software" não é permitido se a chave/valor
+  correspondente existir, ou seja, modificar chaves existentes.
+
+* Gravar em "HKLM\\Software" é permitido desde que uma chave/valor
+  correspondente não exista no pacote e o usuário tenha as permissões
+  de acesso corretas.
+
+Para obter mais detalhes sobre a base técnica dessas limitações,
+consulte a documentação da Microsoft sobre aplicativos de confiança
+total empacotados, atualmente disponíveis em docs.microsoft.com/pt-
+br/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
+
+
+4.3. Os pacotes nuget.org
+=========================
+
+Novo na versão 3.5.2.
+
+O pacote nuget.org é um ambiente Python de tamanho reduzido criado
+para uso em integração contínua e construção de sistemas que não
+precisam de uma instalação de Python por todo o sistema da máquina.
+Enquanto nuget é o "gerenciador de pacotes para .NET", ele também
+funciona perfeitamente bem para pacotes contendo ferramentas em tempo
+de construção.
+
+Visite nuget.org para informações mais atualizadas sobre utilização do
+nuget. A seguir está um sumário que é suficiente para desenvolvedores
+Python.
+
+A ferramenta de linha de comando "nuget.exe" pode ser baixada
+diretamente de "https://aka.ms/nugetclidl", por exemplo, usando o curl
+ou PowerShell. Com a ferramenta, a versão mais recente do Python para
+máquinas 64-bit ou 32-bit é instalada usando:
+
+   nuget.exe install python -ExcludeVersion -OutputDirectory .
+   nuget.exe install pythonx86 -ExcludeVersion -OutputDirectory .
+
+Para selecionar uma versão específica, adicione "-Version 3.x.y". O
+diretório de saída pode ser mudado de ".", e o pacote será instalado
+em um subdiretório. Por padrão, o subdiretório é nomeado igual ao
+pacote, e sem a opção "-ExcludeVersion" esse nome irá incluir a versão
+específica instalada. Dentro do subdiretório está um diretório "tools"
+que contém a instalação do Python:
+
+   # Without -ExcludeVersion
+   > .\python.3.5.2\tools\python.exe -V
+   Python 3.5.2
+
+   # With -ExcludeVersion
+   > .\python\tools\python.exe -V
+   Python 3.5.2
+
+Em geral, pacotes nuget não são atualizáveis, e novas versões devem
+ser instaladas lado-a-lado e referenciadas usando o caminho completo.
+Alternativamente, delete o diretório do pacote manualmente e instale
+novamente. Muitos sistemas CI irão fazer isso automaticamente se eles
+não preservam arquivos entre construções de projetos.
+
+Juntamente com o diretório "tools" está o diretório "build\native".
+Ele contém um arquivo de propriedades MSBuild "python.props" que pode
+ser usado em um projeto C++ para referenciar a instalação do Python.
+Incluir as configurações irá automaticamente usar os cabeçalhos e
+importar as bibliotecas na sua construção de projeto.
+
+As páginas de informação dos pacotes em nuget.org são
+www.nuget.org/packages/python para a versão 64-bit e
+www.nuget.org/packages/pythonx86 para a versão 32-bit.
+
+
+4.4. O pacote embutível
+=======================
+
+Novo na versão 3.5.
+
+A distribuição embutida é um arquivo ZIP contendo um ambiente Python
+mínimo. Ela foi criada para atuar como parte de outra aplicação, ao
+invés de ser diretamente acessada por usuários finais.
+
+Quando extraída, a distribuição embutida é (quase) completamente
+isolada do sistema do usuário, incluindo variáveis de ambiente,
+configurações de registro de sistema, e pacotes instalados. A
+biblioteca padrão está inclusa como arquivos ".pyc" pré-compilados e
+otimizados em um ZIP, e "python3.dll", "python37.dll", "python.exe" e
+"pythonw.exe" estão todos disponíveis. Tcl/tk (incluindo todas as
+dependências, como a Idle), pip e a documentação do Python não estão
+inclusos.
+
+Nota:
+
+  A distribuição embutida não inclui o Microsoft C Runtime e é de
+  responsabilidade do instalador da aplicação providenciar isso. O
+  aplicativo de tempo de execução pode já ter sido instalado no
+  sistema de um usuário previamente ou automaticamente via Windows
+  Update, e pode ser detectado procurando por "ucrtbase.dll" no
+  diretório do sistema.
+
+Pacotes de terceiros devem ser instalados pelo instalador da aplicação
+juntamente com a distribuição embutida. Usar o pip para gerenciar as
+dependências como em uma instalação regular do Python não é suportado
+nessa distribuição, apesar de que com algum cuidado pode ser possível
+incluir e usar o pip para atualizações automáticas. Em geral, pacotes
+de terceiros devem ser tratados como parte da aplicação ("vendoring")
+para que o desenvolvedor consiga garantir compatibilidade com versões
+mais recentes antes de fornecer atualizações para os usuários.
+
+Os dois casos de uso recomendados para essa distribuição são descritos
+abaixo.
+
+
+4.4.1. Aplicação Python
+-----------------------
+
+Uma aplicação escrita em Python não requer necessariamente que os
+usuários estejam cientes deste fato. A distribuição embutida pode ser
+usada neste caso para incluir uma versão privada do pacote de
+instalação do Python. Dependendo de quão transparente deve ser (ou
+pelo contrário, quão profissional deve parecer), existem duas opções.
+
+Usar um executável especializado como inicializador requer um pouco de
+código, mas fornece a experiência mais transparente para os usuários.
+Com um inicializador personalizado, não existem indicações óbvias que
+o programa está rodando em Python: ícones podem ser personalizados,
+informações da empresa e versão podem ser especificadas, e associações
+de arquivo se comportam de forma apropriada. Na maioria dos casos, um
+inicializador personalizado deve simplesmente ser capaz de chamar
+"Py_Main" com uma linha de comando predefinida (hard-coded).
+
+A abordagem mais simples é fornecer um arquivo batch ou um atalho
+gerado que chama diretamente o "python.exe" ou "pythonw.exe" com os
+argumentos de linha de comando necessários. Neste caso, a aplicação
+irá aparecer como Python e não seu nome real, e os usuários podem ter
+problemas em distinguir ela de outros processos ou associações de
+arquivo em Python.
+
+Com a abordagem anterior, pacotes devem ser instalados como diretórios
+juntamente do executável do Python para garantir que estarão
+disponíveis no caminho do ambiente. Com o instalador especializado,
+pacotes podem ser armazenados em outras localidades já que há uma
+oportunidade de especificar o caminho de busca antes de executar a
+aplicação.
+
+
+4.4.2. Incorporando Python
+--------------------------
+
+Aplicações escritas em código nativo frequentemente precisam de alguma
+forma de linguagem de script, e a distribuição embutida do Python pode
+ser usada para esse propósito. Em geral, a maior parte da aplicação é
+em código nativo, e uma parte irá ou invocar "python.exe" ou usar
+diretamente "python3.dll". Para ambos os casos, extrair a distribuição
+embutida em um subdiretório da instalação da aplicação é suficiente
+para providenciar um interpretador Python carregável.
+
+Para uso da aplicação, pacotes podem ser instalados em qualquer local
+já que há uma oportunidade de especificar caminhos de busca antes de
+inicializar o interpretador. De outra forma, não existem diferenças
+fundamentais entre usar a distribuição embutida ou a instalação
+regular.
+
+
+4.5. Pacotes Alternativos
+=========================
+
+À parte da distribuição padrão CPython, existem pacotes modificados
+incluindo funcionalidades adicionais. A seguir está uma lista de
+versões populares e seus recursos chave:
+
+ActivePython
+   Instalador com compatibilidade multi-plataforma, documentação,
+   PyWin32
+
+Anaconda
+   Módulos científicos populares (como o numpy, scipy e pandas) e o
+   gerenciador de pacotes "conda".
+
+Enthought Deployment Manager
+   "A próxima geração de ambiente Python e gerenciador de pacotes".
+
+   Anteriormente, a Enthought fornecia Canopy, mas este chegou ao fim
+   de vida em 2016.
+
+WinPython
+   Distribuição específica do Windows com pacotes científicos
+   pré-construídos e ferramentas para construir pacotes.
+
+Note que esses pacotes podem não incluir as últimas versões do Python
+ou outras bibliotecas, e não são mantidos ou suportados pelo time do
+núcleo do Python.
+
+
+4.6. Configurando o Python
+==========================
+
+Para executar o Python convenientemente de um prompt de comando, você
+pode considerar mudar algumas variáveis de ambiente padrão do Windows.
+Ainda que o instalador forneça uma opção para configurar as variáveis
+PATH e PATHEXT para você, isso só é confiável para uma instalação
+única e global no sistema. Se você usa regularmente múltiplas versões
+do Python, considere usar o Inicializador Python para Windows.
+
+
+4.6.1. Excursus: Configurando variáveis de ambiente
+---------------------------------------------------
+
+O Windows permite que variáveis de ambiente sejam configuradas de
+forma permanente em ambos os níveis de Usuário e de Sistema, ou
+temporariamente em um prompt de comando.
+
+Para definir as variáveis de ambiente temporariamente, abra um Prompt
+de Comando e use o comando **set**:
+
+   C:\>set PATH=C:\Program Files\Python 3.9;%PATH%
+   C:\>set PYTHONPATH=%PYTHONPATH%;C:\My_python_lib
+   C:\>python
+
+Essas mudanças serão aplicadas em quaisquer comandos posteriores que
+forem executados neste console, e serão herdadas por quaisquer
+aplicações iniciadas pelo console.
+
+Incluir o nome da variável com sinais de porcentagem irá expandir o
+valor existente, permitindo que você adicione seu novo valor ao início
+ou final. Modificar o "PATH" adicionando o diretório contendo
+**python.exe** ao início é o modo mais comum de garantir que a versão
+correta do Python seja iniciada.
+
+Para modificar permanentemente as variáveis de ambiente padrão, clique
+em Iniciar e procure por 'Editar as variáveis de ambiente do sistema`,
+ou abra as propriedades do Sistema, Configurações avançadas do sistema
+e clique no botão Variáveis de Ambiente. Neste diálogo, você pode
+adicionar ou modificar as variáveis de Usuário ou Sistema. Para mudar
+as variáveis do Sistema, você precisa de acesso não-restrito à sua
+máquina (isto é, direitos de Administrador).
+
+Nota:
+
+  O Windows irá concatenar as variáveis de Usuário *após* as variáveis
+  de Sistema, o que pode causar resultados inesperados quando
+  modificando o "PATH".A variável "PYTHONPATH" é usada por todas as
+  versões do Python, portanto, você não deve configurá-la
+  permanentemente, a menos que os caminhos listados incluam apenas
+  código compatível com todas as versões instaladas do Python.
+
+Ver também:
+
+  https://docs.microsoft.com/en-us/windows/win32/procthread
+  /environment-variables
+     Visão geral das variáveis de ambiente no Windows
+
+  https://docs.microsoft.com/en-us/windows-server/administration
+  /windows-commands/set_1
+     O comando "set", para modificar temporariamente as variáveis de
+     ambiente
+
+  https://docs.microsoft.com/en-us/windows-server/administration
+  /windows-commands/setx
+     O comando "setx", para modificar permanentemente as variáveis de
+     ambiente
+
+
+4.6.2. Encontrando o executável do Python
+-----------------------------------------
+
+Alterado na versão 3.5.
+
+Além de usar o registro do menu Iniciar criado automaticamente para o
+interpretador do Python, você pode querer iniciar o Python no prompt
+de comando. O instalador possui uma opção para configurar isso pra
+você.
+
+Na primeira página do instalador, uma opção chamada "Add Python to
+PATH" pode ser selecionada para que o instalador adicione o local de
+instalação na sua variável "PATH". O local da pasta de "Scripts\"
+também é adicionado. Isso permite que você digite **python** para
+executar o interpretador, e **pip** para o instalador de pacotes. Além
+disso, você pode também executar seus scripts com as opções de linha
+de comando, veja a documentação Linha de comando.
+
+Se você não habilitar essa opção no momento de instalação, você sempre
+pode re-executar o instalador, selecionar Modify, e habilitá-la.
+Alternativamente, você pode modificar manualmente a variável "PATH"
+usando os direcionamentos em Excursus: Configurando variáveis de
+ambiente. Você precisa definir sua variável de ambiente "PATH" para
+incluir o diretório da sua instalação Python, delimitado por um ponto
+e vírgula de outras entradas. Uma variável exemplo pode parecer com
+isso (assumindo que as duas primeiras entradas já existem):
+
+   C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\Python 3.9
+
+
+4.7. Modo UTF-8
+===============
+
+Novo na versão 3.7.
+
+O Windows ainda usa codificações legadas para a codificação do sistema
+(a Página de Código ANSI). O Python usa-o para a codificação padrão de
+arquivos de texto (por exemplo, "locale.getencoding()").
+
+Isso pode causar problemas, porque o UTF-8 é amplamente usado na
+Internet e na maioria dos sistemas Unix, incluindo o WSL (Subsistema
+Windows para Linux).
+
+Você pode usar o Modo UTF-8 do Python para alterar a codificação de
+texto padrão para UTF-8. Você pode habilitar Modo UTF-8 do Python
+através da opção de linha de comando "-X utf8" ou da variável de
+ambiente "PYTHONUTF8=1". Veja "PYTHONUTF8" para habilitar o modo
+UTF-8, e Excursus: Configurando variáveis de ambiente para saber como
+modificar variáveis de ambiente.
+
+Quando o Modo UTF-8 do Python está habilitado, você ainda pode usar a
+codificação do sistema (a página de código ANSI) através do codec
+"mbcs".
+
+Observe que adicionar "PYTHONUTF8=1" às variáveis de ambiente padrão
+afetará todas as aplicações Python 3.7+ em seu sistema. Se você tiver
+aplicações Python 3.7+ que dependem da codificação do sistema legado,
+é recomendável definir a variável de ambiente temporariamente ou usar
+a opção de linha de comando "-X utf8".
+
+Nota:
+
+  Mesmo quando o modo UTF-8 está desativado, o Python usa o UTF-8 por
+  padrão no Windows para:
+
+  * E/S do console, incluindo E/S padrão (consulte **PEP 528** para
+    detalhes).
+
+  * A *codificação do sistema de arquivos* (veja a **PEP 529** para
+    detalhes).
+
+
+4.8. Inicializador Python para Windows
+======================================
+
+Novo na versão 3.3.
+
+O inicializador Python para Windows é um utilitário que auxilia na
+localização e execução de diferentes versões do Python. Ele permite
+que scripts (ou a linha de comando) indiquem uma preferência por uma
+versão do Python específica, e irá localizar e executar essa versão.
+
+Ao contrário da variável "PATH", o inicializador irá corretamente
+selecionar a versão mais apropriada do Python. Ele irá preferir
+instalações por usuário ao invés de instalações globais no sistema, e
+ordenará por versão da linguagem ao invés de usar a versão instalada
+mais recentemente.
+
+O inicializador foi originalmente especificado na **PEP 397**.
+
+
+4.8.1. Começando
+----------------
+
+
+4.8.1.1. Pela linha de comando
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alterado na versão 3.6.
+
+Instalações globais no sistema do Python 3.3 ou posterior irão colocar
+o inicializador no seu "PATH". O inicializador é compatível com todas
+as versões disponíveis do Python, então não importa qual versão está
+instalada. Para verificar se o inicializador está disponível, execute
+o seguinte comando no Prompt de Comando:
+
+   py
+
+Você deve perceber que a última versão do Python que você tem é
+iniciada - ela pode ser fechada normalmente, e qualquer argumento da
+linha de comando adicional especificado será enviado diretamente para
+o Python.
+
+Se você tem múltiplas versões do Python instaladas (por exemplo, 3.7 e
+3.12) você deve ter notado que o Python 3.12 foi iniciado -- para
+iniciar o Python 3.7, use o comando:
+
+   py -3.7
+
+Se você quer a versão mais recente do Python 2 que você tem instalada,
+tente o comando:
+
+   py -2
+
+Se você ver o seguinte erro, você não tem o inicializador instalado:
+
+   'py' is not recognized as an internal or external command,
+   operable program or batch file.
+
+O comando:
+
+   py --list
+
+exibe a(s) versão(ões) atualmente instalada(s) do Python.
+
+O argumento "-x.y" é a forma abreviada do argumento "-V:Empresa/Tag",
+que permite selecionar um tempo de execução Python específico,
+incluindo aqueles que podem ter vindo de algum lugar diferente de
+python.org. Qualquer tempo de execução registrado seguindo a **PEP
+514** será detectável. O comando "--list" lista todos os tempos de
+execução disponíveis usando o formato "-V:".
+
+Ao usar o argumento "-V:", especificar a Empresa limitará a seleção
+aos tempos de execução desse provedor, enquanto especificar apenas a
+Tag selecionará de todos os provedores. Observe que omitir a barra
+implica uma tag:
+
+   # Select any '3.*' tagged runtime
+   py -V:3
+
+   # Select any 'PythonCore' released runtime
+   py -V:PythonCore/
+
+   # Select PythonCore's latest Python 3 runtime
+   py -V:PythonCore/3
+
+A forma abreviada do argumento ("-3") só seleciona a partir de versões
+principais do Python, e não de outras distribuições. No entanto, a
+forma mais longa ("-V:3") selecionará qualquer um.
+
+A Empresa é correspondida na string completa, sem distinção entre
+maiúsculas e minúsculas. A Tag corresponde a uma string completa ou a
+um prefixo, desde que o próximo caractere seja um ponto ou um hífen.
+Isso permite que "-V:3.1" corresponda a "3.1-32", mas não a "3.10". As
+tags são classificadas usando ordenação numérica ("3.10" é mais
+recente que "3.1"), mas são comparadas usando texto ("-V:3.01" não
+corresponde a "3.1").
+
+
+4.8.1.2. Ambientes virtuais
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Novo na versão 3.5.
+
+Se o inicializador é executado sem versão explícita do Python
+especificada, e um ambiente virtual (criado com o módulo da biblioteca
+padrão "venv" ou da ferramenta externa "virtualenv") está ativo, o
+inicializador irá executar o interpretador do ambiente virtual ao
+invés do global. Para executar o interpretador global, ou desative o
+ambiente virtual, ou explicitamente especifique a versão global do
+Python.
+
+
+4.8.1.3. Por um script
+~~~~~~~~~~~~~~~~~~~~~~
+
+Vamos criar um script teste de Python - crie um arquivo chamado
+"hello.py" com os seguintes conteúdos:
+
+   #! python
+   import sys
+   sys.stdout.write("hello from Python %s\n" % (sys.version,))
+
+A partir do diretório onde hello.py está, execute o comando:
+
+   py hello.py
+
+Você deve notar que o número da versão da sua instalação mais recente
+do Python 2.x é exibido. Agora tente mudar a primeira linha para ser:
+
+   #! python3
+
+Re-executar o comando agora deve exibir informações da última versão
+do Python 3.x. Como nos exemplos da linha de comando acima, você pode
+especificar um qualificador de versão mais explícito. Assumindo que
+você tem o Python 3.7 instalado, tente mudar a primeira linha para "#!
+python3.7" e você deve ver as informações da versão 3.7 sendo
+exibidas.
+
+Note que diferentemente do uso interativo, um simples "python" irá
+usar a última versão do Python 2.x que você tem instalada. Isso é para
+retrocompatibilidade e para compatibilidade com Unix, onde o comando
+"python" tipicamente se refere ao Python 2.
+
+
+4.8.1.4. Por associação de arquivos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O inicializador deve ter sido associado com arquivos Python (isto é,
+arquivos ".py", ".pyw", ".pyc") quando foi instalado. Isso significa
+que quando você clica duas vezes em um desses arquivos a partir do
+Explorador de Arquivos do Windows o inicializador será usado, e assim
+você pode usar as mesmas facilidades descritas acima para que o script
+especifique qual versão deve ser usada.
+
+O benefício chave disso é que um único inicializador pode suportar
+múltiplas versões do Python ao mesmo tempo dependendo dos conteúdos da
+primeira linha.
+
+
+4.8.2. Linhas Shebang
+---------------------
+
+Se a primeira linha de um arquivo de script começa com "#!", ela é
+conhecida como linha "shebang". Linux e outros tipos de sistemas
+operacionais Unix têm suporte nativo para essas linhas e elas são
+comumente usadas nesses sistemas para indicar como um script deve ser
+executado. Esse inicializador permite que as mesmas facilidades sejam
+usadas com scripts Python no Windows e os exemplos acima demonstram
+seu uso.
+
+Para permitir que linhas shebang em scripts Python sejam portáveis
+entre Unix e Windows, este inicializador suporta um número de comandos
+'virtuais' para especificar qual interpretador deve ser usado. Os
+comandos virtuais suportados são:
+
+* "/usr/bin/env"
+
+* "/usr/bin/python"
+
+* "/usr/local/bin/python"
+
+* "python"
+
+Por exemplo, se a primeira linha do seu script começa com
+
+   #! /usr/bin/python
+
+O Python padrão será localizado e utilizado. Como muitos scripts
+Python escritos para funcionar no Unix já terão essa linha, você deve
+perceber que esses scripts podem ser usados pelo inicializador sem
+modificação. Se você está escrevendo um novo script no Windows que
+você espera que seja útil no Unix, você deve usar uma dessas linhas
+shebang começando com "/usr".
+
+Qualquer um dos comandos virtuais acima pode ser sufixado com uma
+versão explícita (ou apenas a maior versão, ou a maior e a menor
+versão). Além disso, a versão de 32 bits pode ser solicitada
+adicionando "-32" após a menor versão. Isto é, "/usr/bin/python3.7-32"
+irá solicitar o uso do python 2.7 32-bit.
+
+Novo na versão 3.7: A partir do inicializador do python 3.7 é possível
+solicitar a versão 64-bit adicionando o sufixo "-64". Além disso é
+possível especificar uma versão maior e arquitetura sem a menor (isto
+é, "/usr/bin/python3-64").
+
+Alterado na versão 3.11: The "-64" suffix is deprecated, and now
+implies "any architecture that is not provably i386/32-bit". To
+request a specific environment, use the new "-V:*TAG*" argument with
+the complete tag.
+
+A forma "/usr/bin/env" da linha shebang tem mais uma propriedade
+especial. Antes de procurar por interpretadores Python instalados,
+este formulário pesquisará o executável "PATH" por um executável
+Python correspondente ao nome fornecido como o primeiro argumento.
+Isso corresponde ao comportamento do programa Unix "env", que executa
+uma pesquisa "PATH". Se um executável correspondente ao primeiro
+argumento após o comando "env" não puder ser encontrado, mas o
+argumento começar com "python", ele será tratado conforme descrito
+para os outros comandos virtuais. A variável de ambiente
+"PYLAUNCHER_NO_SEARCH_PATH" pode ser definida (para qualquer valor)
+para ignorar esta pesquisa de "PATH".
+
+As linhas Shebang que não correspondem a nenhum desses padrões são
+procuradas na seção "[commands]" do arquivo .INI do lançador. Isso
+pode ser usado para lidar com certos comandos de uma maneira que faça
+sentido para o seu sistema. O nome do comando deve ser um único
+argumento (sem espaços no executável shebang) e o valor substituído é
+o caminho completo para o executável (argumentos adicionais
+especificados no .INI serão citados como parte do nome do arquivo).
+
+   [commands]
+   /bin/xpython=C:\Program Files\XPython\python.exe
+
+Quaisquer comandos não encontrados no arquivo .INI são tratados como
+caminhos executáveis do **Windows** que são absolutos ou relativos ao
+diretório que contém o arquivo de script. Isso é uma conveniência para
+scripts somente do Windows, como aqueles gerados por um instalador,
+pois o comportamento não é compatível com shells de estilo Unix. Esses
+caminhos podem ser citados e podem incluir vários argumentos, após os
+quais o caminho para o script e quaisquer argumentos adicionais serão
+anexados.
+
+
+4.8.3. Argumentos em linhas shebang
+-----------------------------------
+
+As linhas shebang também podem especificar opções adicionais a serem
+passadas ao interpretador Python. Por exemplo, se você tem uma linha
+shebang:
+
+   #! /usr/bin/python -v
+
+O Python será iniciado com a opção "-v"
+
+
+4.8.4. Personalização
+---------------------
+
+
+4.8.4.1. Personalização via arquivos INI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Dois arquivos .ini serão pesquisados pelo inicializador - "py.ini" no
+diretório de dados de aplicações do usuário atual ("%LOCALAPPDATA%" ou
+"$env:LocalAppData") e "py.ini" no mesmo diretório que o
+inicializador. Os mesmos arquivos .ini são usados para ambas a versão
+'console' do inicializador (isto é, py.exe) e a versão 'windows' (isto
+é, pyw.exe).
+
+Personalização especificada no "diretório da aplicação" terão
+precedência sobre àquela especificada junto do executável, portanto um
+usuário, que pode não ter acesso de escrita ao arquivo .ini junto do
+inicializador, pode sobrescrever comandos naquele arquivo .ini global.
+
+
+4.8.4.2. Personalizando versões padrão do Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Em alguns casos, um qualificador de versão pode ser incluído em um
+comando para ditar qual versão do Python deve ser usada pelo comando.
+Um qualificador de versão começa com um número maior de versão e pode
+opcionalmente ser seguido por um ponto ('.') e uma especificação de
+versão menor. Além disso, é possível especificar se uma implementação
+de 32 ou 64 bit deve ser solicitada adicionando "-32" ou "-64".
+
+Por exemplo, uma linha shebang "#!python" não tem qualificador de
+versão, enquanto "#!python3" tem um qualificador de versão que
+especifica apenas uma versão maior.
+
+Se nenhum qualificador de versão é encontrado em um comando, a
+variável de ambiente "PY_PYTHON" pode ser definida para especificar o
+qualificador de versão padrão. Se ela não está definida, o padrão é
+"3". A variável pode especificar qualquer valor que pode ser passado
+para a linha de comando, como "3", "3.7", "3.7-32" ou "3.7-64". (Note
+que a opção "-64" está disponível apenas com o inicializador incluso
+no Python 3.7 ou mais recente.)
+
+Se nenhum qualificador de versão menor é encontrado, a variável de
+ambiente "PY_PYTHON{major}" (onde "{major}" é o qualificador da versão
+maior atual, como determinado acima) pode ser definida para
+especificar a versão completa. Se nenhuma opção é encontrada, o
+inicializador irá enumerar as versões do Python instaladas e usar a
+última versão menor encontrada como versão maior, o que é
+provavelmente, ainda que não garantido, a versão instalada mais
+recentemente naquela família.
+
+Em um Windows 64-bit com ambas as implementações de 32-bit e 64-bit da
+mesma (maior.menor) versão do Python instaladas, a versão 64-bit
+sempre será preferida. Isso será verdadeiro para ambas as
+implementações de 32-bit e 64-bit do inicializador - um inicializador
+32-bit irá preferir executar uma instalação 64-bit do Python da versão
+especificada, se disponível. Isso é para que o comportamento do
+inicializador possa ser previsto sabendo apenas quais versões estão
+instaladas no PC e sem considerar a ordem com que elas foram
+instaladas (isto é, sem saber se a última a ser instalada foi a versão
+32 ou 64-bit do Python e do instalador correspondente). Como observado
+acima, um sufixo opcional "-32" ou "-64" pode ser usado como
+especificador de versão para mudar esse comportamento.
+
+Exemplos:
+
+* Se nenhuma opção relevante for definida, os comandos "python" e
+  "python2" irão usar a última versão instalada do Python 2.x e o
+  comando "python3" irá usar o último Python 3.x instalado.
+
+* O comando "python3.7" não vai consultar nenhuma opção já que as
+  versões estão completamente especificadas.
+
+* Se "PY_PYTHON=3", os comandos "python" e "python3" irão ambos usar a
+  última versão do Python 3 instalada.
+
+* Se "PY_PYTHON=3.7-32", o comando "python" irá usar a implementação
+  32 bits do 3.7 enquanto o comando "python3" irá usar o último Python
+  instalado (PY_PYTHON não foi considerado porque uma versão maior foi
+  especificada).
+
+* Se "PY_PYTHON=3" e "PY_PYTHON3=3.7", os comandos "python" e
+  "python3" irão ambos usar especificamente 3.7
+
+Em adição às variáveis de ambiente, as mesmas configurações podem ser
+feitas no arquivo .INI usado pelo inicializador. A seção nos arquivos
+INI é chamada "[defaults]" e o nome da chave será o mesmo que as
+variáveis de ambiente sem o prefixo "PY_" (e observe que os nomes das
+chaves no arquivo INI não diferem maiúsculas e minúsculas). Os
+conteúdos de uma variável de ambiente irão sobrescrever coisas
+especificadas em um arquivo INI.
+
+Por exemplo:
+
+* Configurar "PY_PYTHON=3.7" é o equivalente ao arquivo INI contendo:
+
+   [defaults]
+   python=3.7
+
+* Configurar "PY_PYTHON=3" e "PY_PYTHON3=3.7" é o equivalente ao
+  arquivo INI contendo:
+
+   [defaults]
+   python=3
+   python3=3.7
+
+
+4.8.5. Diagnósticos
+-------------------
+
+Se uma variável de ambiente "PYLAUNCHER_DEBUG" é configurada (para
+qualquer valor), o inicializador irá exibir a informação de
+diagnóstico do stderr (isto é, no console). Enquanto essa informação
+consegue ser simultaneamente verbosa *e* concisa, ela deve permitir
+que você veja quais versões do Python foram localizadas, porquê uma
+versão particular foi escolhida e qual linha de comando exatamente foi
+usada para executar o Python alvo. Destina-se principalmente para
+testes e depuração.
+
+
+4.8.6. Dry Run
+--------------
+
+If an environment variable "PYLAUNCHER_DRYRUN" is set (to any value),
+the launcher will output the command it would have run, but will not
+actually launch Python. This may be useful for tools that want to use
+the launcher to detect and then launch Python directly. Note that the
+command written to standard output is always encoded using UTF-8, and
+may not render correctly in the console.
+
+
+4.8.7. Install on demand
+------------------------
+
+If an environment variable "PYLAUNCHER_ALLOW_INSTALL" is set (to any
+value), and the requested Python version is not installed but is
+available on the Microsoft Store, the launcher will attempt to install
+it. This may require user interaction to complete, and you may need to
+run the command again.
+
+An additional "PYLAUNCHER_ALWAYS_INSTALL" variable causes the launcher
+to always try to install Python, even if it is detected. This is
+mainly intended for testing (and should be used with
+"PYLAUNCHER_DRYRUN").
+
+
+4.8.8. Return codes
+-------------------
+
+The following exit codes may be returned by the Python launcher.
+Unfortunately, there is no way to distinguish these from the exit code
+of Python itself.
+
+The names of codes are as used in the sources, and are only for
+reference. There is no way to access or resolve them apart from
+reading this page. Entries are listed in alphabetical order of names.
+
++---------------------+---------+-------------------------------------------------+
+| Nome                | Valor   | Descrição                                       |
+|=====================|=========|=================================================|
+| RC_BAD_VENV_CFG     | 107     | A "pyvenv.cfg" was found but is corrupt.        |
++---------------------+---------+-------------------------------------------------+
+| RC_CREATE_PROCESS   | 101     | Failed to launch Python.                        |
++---------------------+---------+-------------------------------------------------+
+| RC_INSTALLING       | 111     | An install was started, but the command will    |
+|                     |         | need to be re-run after it completes.           |
++---------------------+---------+-------------------------------------------------+
+| RC_INTERNAL_ERROR   | 109     | Unexpected error. Please report a bug.          |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_COMMANDLINE   | 108     | Unable to obtain command line from the          |
+|                     |         | operating system.                               |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_PYTHON        | 103     | Unable to locate the requested version.         |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_VENV_CFG      | 106     | A "pyvenv.cfg" was required but not found.      |
++---------------------+---------+-------------------------------------------------+
+
+
+4.9. Encontrando módulos
+========================
+
+These notes supplement the description at The initialization of the
+sys.path module search path with detailed Windows notes.
+
+Quando nenhum arquivo "._pth" é encontrado, assim é como "sys.path" é
+populado no Windows:
+
+* Uma entrada em branco é adicionada ao início, que corresponde ao
+  diretório atual.
+
+* Se a variável de ambiente "PYTHONPATH" existe, como descrito em
+  Variáveis de ambiente, suas entradas são adicionadas em seguida.
+  Note que no Windows, caminhos nessa variável devem ser separados por
+  ponto e vírgula, para distinguir eles dos dois pontos usados nos
+  identificadores de drivers ("C:\" etc.).
+
+* "Caminhos da aplicação" adicionais podem ser adicionados ao registro
+  como subchaves de "\SOFTWARE\Python\PythonCore{version}\PythonPath"
+  sob ambas "HKEY_CURRENT_USER" e "HKEY_LOCAL_MACHINE". Subchaves que
+  possuem string de caminhos delimitados por ponto e vírgula como seu
+  valor padrão farão com que cada caminho seja adicionado ao
+  "sys.path". (Note que todos os instaladores conhecidos usam apenas
+  HKLM, portanto HKCU está tipicamente vazio.)
+
+* Se a variável de ambiente "PYTHONHOME" está definida, ela é assumida
+  como "Python Home". Caso contrário, o caminho do principal
+  executável do Python é usado para localizar um "arquivo de
+  referência" (ou "Lib\os.py" ou "pythonXY.zip") para deduzir o
+  "Python Home". Se um Python Home é encontrado, os subdiretórios
+  relevantes adicionados ao "sys.path" ("Lib", "plat-win", etc) são
+  baseados naquela pasta. Se não, o caminho núcleo do Python é
+  construído a partir do PythonPath armazenado no registro.
+
+* Se o Python Home não puder ser localizado, nenhum "PYTHONPATH" está
+  especificado no ambiente, e nenhuma entrada de registro pôde ser
+  encontrada, um caminho padrão com entradas relativas é usado (por
+  exemplo, ".\Lib;.\plat-win", etc).
+
+Se um arquivo "pyvenv.cfg" for encontrado juntamente com o principal
+executável ou no diretório um nível acima do executável, as seguintes
+variações se aplicam:
+
+* Se "home" é um caminho absoluto e "PYTHONHOME" não está definido, o
+  caminho é usado ao invés do caminho ao principal executável quando
+  deduzindo a localização do Home.
+
+O resultado final de tudo isso é:
+
+* Quando executando "python.exe", ou qualquer outro .exe no diretório
+  principal do Python (ou uma versão instalada, ou diretamente do
+  diretório PCbuild), o caminho núcleo é deduzido, e os caminhos
+  núcleo no registro são ignorados. Outros "caminhos da aplicação" no
+  registro são sempre lidos.
+
+* Quando Python é hospedado em outro .exe (diretório diferente,
+  embutido via COM, etc), o "Python Home" não será deduzido, então o
+  caminho núcleo do registro é usado. Outros "caminhos da aplicação"
+  no registro sempre são lidos.
+
+* Se o Python não puder encontrar seu Home e não existem valores no
+  registro (.exe imutáveis, algumas configurações de instalação bem
+  estranhas) você recebe um caminho com alguns caminhos padrão, porém
+  relativos.
+
+Para aqueles que querem empacotar o Python em suas aplicações ou
+distribuições, o seguinte conselho irá prevenir conflitos com outras
+instalações:
+
+* Inclua um arquivo "._pth" juntamente do executável contendo os
+  diretórios a serem incluídos. Isso irá ignorar caminhos listados no
+  registro e variáveis de ambiente, e também ignorar "sites" a não ser
+  que "import site" seja listado.
+
+* Se você está carregando o "python3.dll" ou "python37.dll" no seu
+  próprio executável, explicitamente chame "Py_SetPath()" ou (pelo
+  menos) "Py_SetProgramName()" antes de "Py_Initialize()".
+
+* Limpe e/ou sobrescreva "PYTHONPATH" e defina "PYTHONHOME" antes de
+  iniciar o "python.exe" a partir da sua aplicação.
+
+* Se você não puder usar as sugestões anteriores (por exemplo, você é
+  uma distribuição que permite que as pessoas executem o arquivo
+  "python.exe" diretamente), certifique-se de que o arquivo de
+  referência ("Lib\os.py") existe no seu diretório de instalação.
+  (Note que ele não será detectado dentro de um arquivo ZIP, mas um
+  arquivo ZIP corretamente nomeado será detectado ao invés disso.)
+
+Isso irá garantir que seus arquivos em uma instalação global no
+sistema não terão precedência sobre uma cópia da biblioteca padrão
+empacotada com a sua aplicação. Caso contrário, seus usuários podem
+experienciar problemas usando sua aplicação. Note que a primeira
+sugestão é a melhor, pois as outras podem ainda estar suscetíveis a
+caminhos não-padrão no registro e no site-packages do usuário.
+
+Alterado na versão 3.6: Add "._pth" file support and removes
+"applocal" option from "pyvenv.cfg".
+
+Alterado na versão 3.6: Add "python*XX*.zip" as a potential landmark
+when directly adjacent to the executable.
+
+Obsoleto desde a versão 3.6: Modules specified in the registry under
+"Modules" (not "PythonPath") may be imported by
+"importlib.machinery.WindowsRegistryFinder". This finder is enabled on
+Windows in 3.6.0 and earlier, but may need to be explicitly added to
+"sys.meta_path" in the future.
+
+
+4.10. Módulos adicionais
+========================
+
+Mesmo que o Python tenha como objetivo ser portável através de todas
+as plataformas, existem recursos que são únicos para o Windows. Alguns
+módulos, em ambas as bibliotecas padrão e externa, e trechos de código
+existem para usar esses recursos.
+
+Os módulos padrão específicos para Windows estão documentados em
+Serviços Específicos do MS Windows.
+
+
+4.10.1. PyWin32
+---------------
+
+O módulo PyWin32 de Mark Hammond é uma coleção de módulos para suporte
+avançado específico para Windows. Isso inclui utilitários para:
+
+* Component Object Model (COM)
+
+* Chamadas à API Win32
+
+* Registro
+
+* Log de Eventos
+
+* Microsoft Foundation Classes (MFC) user interfaces
+
+PythonWin é uma aplicação MFC de exemplo enviada com o PyWin32. É uma
+IDE embutível com um depurador embutido.
+
+Ver também:
+
+  Win32 How Do I...?
+     por Tim Golden
+
+  Python and COM
+     by David and Paul Boddie
+
+
+4.10.2. cx_Freeze
+-----------------
+
+cx_Freeze wraps Python scripts into executable Windows programs
+("***.exe" files).  When you have done this, you can distribute your
+application without requiring your users to install Python.
+
+
+4.11. Compilando Python no Windows
+==================================
+
+If you want to compile CPython yourself, first thing you should do is
+get the source. You can download either the latest release's source or
+just grab a fresh checkout.
+
+The source tree contains a build solution and project files for
+Microsoft Visual Studio, which is the compiler used to build the
+official Python releases. These files are in the "PCbuild" directory.
+
+Confira o "PCbuild/readme.txt" para informações gerais sobre o
+processo de construção.
+
+Para módulos de extensão, consulte Construindo Extensões C e C++ no
+Windows.
+
+
+4.12. Outras plataformas
+========================
+
+Com o desenvolvimento do Python em andamento, algumas plataformas que
+costumavam ser suportadas anteriormente não são mais suportadas
+(devido à falta de usuário ou desenvolvedores). Confira a **PEP 11**
+para detalhes de todas as plataformas não suportadas.
+
+* Windows CE is no longer supported since Python 3 (if it ever was).
+
+* The Cygwin installer offers to install the Python interpreter as
+  well
+
+Veja Python for Windows para informação detalhada sobre as plataformas
+com instaladores pré-compilados.
