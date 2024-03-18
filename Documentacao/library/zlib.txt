@@ -1,0 +1,329 @@
+"zlib" --- Compactação compatível com **gzip**
+**********************************************
+
+======================================================================
+
+For applications that require data compression, the functions in this
+module allow compression and decompression, using the zlib library.
+The zlib library has its own home page at https://www.zlib.net.
+There are known incompatibilities between the Python module and
+versions of the zlib library earlier than 1.1.3; 1.1.3 has a security
+vulnerability, so we recommend using 1.1.4 or later.
+
+As funções do zlib têm muitas opções e geralmente precisam ser usadas
+em uma ordem específica. Esta documentação não tenta cobrir todas as
+permutações; consulte o manual do zlib em
+http://www.zlib.net/manual.html para obter informações oficiais.
+
+Para leitura e escrita de arquivos ".gz", consulte o módulo "gzip".
+
+A exceção e as funções disponíveis neste módulo são:
+
+exception zlib.error
+
+   Exceção levantada em erros de compactação e descompactação.
+
+zlib.adler32(data[, value])
+
+   Calcula uma soma de verificação Adler-32 de *data*. (Uma soma de
+   verificação Adler-32 é quase tão confiável quanto uma CRC32, mas
+   pode ser calculada muito mais rapidamente.) O resultado é um número
+   inteiro sem sinal de 32 bits. Se *value* estiver presente, ele será
+   usado como o valor inicial da soma de verificação; caso contrário,
+   um valor padrão de 1 é usado. A passagem de *value* permite
+   calcular uma soma de verificação em execução através da
+   concatenação de várias entradas. O algoritmo não é
+   criptograficamente forte e não deve ser usado para autenticação ou
+   assinaturas digitais. Como o algoritmo foi projetado para uso como
+   um algoritmo de soma de verificação, não é adequado para uso como
+   um algoritmo de hash geral.
+
+   Alterado na versão 3.0: O resultado é sempre sem sinal.
+
+zlib.compress(data, /, level=-1, wbits=MAX_WBITS)
+
+   Compresses the bytes in *data*, returning a bytes object containing
+   compressed data. *level* is an integer from "0" to "9" or "-1"
+   controlling the level of compression; "1" (Z_BEST_SPEED) is fastest
+   and produces the least compression, "9" (Z_BEST_COMPRESSION) is
+   slowest and produces the most.  "0" (Z_NO_COMPRESSION) is no
+   compression. The default value is "-1" (Z_DEFAULT_COMPRESSION).
+   Z_DEFAULT_COMPRESSION represents a default compromise between speed
+   and compression (currently equivalent to level 6).
+
+   O argumento *wbits* controla o tamanho do buffer do histórico (ou o
+   "tamanho da janela") usado ao compactar dados e se um cabeçalho e
+   um trailer estão incluídos na saída. Pode levar vários intervalos
+   de valores, padronizando para "15" (MAX_WBITS):
+
+   * +9 a +15: o logaritmo de base dois do tamanho da janela, que
+     varia entre 512 e 32768. Valores maiores produzem melhor
+     compactação às custas de maior uso de memória. A saída resultante
+     incluirá um cabeçalho e uma sequência específicos para zlib.
+
+   * -9 a -15: Usa o valor absoluto de *wbits* como o logaritmo do
+     tamanho da janela, enquanto produz um fluxo de saída bruto sem
+     cabeçalho ou soma de verificação à direita.
+
+   * +25 a +31 = 16 + (9 a 15): Usa os 4 bits baixos do valor como
+     logaritmo do tamanho da janela, incluindo um cabeçalho básico
+     **gzip** e a soma de verificação à direita na saída.
+
+   Raises the "error" exception if any error occurs.
+
+   Alterado na versão 3.6: *level* pode agora ser usado como um
+   parâmetro nomeado.
+
+   Alterado na versão 3.11: The *wbits* parameter is now available to
+   set window bits and compression type.
+
+zlib.compressobj(level=-1, method=DEFLATED, wbits=MAX_WBITS, memLevel=DEF_MEM_LEVEL, strategy=Z_DEFAULT_STRATEGY[, zdict])
+
+   Retorna um objeto de compactação, a ser usado para compactar fluxos
+   de dados que não cabem na memória de uma só vez.
+
+   *level* é o nível de compactação -- um número inteiro de "0" a "9"
+   ou "-1". Um valor de "1" (Z_BEST_SPEED) é mais rápido e produz a
+   menor compactação, enquanto um valor de "9" (Z_BEST_COMPRESSION) é
+   mais lento e produz o máximo. "0" (Z_NO_COMPRESSION) é nenhuma
+   compactação. O valor padrão é "-1" (Z_DEFAULT_COMPRESSION).
+   Z_DEFAULT_COMPRESSION representa um meio termo padrão entre
+   velocidade e compactação (atualmente equivalente ao nível 6).
+
+   *method* é o algoritmo de compactação. Atualmente, o único valor
+   suportado é "DEFLATED".
+
+   The *wbits* parameter controls the size of the history buffer (or
+   the "window size"), and what header and trailer format will be
+   used. It has the same meaning as described for compress().
+
+   O argumento *memLevel* controla a quantidade de memória usada para
+   o estado de compactação interno. Os valores válidos variam de "1" a
+   "9". Valores mais altos usam mais memória, mas são mais rápidos e
+   produzem uma saída menor.
+
+   *strategy* é usado para ajustar o algoritmo de compactação. Os
+   valores possíveis são "Z_DEFAULT_STRATEGY", "Z_FILTERED",
+   "Z_HUFFMAN_ONLY", "Z_RLE" (zlib 1.2.0.1) e "Z_FIXED" (zlib
+   1.2.2.2).
+
+   *zdict* é um dicionário de compactação predefinido. Esta é uma
+   sequência de bytes (como um objeto "bytes") que contém
+   subsequências que se espera que ocorram com frequência nos dados a
+   serem compactados. As subsequências que se espera serem mais comuns
+   devem aparecer no final do dicionário.
+
+   Alterado na versão 3.3: Adicionado o suporte ao parâmetro e
+   argumento nomeado *zdict*.
+
+zlib.crc32(data[, value])
+
+   Calcula uma soma de verificação CRC (Cyclic Redundancy Check) de
+   *data*. O resultado é um número inteiro sem sinal de 32 bits. Se
+   *value* estiver presente, ele será usado como o valor inicial da
+   soma de verificação; caso contrário, um valor padrão de 1 é usado.
+   A passagem de *value* permite calcular uma soma de verificação em
+   execução através da concatenação de várias entradas. O algoritmo
+   não é criptograficamente forte e não deve ser usado para
+   autenticação ou assinaturas digitais. Como o algoritmo foi
+   projetado para uso como um algoritmo de soma de verificação, não é
+   adequado para uso como um algoritmo de hash geral.
+
+   Alterado na versão 3.0: O resultado é sempre sem sinal.
+
+zlib.decompress(data, /, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
+
+   Descompacta os bytes em *data*, retornando um objeto de bytes que
+   contém os dados não compactados. O parâmetro *wbits* depende do
+   formato de *data* e é discutido mais abaixo. Se *bufsize* for
+   fornecido, ele será usado como o tamanho inicial do buffer de
+   saída. Levanta a exceção "error" se ocorrer algum erro.
+
+   O parâmetro *wbits* controla o tamanho do buffer do histórico (ou
+   "tamanho da janela") e qual formato de cabeçalho e sequência é
+   esperado. É semelhante ao parâmetro para "compressobj()", mas
+   aceita mais intervalos de valores:
+
+   * +8 a +15: O logaritmo de base dois do tamanho da janela. A
+     entrada deve incluir um cabeçalho e uma sequência de zlib.
+
+   * 0: Determina automaticamente o tamanho da janela no cabeçalho
+     zlib. Suportado apenas desde o zlib 1.2.3.5.
+
+   * −8 a −15: Usa o valor absoluto de *wbits* como o logaritmo do
+     tamanho da janela. A entrada deve ser um fluxo bruto sem
+     cabeçalho ou sequência.
+
+   * +24 a +31 = 16 + (8 a 15): Usa os 4 bits baixos do valor como
+     logaritmo do tamanho da janela. A entrada deve incluir um
+     cabeçalho e sequência de gzip.
+
+   * +40 a +47 = 32 + (8 a 15): Usa os 4 bits baixos do valor como
+     logaritmo do tamanho da janela e aceita automaticamente o formato
+     zlib ou gzip.
+
+   Ao descompactar um fluxo, o tamanho da janela não deve ser menor
+   que o tamanho originalmente usado para compactar o fluxo; o uso de
+   um valor muito pequeno pode resultar em uma exceção "error". O
+   valor padrão *wbits* corresponde ao maior tamanho da janela e
+   requer que um cabeçalho e uma sequência de zlib sejam incluídos.
+
+   *bufsize* é o tamanho inicial do buffer usado para armazenar dados
+   descompactados. Se for necessário mais espaço, o tamanho do buffer
+   será aumentado conforme necessário, para que você não precise obter
+   esse valor exatamente correto; sintonizando, apenas algumas
+   chamadas serão salvas em "malloc()".
+
+   Alterado na versão 3.6: *wbits* and *bufsize* can be used as
+   keyword arguments.
+
+zlib.decompressobj(wbits=MAX_WBITS[, zdict])
+
+   Returns a decompression object, to be used for decompressing data
+   streams that won't fit into memory at once.
+
+   The *wbits* parameter controls the size of the history buffer (or
+   the "window size"), and what header and trailer format is expected.
+   It has the same meaning as described for decompress().
+
+   The *zdict* parameter specifies a predefined compression
+   dictionary. If provided, this must be the same dictionary as was
+   used by the compressor that produced the data that is to be
+   decompressed.
+
+   Nota:
+
+     If *zdict* is a mutable object (such as a "bytearray"), you must
+     not modify its contents between the call to "decompressobj()" and
+     the first call to the decompressor's "decompress()" method.
+
+   Alterado na versão 3.3: Adicionado o parâmetro *zdict*.
+
+Compression objects support the following methods:
+
+Compress.compress(data)
+
+   Compress *data*, returning a bytes object containing compressed
+   data for at least part of the data in *data*.  This data should be
+   concatenated to the output produced by any preceding calls to the
+   "compress()" method.  Some input may be kept in internal buffers
+   for later processing.
+
+Compress.flush([mode])
+
+   All pending input is processed, and a bytes object containing the
+   remaining compressed output is returned.  *mode* can be selected
+   from the constants "Z_NO_FLUSH", "Z_PARTIAL_FLUSH", "Z_SYNC_FLUSH",
+   "Z_FULL_FLUSH", "Z_BLOCK" (zlib 1.2.3.4), or "Z_FINISH", defaulting
+   to "Z_FINISH".  Except "Z_FINISH", all constants allow compressing
+   further bytestrings of data, while "Z_FINISH" finishes the
+   compressed stream and prevents compressing any more data.  After
+   calling "flush()" with *mode* set to "Z_FINISH", the "compress()"
+   method cannot be called again; the only realistic action is to
+   delete the object.
+
+Compress.copy()
+
+   Returns a copy of the compression object.  This can be used to
+   efficiently compress a set of data that share a common initial
+   prefix.
+
+Alterado na versão 3.8: Added "copy.copy()" and "copy.deepcopy()"
+support to compression objects.
+
+Decompression objects support the following methods and attributes:
+
+Decompress.unused_data
+
+   A bytes object which contains any bytes past the end of the
+   compressed data. That is, this remains "b""" until the last byte
+   that contains compression data is available.  If the whole
+   bytestring turned out to contain compressed data, this is "b""", an
+   empty bytes object.
+
+Decompress.unconsumed_tail
+
+   A bytes object that contains any data that was not consumed by the
+   last "decompress()" call because it exceeded the limit for the
+   uncompressed data buffer.  This data has not yet been seen by the
+   zlib machinery, so you must feed it (possibly with further data
+   concatenated to it) back to a subsequent "decompress()" method call
+   in order to get correct output.
+
+Decompress.eof
+
+   A boolean indicating whether the end of the compressed data stream
+   has been reached.
+
+   This makes it possible to distinguish between a properly formed
+   compressed stream, and an incomplete or truncated one.
+
+   Novo na versão 3.3.
+
+Decompress.decompress(data, max_length=0)
+
+   Decompress *data*, returning a bytes object containing the
+   uncompressed data corresponding to at least part of the data in
+   *string*.  This data should be concatenated to the output produced
+   by any preceding calls to the "decompress()" method.  Some of the
+   input data may be preserved in internal buffers for later
+   processing.
+
+   If the optional parameter *max_length* is non-zero then the return
+   value will be no longer than *max_length*. This may mean that not
+   all of the compressed input can be processed; and unconsumed data
+   will be stored in the attribute "unconsumed_tail". This bytestring
+   must be passed to a subsequent call to "decompress()" if
+   decompression is to continue.  If *max_length* is zero then the
+   whole input is decompressed, and "unconsumed_tail" is empty.
+
+   Alterado na versão 3.6: *max_length* can be used as a keyword
+   argument.
+
+Decompress.flush([length])
+
+   All pending input is processed, and a bytes object containing the
+   remaining uncompressed output is returned.  After calling
+   "flush()", the "decompress()" method cannot be called again; the
+   only realistic action is to delete the object.
+
+   The optional parameter *length* sets the initial size of the output
+   buffer.
+
+Decompress.copy()
+
+   Returns a copy of the decompression object.  This can be used to
+   save the state of the decompressor midway through the data stream
+   in order to speed up random seeks into the stream at a future
+   point.
+
+Alterado na versão 3.8: Added "copy.copy()" and "copy.deepcopy()"
+support to decompression objects.
+
+Information about the version of the zlib library in use is available
+through the following constants:
+
+zlib.ZLIB_VERSION
+
+   The version string of the zlib library that was used for building
+   the module. This may be different from the zlib library actually
+   used at runtime, which is available as "ZLIB_RUNTIME_VERSION".
+
+zlib.ZLIB_RUNTIME_VERSION
+
+   The version string of the zlib library actually loaded by the
+   interpreter.
+
+   Novo na versão 3.3.
+
+Ver também:
+
+  Module "gzip"
+     Reading and writing **gzip**-format files.
+
+  http://www.zlib.net
+     The zlib library home page.
+
+  http://www.zlib.net/manual.html
+     The zlib manual explains  the semantics and usage of the
+     library's many functions.

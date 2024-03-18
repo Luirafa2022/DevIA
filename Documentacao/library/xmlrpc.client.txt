@@ -1,0 +1,566 @@
+"xmlrpc.client" --- Cliente XML-RPC
+***********************************
+
+**Código-fonte:** Lib/xmlrpc/client.py
+
+======================================================================
+
+XML-RPC é um método de chamada remota de métodos que usa XML usando
+HTTP(S) como transporte.  Com ele, um cliente pode chamar métodos com
+parâmetros em um servidor remoto (o servidor é nomeado por um URI) e
+receber de volta dados estruturados.  Este módulo oferece suporte à
+escrita de código de clientes XML-RPC; ele lida com todos os detalhes
+da tradução entre Python objetos e XML.
+
+Aviso:
+
+  O módulo "xmlrpc.client" não é seguro contra dados construídos de
+  forma maliciosa. Se você precisa processar dados não-confiáveis ou
+  sem autenticação, veja Vulnerabilidades em XML.
+
+Alterado na versão 3.5: Para URIs com HTTPS, "xmlrpc.client" agora faz
+todas as validações de certificado e nome do servidor necessárias por
+padrão.
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+class xmlrpc.client.ServerProxy(uri, transport=None, encoding=None, verbose=False, allow_none=False, use_datetime=False, use_builtin_types=False, *, headers=(), context=None)
+
+   Uma instância de "ServerProxy" é um objeto que gerencia a
+   comunicação com um servidor XML-RPC remoto. O primeiro argumento
+   obrigatório é uma URI (Uniform Resource Indicator - Indicador de
+   Recurso Uniforme) e normalmente vai ser a URL do servidor. O
+   segundo parâmetro, opcional, é uma instância de um factory de
+   transporte; por padrão é uma instância de "SafeTransport" para URLs
+   https e uma instância de "Transport" caso contrário. O terceiro
+   parâmetro, opcional, é o encoding, por padrão sendo UTF-8. O quarto
+   argumento, opcional, é a flag de debug.
+
+   Os seguite parâmetros coordenam o uso da intância de proxy
+   retornada. Se *alow_none* for verdadeiro, a constante "None" do
+   Python será traduzida para XML; o comportamento padrão é que "None"
+   levante uma "TypeError", Isso é uma extensão comum da especificação
+   do XML-RPC, mas não é suportado por todos os clientes e servidores,
+   veja  http://ontosys.com/xml-rpc/extensions.php para uma descrição.
+   A flag *use_builtin_types* pode ser usada para  que valores de data
+   e hora sejam representados como objetos "datetime.datetime" e dados
+   binários representados com objetos "bytes"; essa flag é False por
+   padrão. Objetos "datetime.datetime", "bytes" e "bytearray" podem
+   ser usados nas chamadas. O parâmetro *headers* é uma sequência
+   opcional de headers a serem enviados em cada requisição,
+   representados por uma sequência de tuplas de dois valores
+   representando o nome do header e seu valor (como "[('Header-Name',
+   'value')]"). A flag *use_datetime* é obsoleta e é similar a
+   *use_builtin_types* mas se aplica somente a valores de data e hora.
+
+Alterado na versão 3.3: O sinalizador *use_builtin_types* foi
+adicionado.
+
+Alterado na versão 3.8: O parâmetro *headers* foi adicionado.Tanto o
+transporte por HTTP quanto o transporte por HTTP suportam a extensão
+da sintaxe de URL para Autenticação Básica do HTTP:
+"http://user:pass@host:port/path". A parte "user:pass" será codificada
+em Base64 como um header HTTP 'Authorization', e enviada para o
+servidor remoto como parte do processo de conexão quando for invocado
+um método XML-RPC. Você só precisar usar isso se o servidor remoto
+requer Autenticação Básica com usuário e senha. Se for usada uma URL
+HTTPS, *context* pode ser do tipo "ssl.SSLContext" e configurar o SSL
+da conexão HTTPS por baixo.A instância retornada é um objeto proxy com
+métodos que podem ser usados para invocar a chamada RPC correspondendo
+no servidor remoto. Se o servidor remoto suportar a API de
+instrospecção, o proxy também pode ser usado para perguntar ao
+servidor remoto pelos métodos que ele suporta (descoberta de serviço)
+e recuperar outros meta-dados associados com o servidor.Os tipos que
+são conformáveis (por exemplo, que podem ser convertidos para XML)
+incluem os seguintes (e exceto onde indicado, eles não são convertidos
+como o mesmo tipo Python):
+
++------------------------+---------------------------------------------------------+
+| Tipo XML-RPC           | Python type                                             |
+|========================|=========================================================|
+| "boolean"              | "bool"                                                  |
++------------------------+---------------------------------------------------------+
+| "int", "i1", "i2",     | "int" no intervalo de -2147483648 a 2147483647. Os      |
+| "i4", "i8" ou          | valores recebem a tag "<int>".                          |
+| "biginteger"           |                                                         |
++------------------------+---------------------------------------------------------+
+| "double" ou "float"    | "float".  Os valores recebem a tag "<double>".          |
++------------------------+---------------------------------------------------------+
+| "string"               | "str"                                                   |
++------------------------+---------------------------------------------------------+
+| "array"                | "list" ou "tuple" contendo elementos conformáveis.  As  |
+|                        | matrizes são retornadas como "lists".                   |
++------------------------+---------------------------------------------------------+
+| "struct"               | "dict". Chaves devem ser strings, valores podem ser     |
+|                        | qualquer tipo conformáveis. Objetos de classes          |
+|                        | definidas pelo usuário pode ser usadas; apenas o        |
+|                        | atributo "__dict__" delas é transmitido.                |
++------------------------+---------------------------------------------------------+
+| "dateTime.iso8601"     | "DateTime" ou "datetime.datetime". O tipo retornado     |
+|                        | depende de volumes de sinalizadores *use_builtin_types* |
+|                        | e *use_datetime*.                                       |
++------------------------+---------------------------------------------------------+
+| "base64"               | "Binary", "bytes" ou "bytearray".  O tipo retornado     |
+|                        | depende do valor da flag *use_builtin_types*.           |
++------------------------+---------------------------------------------------------+
+| "nil"                  | A constante "None".  A passagem é permitida somente se  |
+|                        | *allow_none* for verdadeiro.                            |
++------------------------+---------------------------------------------------------+
+| "bigdecimal"           | "decimal.Decimal".  Somente tipo retornado.             |
++------------------------+---------------------------------------------------------+
+
+Esta é a lista completa de tipos suportados por XML-RPC. Chamadas de
+método podem também levantar uma instância de "Fault", usado para que
+o servidor XML-RPC indique erros, ou "ProtocolError" para indicar
+erros na camada HTTP/HTTPS. Tnato "Fault" quanto "ProtocolError"
+derivam da classe base "Error". Observe que o módulo de cliente xmlrpc
+atualmente não converte instância de subclasses dos tipos built-in.Ao
+passar strings, os caracteres especiais para XML, como "<", ">" e "&",
+serão automaticamente escapados.  No entanto, é responsabilidade do
+chamador garantir que o string esteja livre de caracteres que não são
+permitidos em XML, como os caracteres de controle com valores ASCII
+entre 0 e 31 (exceto, é claro, tabulação, nova linha e retorno de
+carro); se isso não for feito, resultará em uma solicitação XML-RPC
+que não é um XML bem formado.  Se você precisar passar bytes
+arbitrários via XML-RPC, use as classes "bytes" ou "bytearray" ou a
+classe wrapper "Binary" descrito abaixo."Server" foi mantido como um
+apelido para "ServerProxy" para compatibilidade retroativa.  Código
+novo deve usar "ServerProxy".
+
+Alterado na versão 3.5: Argumento *context* adicionado.
+
+Alterado na versão 3.6: Adicionado suporte para tags com prefixos (por
+exemplo "ex:nil") Adicionado suporte para desconversão de tipos
+adicionados usados pela implementação do Apache XML-RPC para
+numéricos: "i1", "i2", "i8", "biginteger", "float" e "bigdecimal".
+Veja   https://ws.apache.org/xmlrpc/types.html para uma descrição.
+
+Ver também:
+
+  XML-RPC HOWTO
+     Uma boa descrição das operações XML-RPC e software cliente em
+     vários idiomas. Contém praticamente tudo o que um desenvolvedor
+     de clientes XML-RPC precisa saber.
+
+  XML-RPC Introspection
+     Describe a extensão do protocolo XML-RPC para instrospecção.
+
+  XML-RPC Specification
+     A especificação oficial.
+
+
+Objetos ServerProxy
+===================
+
+A "ServerProxy" instance has a method corresponding to each remote
+procedure call accepted by the XML-RPC server.  Calling the method
+performs an RPC, dispatched by both name and argument signature (e.g.
+the same method name can be overloaded with multiple argument
+signatures).  The RPC finishes by returning a value, which may be
+either returned data in a conformant type or a "Fault" or
+"ProtocolError" object indicating an error.
+
+Servers that support the XML introspection API support some common
+methods grouped under the reserved "system" attribute:
+
+ServerProxy.system.listMethods()
+
+   This method returns a list of strings, one for each (non-system)
+   method supported by the XML-RPC server.
+
+ServerProxy.system.methodSignature(name)
+
+   This method takes one parameter, the name of a method implemented
+   by the XML-RPC server. It returns an array of possible signatures
+   for this method. A signature is an array of types. The first of
+   these types is the return type of the method, the rest are
+   parameters.
+
+   Because multiple signatures (ie. overloading) is permitted, this
+   method returns a list of signatures rather than a singleton.
+
+   Signatures themselves are restricted to the top level parameters
+   expected by a method. For instance if a method expects one array of
+   structs as a parameter, and it returns a string, its signature is
+   simply "string, array". If it expects three integers and returns a
+   string, its signature is "string, int, int, int".
+
+   If no signature is defined for the method, a non-array value is
+   returned. In Python this means that the type of the returned  value
+   will be something other than list.
+
+ServerProxy.system.methodHelp(name)
+
+   This method takes one parameter, the name of a method implemented
+   by the XML-RPC server.  It returns a documentation string
+   describing the use of that method. If no such string is available,
+   an empty string is returned. The documentation string may contain
+   HTML markup.
+
+Alterado na versão 3.5: Instances of "ServerProxy" support the
+*context manager* protocol for closing the underlying transport.
+
+A working example follows. The server code:
+
+   from xmlrpc.server import SimpleXMLRPCServer
+
+   def is_even(n):
+       return n % 2 == 0
+
+   server = SimpleXMLRPCServer(("localhost", 8000))
+   print("Listening on port 8000...")
+   server.register_function(is_even, "is_even")
+   server.serve_forever()
+
+The client code for the preceding server:
+
+   import xmlrpc.client
+
+   with xmlrpc.client.ServerProxy("http://localhost:8000/") as proxy:
+       print("3 is even: %s" % str(proxy.is_even(3)))
+       print("100 is even: %s" % str(proxy.is_even(100)))
+
+
+Objetos DateTime
+================
+
+class xmlrpc.client.DateTime
+
+   This class may be initialized with seconds since the epoch, a time
+   tuple, an ISO 8601 time/date string, or a "datetime.datetime"
+   instance.  It has the following methods, supported mainly for
+   internal use by the marshalling/unmarshalling code:
+
+   decode(string)
+
+      Accept a string as the instance's new time value.
+
+   encode(out)
+
+      Write the XML-RPC encoding of this "DateTime" item to the *out*
+      stream object.
+
+   It also supports certain of Python's built-in operators through
+   "rich comparison" and "__repr__()" methods.
+
+A working example follows. The server code:
+
+   import datetime
+   from xmlrpc.server import SimpleXMLRPCServer
+   import xmlrpc.client
+
+   def today():
+       today = datetime.datetime.today()
+       return xmlrpc.client.DateTime(today)
+
+   server = SimpleXMLRPCServer(("localhost", 8000))
+   print("Listening on port 8000...")
+   server.register_function(today, "today")
+   server.serve_forever()
+
+The client code for the preceding server:
+
+   import xmlrpc.client
+   import datetime
+
+   proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
+
+   today = proxy.today()
+   # convert the ISO8601 string to a datetime object
+   converted = datetime.datetime.strptime(today.value, "%Y%m%dT%H:%M:%S")
+   print("Today: %s" % converted.strftime("%d.%m.%Y, %H:%M"))
+
+
+Objetos Binários
+================
+
+class xmlrpc.client.Binary
+
+   This class may be initialized from bytes data (which may include
+   NULs). The primary access to the content of a "Binary" object is
+   provided by an attribute:
+
+   data
+
+      The binary data encapsulated by the "Binary" instance.  The data
+      is provided as a "bytes" object.
+
+   "Binary" objects have the following methods, supported mainly for
+   internal use by the marshalling/unmarshalling code:
+
+   decode(bytes)
+
+      Accept a base64 "bytes" object and decode it as the instance's
+      new data.
+
+   encode(out)
+
+      Write the XML-RPC base 64 encoding of this binary item to the
+      *out* stream object.
+
+      The encoded data will have newlines every 76 characters as per
+      **RFC 2045 section 6.8**, which was the de facto standard base64
+      specification when the XML-RPC spec was written.
+
+   It also supports certain of Python's built-in operators through
+   "__eq__()" and "__ne__()" methods.
+
+Example usage of the binary objects.  We're going to transfer an image
+over XMLRPC:
+
+   from xmlrpc.server import SimpleXMLRPCServer
+   import xmlrpc.client
+
+   def python_logo():
+       with open("python_logo.jpg", "rb") as handle:
+           return xmlrpc.client.Binary(handle.read())
+
+   server = SimpleXMLRPCServer(("localhost", 8000))
+   print("Listening on port 8000...")
+   server.register_function(python_logo, 'python_logo')
+
+   server.serve_forever()
+
+The client gets the image and saves it to a file:
+
+   import xmlrpc.client
+
+   proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
+   with open("fetched_python_logo.jpg", "wb") as handle:
+       handle.write(proxy.python_logo().data)
+
+
+Objetos Fault
+=============
+
+class xmlrpc.client.Fault
+
+   A "Fault" object encapsulates the content of an XML-RPC fault tag.
+   Fault objects have the following attributes:
+
+   faultCode
+
+      An int indicating the fault type.
+
+   faultString
+
+      A string containing a diagnostic message associated with the
+      fault.
+
+In the following example we're going to intentionally cause a "Fault"
+by returning a complex type object.  The server code:
+
+   from xmlrpc.server import SimpleXMLRPCServer
+
+   # A marshalling error is going to occur because we're returning a
+   # complex number
+   def add(x, y):
+       return x+y+0j
+
+   server = SimpleXMLRPCServer(("localhost", 8000))
+   print("Listening on port 8000...")
+   server.register_function(add, 'add')
+
+   server.serve_forever()
+
+The client code for the preceding server:
+
+   import xmlrpc.client
+
+   proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
+   try:
+       proxy.add(2, 5)
+   except xmlrpc.client.Fault as err:
+       print("A fault occurred")
+       print("Fault code: %d" % err.faultCode)
+       print("Fault string: %s" % err.faultString)
+
+
+Objeto ProtocolError
+====================
+
+class xmlrpc.client.ProtocolError
+
+   A "ProtocolError" object describes a protocol error in the
+   underlying transport layer (such as a 404 'not found' error if the
+   server named by the URI does not exist).  It has the following
+   attributes:
+
+   url
+
+      The URI or URL that triggered the error.
+
+   errcode
+
+      O código do erro.
+
+   errmsg
+
+      The error message or diagnostic string.
+
+   headers
+
+      A dict containing the headers of the HTTP/HTTPS request that
+      triggered the error.
+
+In the following example we're going to intentionally cause a
+"ProtocolError" by providing an invalid URI:
+
+   import xmlrpc.client
+
+   # create a ServerProxy with a URI that doesn't respond to XMLRPC requests
+   proxy = xmlrpc.client.ServerProxy("http://google.com/")
+
+   try:
+       proxy.some_method()
+   except xmlrpc.client.ProtocolError as err:
+       print("A protocol error occurred")
+       print("URL: %s" % err.url)
+       print("HTTP/HTTPS headers: %s" % err.headers)
+       print("Error code: %d" % err.errcode)
+       print("Error message: %s" % err.errmsg)
+
+
+Objetos MultiCall
+=================
+
+The "MultiCall" object provides a way to encapsulate multiple calls to
+a remote server into a single request [1].
+
+class xmlrpc.client.MultiCall(server)
+
+   Create an object used to boxcar method calls. *server* is the
+   eventual target of the call. Calls can be made to the result
+   object, but they will immediately return "None", and only store the
+   call name and parameters in the "MultiCall" object. Calling the
+   object itself causes all stored calls to be transmitted as a single
+   "system.multicall" request. The result of this call is a
+   *generator*; iterating over this generator yields the individual
+   results.
+
+A usage example of this class follows.  The server code:
+
+   from xmlrpc.server import SimpleXMLRPCServer
+
+   def add(x, y):
+       return x + y
+
+   def subtract(x, y):
+       return x - y
+
+   def multiply(x, y):
+       return x * y
+
+   def divide(x, y):
+       return x // y
+
+   # A simple server with simple arithmetic functions
+   server = SimpleXMLRPCServer(("localhost", 8000))
+   print("Listening on port 8000...")
+   server.register_multicall_functions()
+   server.register_function(add, 'add')
+   server.register_function(subtract, 'subtract')
+   server.register_function(multiply, 'multiply')
+   server.register_function(divide, 'divide')
+   server.serve_forever()
+
+The client code for the preceding server:
+
+   import xmlrpc.client
+
+   proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
+   multicall = xmlrpc.client.MultiCall(proxy)
+   multicall.add(7, 3)
+   multicall.subtract(7, 3)
+   multicall.multiply(7, 3)
+   multicall.divide(7, 3)
+   result = multicall()
+
+   print("7+3=%d, 7-3=%d, 7*3=%d, 7//3=%d" % tuple(result))
+
+
+Convenience Functions
+=====================
+
+xmlrpc.client.dumps(params, methodname=None, methodresponse=None, encoding=None, allow_none=False)
+
+   Convert *params* into an XML-RPC request. or into a response if
+   *methodresponse* is true. *params* can be either a tuple of
+   arguments or an instance of the "Fault" exception class.  If
+   *methodresponse* is true, only a single value can be returned,
+   meaning that *params* must be of length 1. *encoding*, if supplied,
+   is the encoding to use in the generated XML; the default is UTF-8.
+   Python's "None" value cannot be used in standard XML-RPC; to allow
+   using it via an extension,  provide a true value for *allow_none*.
+
+xmlrpc.client.loads(data, use_datetime=False, use_builtin_types=False)
+
+   Convert an XML-RPC request or response into Python objects, a
+   "(params, methodname)".  *params* is a tuple of argument;
+   *methodname* is a string, or "None" if no method name is present in
+   the packet. If the XML-RPC packet represents a fault condition,
+   this function will raise a "Fault" exception. The
+   *use_builtin_types* flag can be used to cause date/time values to
+   be presented as "datetime.datetime" objects and binary data to be
+   presented as "bytes" objects; this flag is false by default.
+
+   The obsolete *use_datetime* flag is similar to *use_builtin_types*
+   but it applies only to date/time values.
+
+   Alterado na versão 3.3: O sinalizador *use_builtin_types* foi
+   adicionado.
+
+
+Exemplo de uso do cliente
+=========================
+
+   # simple test program (from the XML-RPC specification)
+   from xmlrpc.client import ServerProxy, Error
+
+   # server = ServerProxy("http://localhost:8000") # local server
+   with ServerProxy("http://betty.userland.com") as proxy:
+
+       print(proxy)
+
+       try:
+           print(proxy.examples.getStateName(41))
+       except Error as v:
+           print("ERROR", v)
+
+To access an XML-RPC server through a HTTP proxy, you need to define a
+custom transport.  The following example shows how:
+
+   import http.client
+   import xmlrpc.client
+
+   class ProxiedTransport(xmlrpc.client.Transport):
+
+       def set_proxy(self, host, port=None, headers=None):
+           self.proxy = host, port
+           self.proxy_headers = headers
+
+       def make_connection(self, host):
+           connection = http.client.HTTPConnection(*self.proxy)
+           connection.set_tunnel(host, headers=self.proxy_headers)
+           self._connection = host, connection
+           return connection
+
+   transport = ProxiedTransport()
+   transport.set_proxy('proxy-server', 8080)
+   server = xmlrpc.client.ServerProxy('http://betty.userland.com', transport=transport)
+   print(server.examples.getStateName(41))
+
+
+Example of Client and Server Usage
+==================================
+
+See Exemplo de SimpleXMLRPCServer.
+
+-[ Notas de rodapé ]-
+
+[1] This approach has been first presented in a discussion on
+    xmlrpc.com.
