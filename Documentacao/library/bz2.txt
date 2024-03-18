@@ -1,0 +1,356 @@
+"bz2" --- Suporte para compressão **bzip2**
+*******************************************
+
+**Código-fonte:** Lib/bz2.py
+
+======================================================================
+
+Este módulo fornece uma interface abrangente para compactar e
+descompactar dados usando o algoritmo de compactação bzip2.
+
+O módulo "bz2" contém:
+
+* A função "open()" e a classe "BZ2File" para leitura e escrita de
+  arquivos compactados.
+
+* As classes "BZ2Compressor" e "BZ2Decompressor" para (des)compressão
+  incremental.
+
+* As funções "compress()" e "decompress()" para (des)compressão de uma
+  só vez.
+
+
+(Des)compressão de arquivos
+===========================
+
+bz2.open(filename, mode='rb', compresslevel=9, encoding=None, errors=None, newline=None)
+
+   Abre um arquivo compactado com bzip2 no modo binário ou texto,
+   retornando um *objeto arquivo*.
+
+   Assim como no construtor para "BZ2File", o argumento *filename*
+   pode ser um nome de arquivo real (um objeto "str" ou "bytes"), ou
+   um objeto arquivo existente para ler ou gravar.
+
+   O argumento *mode* pode ser qualquer um de "'r'", "'rb'", "'w'",
+   "'wb'", "'x'", "'xb'", "'a'" ou "'ab'" para modo binário, ou
+   "'rt'", "'wt'", "'xt'" ou "'at'" para modo texto. O padrão é
+   "'rb'".
+
+   O argumento *compresslevel* é um inteiro de 1 a 9, como para o
+   construtor "BZ2File".
+
+   Para o modo binário, esta função é equivalente ao construtor de
+   "BZ2File": "BZ2File(filename, mode, compresslevel=compresslevel)".
+   Neste caso, os argumentos *encoding*, *errors* e *newline* não
+   devem ser fornecidos.
+
+   Para o modo texto, um objeto "BZ2File" é criado e envolto em uma
+   instância "io.TextIOWrapper" com a codificação especificada,
+   comportamento de tratamento de erros e final(is) de linha.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.4: O modo "'x'" (criação exclusiva) foi
+   adicionado.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+class bz2.BZ2File(filename, mode='r', *, compresslevel=9)
+
+   Abre um arquivo compactado com bzip2 no modo binário.
+
+   Se *filename* for um objeto "str" ou "bytes", abra o arquivo
+   nomeado diretamente. Caso contrário, *filename* deve ser um *objeto
+   arquivo*, que será usado para ler ou gravar os dados compactados.
+
+   O argumento *mode* pode ser "'r'" para leitura (padrão), "'w'" para
+   substituição, "'x'" para criação exclusiva ou "'a'" para anexar.
+   Estes podem ser equivalentemente dados como "'rb'", "'wb'", "'xb'"
+   e "'ab'" respectivamente.
+
+   Se *filename* for um objeto arquivo (ao invés de um nome de arquivo
+   real), um modo de "'w'" não truncará o arquivo e será equivalente a
+   "'a'".
+
+   Se *mode* for "'w'" ou "'a'", *compresslevel* pode ser um inteiro
+   entre "1" e "9" especificando o nível de compressão: "1" produz a
+   menor compressão e "9" (padrão) produz a maior compactação.
+
+   Se *mode* for "'r'", o arquivo de entrada pode ser a concatenação
+   de vários fluxos compactados.
+
+   "BZ2File" fornece todos os membros especificados pelo
+   "io.BufferedIOBase", exceto "detach()" e "truncate()". Iteração e a
+   instrução "with" são suportadas.
+
+   "BZ2File" também fornece os seguintes métodos:
+
+   peek([n])
+
+      Retorna dados armazenados em buffer sem avançar a posição do
+      arquivo. Pelo menos um byte de dados será retornado (a menos que
+      em EOF). O número exato de bytes retornados não é especificado.
+
+      Nota:
+
+        Enquanto chamar "peek()" não altera a posição do arquivo de
+        "BZ2File", pode alterar a posição do objeto de arquivo
+        subjacente (por exemplo, se o "BZ2File" foi construído
+        passando um objeto de arquivo para *filename*).
+
+      Novo na versão 3.3.
+
+   fileno()
+
+      Retorna o endereço descritor de arquivo do arquivo subjacente.
+
+      Novo na versão 3.3.
+
+   readable()
+
+      Retorna se o arquivo foi aberto para leitura.
+
+      Novo na versão 3.3.
+
+   seekable()
+
+      Retorna se o arquivo suporta a busca.
+
+      Novo na versão 3.3.
+
+   writable()
+
+      Retorna se o arquivo foi aberto para gravação.
+
+      Novo na versão 3.3.
+
+   read1(size=-1)
+
+      Lê até o tamanho *size* de bytes não compactados, tentando
+      evitar várias leituras do fluxo subjacente. Lê até um valor
+      buffer de dados se o tamanho for negativo.
+
+      Retorna "b''" se o arquivo tiver atingido EOF, ou seja, o fim do
+      arquivo.
+
+      Novo na versão 3.3.
+
+   readinto(b)
+
+      Lêr bytes para *b*.
+
+      Retorna o número de bytes lidos (0 para EOF).
+
+      Novo na versão 3.3.
+
+   Alterado na versão 3.1: Suporte para a instrução "with" foi
+   adicionado.
+
+   Alterado na versão 3.3: Foi adicionado suporte para *filename* ser
+   um *objeto arquivo* em vez de um nome de arquivo real.O modo "'a'"
+   (anexar) foi adicionado, juntamente com suporte para leitura de
+   arquivos multifluxo.
+
+   Alterado na versão 3.4: O modo "'x'" (criação exclusiva) foi
+   adicionado.
+
+   Alterado na versão 3.5: O método "read()" agora aceita um argumento
+   de "None".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.9: O parâmetro *buffering* foi removido. Foi
+   ignorado e descontinuado desde o Python 3.0. Passe um objeto
+   arquivo aberto para controlar como o arquivo é aberto.O parâmetro
+   *compresslevel* tornou-se somente-nomeado.
+
+   Alterado na versão 3.10: Esta classe não é segura para threads
+   diante de vários leitores ou escritores simultâneos, assim como
+   suas classes equivalentes em "gzip" e "lzma" sempre foram.
+
+
+(Des)compressão incremental
+===========================
+
+class bz2.BZ2Compressor(compresslevel=9)
+
+   Cria um novo objeto compressor. Este objeto pode ser usado para
+   compactar dados de forma incremental. Para compactação única, use a
+   função "compress()".
+
+   *compresslevel*, se fornecido, deve ser um inteiro entre "1" e "9".
+   O padrão é "9".
+
+   compress(data)
+
+      Fornece dados para o objeto compressor. Retorna um pedaço de
+      dados compactados, se possível, ou uma string de bytes vazia,
+      caso contrário.
+
+      Quando você terminar de fornecer dados ao compactador, chame o
+      método "flush()" para finalizar o processo de compressão.
+
+   flush()
+
+      Finaliza o processo de compactação. Retorna os dados compactados
+      deixados em buffers internos.
+
+      O objeto compactador não pode ser usado após a chamada deste
+      método.
+
+class bz2.BZ2Decompressor
+
+   Cria um novo objeto descompactador. Este objeto pode ser usado para
+   descompactar dados de forma incremental. Para compactação única,
+   use a função "decompress()".
+
+   Nota:
+
+     Esta classe não trata de forma transparente entradas contendo
+     múltiplos fluxos compactados, ao contrário de "decompress()" e
+     "BZ2File". Se você precisar descompactar uma entrada multifluxo
+     com "BZ2Decompressor", você deve usar um novo descompactador para
+     cada fluxo.
+
+   decompress(data, max_length=-1)
+
+      Descompacta dados *data* (um *objeto bytes ou similar*),
+      retornando dados não compactados como bytes. Alguns dos *data*
+      podem ser armazenados em buffer internamente, para uso em
+      chamadas posteriores para "decompress()". Os dados retornados
+      devem ser concatenados com a saída de qualquer chamada anterior
+      para "decompress()".
+
+      Se *max_length* for não negativo, retornará no máximo
+      *max_length* bytes de dados descompactados. Se este limite for
+      atingido e mais saída puder ser produzida, o atributo
+      "needs_input" será definido como "False". Neste caso, a próxima
+      chamada para "decompress()" pode fornecer *data* como "b''" para
+      obter mais saída.
+
+      Se todos os dados de entrada foram descompactados e retornados
+      (seja porque era menor que *max_length* bytes, ou porque
+      *max_length* era negativo), o atributo "needs_input" será
+      definido como "True" .
+
+      A tentativa de descompactar os dados após o final do fluxo ser
+      atingido gera um "EOFError". Quaisquer dados encontrados após o
+      final do fluxo são ignorados e salvos no atributo "unused_data".
+
+      Alterado na versão 3.5: Adicionado o parâmetro *max_length*.
+
+   eof
+
+      "True" se o marcador de fim de fluxo foi atingido.
+
+      Novo na versão 3.3.
+
+   unused_data
+
+      Dados encontrados após o término do fluxo compactado.
+
+      Se este atributo for acessado antes do final do fluxo ser
+      alcançado, seu valor será "b''".
+
+   needs_input
+
+      "False" se o método "decompress()" puder fornecer mais dados
+      descompactados antes de exigir uma nova entrada descompactada.
+
+      Novo na versão 3.5.
+
+
+(De)compressão de uma só vez (one-shot)
+=======================================
+
+bz2.compress(data, compresslevel=9)
+
+   Compacta *data*, um *objeto bytes ou similar*.
+
+   *compresslevel*, se fornecido, deve ser um inteiro entre "1" e "9".
+   O padrão é "9".
+
+   Para compressão incremental, use um "BZ2Compressor".
+
+bz2.decompress(data)
+
+   Descompacta *data*, um *objeto bytes ou similar*.
+
+   Se *data* for a concatenação de vários fluxos compactados,
+   descompacta todos os fluxos.
+
+   Para descompressão incremental, use um "BZ2Decompressor".
+
+   Alterado na versão 3.3: Suporte para entradas multifluxo foi
+   adicionado.
+
+
+Exemplos de uso
+===============
+
+Abaixo estão alguns exemplos de uso típico do módulo "bz2".
+
+Usando "compress()" e "decompress()" para demonstrar a compactação de
+ida e volta:
+
+>>> import bz2
+>>> data = b"""\
+... Donec rhoncus quis sapien sit amet molestie. Fusce scelerisque vel augue
+... nec ullamcorper. Nam rutrum pretium placerat. Aliquam vel tristique lorem,
+... sit amet cursus ante. In interdum laoreet mi, sit amet ultrices purus
+... pulvinar a. Nam gravida euismod magna, non varius justo tincidunt feugiat.
+... Aliquam pharetra lacus non risus vehicula rutrum. Maecenas aliquam leo
+... felis. Pellentesque semper nunc sit amet nibh ullamcorper, ac elementum
+... dolor luctus. Curabitur lacinia mi ornare consectetur vestibulum."""
+>>> c = bz2.compress(data)
+>>> len(data) / len(c)  # Data compression ratio
+1.513595166163142
+>>> d = bz2.decompress(c)
+>>> data == d  # Check equality to original object after round-trip
+True
+
+Usando "BZ2Compressor" para compressão incremental:
+
+>>> import bz2
+>>> def gen_data(chunks=10, chunksize=1000):
+...     """Yield incremental blocks of chunksize bytes."""
+...     for _ in range(chunks):
+...         yield b"z" * chunksize
+...
+>>> comp = bz2.BZ2Compressor()
+>>> out = b""
+>>> for chunk in gen_data():
+...     # Provide data to the compressor object
+...     out = out + comp.compress(chunk)
+...
+>>> # Finish the compression process.  Call this once you have
+>>> # finished providing data to the compressor.
+>>> out = out + comp.flush()
+
+O exemplo acima usa um fluxo de dados muito "não aleatório" (um fluxo
+de partes "b"z""). Dados aleatórios tendem a compactar mal, enquanto
+dados ordenados e repetitivos geralmente produzem uma alta taxa de
+compactação.
+
+Escrevendo e lendo um arquivo compactado com bzip2 no modo binário:
+
+>>> import bz2
+>>> data = b"""\
+... Donec rhoncus quis sapien sit amet molestie. Fusce scelerisque vel augue
+... nec ullamcorper. Nam rutrum pretium placerat. Aliquam vel tristique lorem,
+... sit amet cursus ante. In interdum laoreet mi, sit amet ultrices purus
+... pulvinar a. Nam gravida euismod magna, non varius justo tincidunt feugiat.
+... Aliquam pharetra lacus non risus vehicula rutrum. Maecenas aliquam leo
+... felis. Pellentesque semper nunc sit amet nibh ullamcorper, ac elementum
+... dolor luctus. Curabitur lacinia mi ornare consectetur vestibulum."""
+>>> with bz2.open("myfile.bz2", "wb") as f:
+...     # Write compressed data to file
+...     unused = f.write(data)
+...
+>>> with bz2.open("myfile.bz2", "rb") as f:
+...     # Decompress data from file
+...     content = f.read()
+...
+>>> content == data  # Check equality to original object after round-trip
+True

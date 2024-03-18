@@ -1,0 +1,55 @@
+"colorsys" --- Conversões entre sistemas de cores
+*************************************************
+
+**Código-fonte:** Lib/colorsys.py
+
+======================================================================
+
+O módulo "colorsys" define conversões bidirecionais de valores de
+cores entre cores expressas no espaço de cores RGB (Red Green Blue)
+usado em monitores de computador e três outros sistemas de
+coordenadas: YIQ, HLS (Hue Lightness Saturation) e HSV (Hue Saturation
+Value). As coordenadas em todos esses espaços de cores são valores de
+ponto flutuante. No espaço YIQ, a coordenada Y está entre 0 e 1, mas
+as coordenadas I e Q podem ser positivas ou negativas. Em todos os
+outros espaços, as coordenadas estão todas entre 0 e 1.
+
+Ver também:
+
+  Mais informações sobre espaços de cores podem ser encontradas em
+  https://poynton.ca/ColorFAQ.html e
+  https://www.cambridgeincolour.com/tutorials/color-spaces.htm.
+
+O módulo "colorsys" define as seguintes funções:
+
+colorsys.rgb_to_yiq(r, g, b)
+
+   Converte a cor de coordenadas RGB para coordenadas YIQ.
+
+colorsys.yiq_to_rgb(y, i, q)
+
+   Converte a cor de coordenadas YIQ para coordenadas RGB.
+
+colorsys.rgb_to_hls(r, g, b)
+
+   Converte a cor de coordenadas RGB para coordenadas HLS.
+
+colorsys.hls_to_rgb(h, l, s)
+
+   Converte a cor de coordenadas HLS para coordenadas RGB.
+
+colorsys.rgb_to_hsv(r, g, b)
+
+   Converte a cor de coordenadas RGB para coordenadas HSV.
+
+colorsys.hsv_to_rgb(h, s, v)
+
+   Converte a cor de coordenadas HSV para coordenadas RGB.
+
+Exemplo:
+
+   >>> import colorsys
+   >>> colorsys.rgb_to_hsv(0.2, 0.4, 0.4)
+   (0.5, 0.5, 0.4)
+   >>> colorsys.hsv_to_rgb(0.5, 0.5, 0.4)
+   (0.2, 0.4, 0.4)

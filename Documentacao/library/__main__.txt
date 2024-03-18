@@ -1,0 +1,363 @@
+"__main__" --- Ambiente de código principal
+*******************************************
+
+======================================================================
+
+Em Python, o nome especial "__main__" é usado em duas construções
+importantes:
+
+1. O nome do ambiente principal do programa, que pode ser verificado
+   usando a expressão "__name__ == '__main__'"; e
+
+2. o arquivo "__main__.py" em pacotes Python.
+
+Ambas as formas estão relacionadas aos módulos Python; como os
+usuários interagem com eles e como eles interagem entre si. Eles serão
+explicados em detalhes abaixo. Se você ainda não conhece módulos
+Python, veja a seção Módulos para uma introdução.
+
+
+"__name__ == '__main__'"
+========================
+
+Quando um pacote ou módulo Python é importado, "__name__" é definido
+como o nome do módulo. Normalmente, este é o nome do próprio arquivo
+Python sem a extensão ".py":
+
+   >>> import configparser
+   >>> configparser.__name__
+   'configparser'
+
+Caso o arquivo seja parte de um pacote, "__name__" também incluirá o
+nome da pasta raiz do pacote.
+
+   >>> from concurrent.futures import process
+   >>> process.__name__
+   'concurrent.futures.process'
+
+Porém, se o módulo for executado como o código principal, "__name__"
+passa a ser definido como a string "'__main__'"
+
+
+O que é o "ambiente de código principal"?
+-----------------------------------------
+
+"__main__" é o nome do ambiente principal no qual o código é
+executado. "Ambiente de código principal" é o primeiro módulo Python
+definido pelo usuário que começa a ser executado. É considerado
+principal porque ele importa todos os outros módulos que o programa
+precisa. As vezes, "ambiente principal" também pode ser chamado de
+"ponto de entrada" da aplicação.
+
+O ambiente de código principal pode ser:
+
+* o escopo de um prompt de comando interativo:
+
+     >>> __name__
+     '__main__'
+
+* o módulo Python passado ao interpretador do Python como um argumento
+  correspondente ao nome do arquivo:
+
+     $ python helloworld.py
+     Hello, world!
+
+* o módulo ou pacote Python passado ao interpretador do Python com o
+  argumento "-m":
+
+     $ python -m tarfile
+     usage: tarfile.py [-h] [-v] (...)
+
+* código Python lido pelo interpretador através da entrada padrão de
+  linha de comando:
+
+     $ echo "import this" | python
+     The Zen of Python, by Tim Peters
+
+     Beautiful is better than ugly.
+     Explicit is better than implicit.
+     ...
+
+* código Python passado ao interpretador do Python com o argumento
+  "-c":
+
+     $ python -c "import this"
+     The Zen of Python, by Tim Peters
+
+     Beautiful is better than ugly.
+     Explicit is better than implicit.
+     ...
+
+Em cada uma destas situações, a variável especial "__name__" passa a
+ser definida como "'__main__'".
+
+Como resultado, um módulo pode saber se está ou não sendo executado no
+ambiente principal verificando seu próprio "__name__", que habilita um
+termo comum para executar código condicionalmente quando o módulo não
+é inicializado a partir de uma instrução de importação:
+
+   if __name__ == '__main__':
+       # Execute when the module is not initialized from an import statement.
+       ...
+
+Ver também:
+
+  Para uma visão mais detalhada sobre como "__name__" é definido em
+  todas as situações, veja a sessão Módulos.
+
+
+Uso idiomático
+--------------
+
+Alguns módulos contém códigos que são específicos para serem usados
+como scripts, como análise de argumentos através de linha de comando
+ou leitura de dados da entrada padrão. Se um módulo como o citado for
+importado em um outro módulo diferente, por exemplo em testes
+unitários, o código do script também seria executado de forma
+indesejada.
+
+É aqui onde o uso do trecho de código "if __name__ == '__main__'"
+revela-se útil. Os códigos dentro desta condicional não rodarão ao não
+ser que o módulo seja executado através do ambiente principal.
+
+Colocar o mínimo de instruções possível no bloco abaixo de "if
+__name__ == '__main__'" pode melhorar a clareza e a precisão do
+código. Na maioria das vezes, uma função chamada de "main" encapsula o
+comportamento principal do programa:
+
+   # echo.py
+
+   import shlex
+   import sys
+
+   def echo(phrase: str) -> None:
+      """A dummy wrapper around print."""
+      # for demonstration purposes, you can imagine that there is some
+      # valuable and reusable logic inside this function
+      print(phrase)
+
+   def main() -> int:
+       """Echo the input arguments to standard output"""
+       phrase = shlex.join(sys.argv)
+       echo(phrase)
+       return 0
+
+   if __name__ == '__main__':
+       sys.exit(main())  # next section explains the use of sys.exit
+
+Repare quem se o módulo, ao invés de ter encapsulado o código dentro
+da função "main", fosse colocado direto dentro do bloco "if __name__
+== '__main__'", a variável "phrase" seria global para todo o módulo.
+Isto é suscetível à erros pois outras funções dentro do módulo
+poderiam inadvertidamente usar a variável global ao invés da local. A
+função "main" resolve este problema.
+
+O uso da função "main" tem o benefício adicional de a própria função
+"echo" ser isolada e importável em outro lugar. Quando "echo.py" é
+importado, as funções "echo" e "main" serão definidas, mas nenhuma
+delas será chamada por conta do bloco "__name__ != '__main__'".
+
+
+Considerações sobre pacotes
+---------------------------
+
+"main" são funções frequentemente usadas ​​para criar ferramentas de
+linha de comando especificando-as como pontos de entrada para scripts
+de console. Quando isto é feito, pip insere a chamada da função em um
+modelo de script, onde o valor de retorno de "main" é passado para
+"sys.exit()". Por exemplo:
+
+   sys.exit(main())
+
+Uma vez que a chamada à "main" está embutida dentro de "sys.exit()", a
+expectativa é que a sua função retorne somente valores aceitável para
+"sys.exit()"; normalmente um inteiro ou "None" (retornado de forma
+implícita, caso a sua função não tenha uma instrução de retorno).
+
+Seguindo proativamente essa convenção, nosso módulo terá o mesmo
+comportamento quando executado diretamente (ou seja, "python echo.py")
+como terá também se posteriormente criarmos um pacote como um ponto de
+entrada de script de console em um pacote instalável via pip.
+
+Em particular, tenha cuidado ao retornar strings de sua função "main".
+"sys.exit()" interpretará um argumento de string como uma mensagem de
+falha, então seu programa terá um código de saída "1", indicando
+falha, e a string será escrita em "sys.stderr". O exemplo anterior de
+"echo.py" exemplifica o uso da convenção "sys.exit(main())".
+
+Ver também:
+
+  O Guia de Usuário para Empacotamento de Python contém uma coleção de
+  tutoriais e referências sobre como distribuir e instalar pacotes
+  Python com ferramentas modernas.
+
+
+"__main__.py" em pacotes Python
+===============================
+
+Se você não estiver familiarizado com pacotes Python, veja a seção
+Pacotes do tutorial. Mais comumente, o arquivo "__main__.py" é usado
+para fornecer uma interface de linha de comando para um pacote.
+Considere o seguinte pacote hipotético, "bandclass":
+
+   bandclass
+     ├── __init__.py
+     ├── __main__.py
+     └── student.py
+
+"__main__.py" será executado quando o próprio pacote for invocado
+diretamente da linha de comando usando o sinalizador "-m". Por
+exemplo:
+
+   $ python -m bandclass
+
+Este comando fará com que "__main__.py" seja executado. Como você
+utiliza esse mecanismo dependerá da natureza do pacote que você está
+escrevendo, mas neste caso hipotético, pode fazer sentido permitir que
+o professor procure alunos:
+
+   # bandclass/__main__.py
+
+   import sys
+   from .student import search_students
+
+   student_name = sys.argv[1] if len(sys.argv) >= 2 else ''
+   print(f'Found student: {search_students(student_name)}')
+
+Observe que "from .student import search_students" é um exemplo de
+importação relativa. Esse estilo de importação pode ser usado ao fazer
+referência a módulos em um pacote. Para mais detalhes, veja
+Referências em um mesmo pacote na seção Módulos do tutorial.
+
+
+Uso idiomático
+--------------
+
+O conteúdo do "__main__.py" normalmente não é protegido por um bloco
+"if __name__ == '__main__'" .  Em vez disso, esses arquivos são
+mantidos curtos e importa funções para serem executados a partir de
+outros módulos.  Esses outros módulos podem então ter suas unidades
+facilmente testadas e são adequadamente reutilizáveis.
+
+Se usado, o bloco condicional "if __name__ == '__main__'" ainda
+funcionará como esperado para o arquivo "__main__.py" dentro de um
+pacote, pois seu atributo "__name__" incluirá o caminho do pacote se
+importado:
+
+   >>> import asyncio.__main__
+   >>> asyncio.__main__.__name__
+   'asyncio.__main__'
+
+Isso não funcionará para arquivos "__main__.py" no diretório raiz de
+um arquivo .zip. Portanto, para consistência, dê preferência para
+"__main__.py" minimalistas, como o "venv" mencionado abaixo.
+
+Ver também:
+
+  Veja "venv", da biblioteca padrão, para um exemplo de pacote com um
+  "__main__.py" minimalista. Ele não contém um bloco "if __name__ ==
+  '__main__'". Você pode invocá-lo com "python -m venv [directory]".
+
+  Veja "runpy" para mais detalhes sobre o sinalizador "-m" para o
+  executável do interpretador.
+
+  Veja "zipapp" para saber como executar aplicativos compactados como
+  arquivos *.zip*. Nesse caso, o Python procura um arquivo
+  "__main__.py" no diretório raiz do arquivo.
+
+
+"import __main__"
+=================
+
+Independentemente do módulo com o qual um programa Python foi
+iniciado, outros módulos executados no mesmo programa podem importar o
+escopo do ambiente principal (*espaço de nomes*) importando o módulo
+"__main__". Isso não faz a importação de um arquivo "__main__.py", mas
+sim qualquer módulo que recebeu o nome especial "'__main__'".
+
+Aqui está um módulo de exemplo que consome o espaço de nomes
+"__main__":
+
+   # namely.py
+
+   import __main__
+
+   def did_user_define_their_name():
+       return 'my_name' in dir(__main__)
+
+   def print_user_name():
+       if not did_user_define_their_name():
+           raise ValueError('Define the variable `my_name`!')
+
+       if '__file__' in dir(__main__):
+           print(__main__.my_name, "found in file", __main__.__file__)
+       else:
+           print(__main__.my_name)
+
+Exemplo de uso deste módulo pode ser como abaixo:
+
+   # start.py
+
+   import sys
+
+   from namely import print_user_name
+
+   # my_name = "Dinsdale"
+
+   def main():
+       try:
+           print_user_name()
+       except ValueError as ve:
+           return str(ve)
+
+   if __name__ == "__main__":
+       sys.exit(main())
+
+Agora, se iniciarmos nosso programa, o resultado seria assim:
+
+   $ python start.py
+   Define the variable `my_name`!
+
+O código de saída do programa seria 1, indicando um erro. Descomentar
+a linha com "my_name = "Dinsdale"" corrige o programa e agora ele sai
+com o código de status 0, indicando sucesso:
+
+   $ python start.py
+   Dinsdale found in file /path/to/start.py
+
+Observe que a importação de "__main__" não causa nenhum problema com a
+execução involuntária de código principal destinado ao uso de script
+que é colocado no bloco "if __name__ == "__main__"" do módulo "start".
+Por que isso funciona?
+
+O Python insere um módulo "__main__" vazio em "sys.modules" na
+inicialização do interpretador e o preenche executando o código
+principal. Em nosso exemplo, este é o módulo "start" que executa linha
+por linha e importa "namely". Por sua vez, "namely" importa "__main__"
+(que é realmente "start"). Isso é um ciclo de importação! Felizmente,
+como o módulo "__main__" parcialmente preenchido está presente em
+"sys.modules", o Python o passa para "namely". Veja Considerações
+especiais sobre __main__ na referência do sistema de importação para
+detalhes sobre como isso funciona.
+
+O REPL do Python é outro exemplo de um "ambiente principal", então
+qualquer coisa definida no REPL se torna parte do escopo do
+"__main__":
+
+   >>> import namely
+   >>> namely.did_user_define_their_name()
+   False
+   >>> namely.print_user_name()
+   Traceback (most recent call last):
+   ...
+   ValueError: Define the variable `my_name`!
+   >>> my_name = 'Jabberwocky'
+   >>> namely.did_user_define_their_name()
+   True
+   >>> namely.print_user_name()
+   Jabberwocky
+
+Note que neste caso o escopo "__main__" não contém um atributo
+"__file__", pois é interativo.
+
+O escopo "__main__" é usado na implementação de "pdb" e "rlcompleter".

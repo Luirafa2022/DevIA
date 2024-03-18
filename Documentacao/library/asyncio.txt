@@ -1,0 +1,119 @@
+"asyncio" --- E/S assíncrona
+****************************
+
+======================================================================
+
+
+Olá Mundo!
+^^^^^^^^^^
+
+   import asyncio
+
+   async def main():
+       print('Hello ...')
+       await asyncio.sleep(1)
+       print('... World!')
+
+   asyncio.run(main())
+
+asyncio é uma biblioteca para escrever código **simultâneo** usando a
+sintaxe **async/await**.
+
+O asyncio é usado como uma base para várias estruturas assíncronas do
+Python que fornecem rede e servidores web de alto desempenho,
+bibliotecas de conexão de banco de dados, filas de tarefas
+distribuídas etc.
+
+asyncio geralmente serve perfeitamente para código de rede
+**estruturado** de alto nível e vinculado a E/S.
+
+asyncio fornece um conjunto de APIs de **alto nível** para:
+
+* executar corrotinas do Python simultaneamente e ter controle total
+  sobre sua execução;
+
+* realizar IPC e E/S de rede;
+
+* controlar subprocessos;
+
+* distribuir tarefas por meio de filas;
+
+* sincronizar código simultâneo;
+
+Além disso, há APIs de **baixo nível** para *desenvolvedores de
+biblioteca e framework* para:
+
+* criar e gerenciar laços de eventos, que fornecem APIs assíncronas
+  para rede, execução de subprocessos, tratamento de sinais de
+  sistemas operacionais etc;
+
+* implementar protocolos eficientes usando transportes;
+
+* fazer uma ponte sobre bibliotecas baseadas em chamadas e codificar
+  com a sintaxe de async/await.
+
+Você pode experimentar um contexto concorrente "asyncio" no REPL:
+
+   $ python -m asyncio
+   asyncio REPL ...
+   Use "await" directly instead of "asyncio.run()".
+   Type "help", "copyright", "credits" or "license" for more information.
+   >>> import asyncio
+   >>> await asyncio.sleep(10, result='hello')
+   'hello'
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+-[ Referência ]-
+
+
+APIs de alto nível
+^^^^^^^^^^^^^^^^^^
+
+* Runners
+
+* Corrotinas e Tarefas
+
+* Streams
+
+* Synchronization Primitives
+
+* Subprocessos
+
+* Filas
+
+* Exceções
+
+
+APIs de baixo nível
+^^^^^^^^^^^^^^^^^^^
+
+* Laço de Eventos
+
+* Futuros
+
+* Transports and Protocols
+
+* Políticas
+
+* Suporte a plataformas
+
+* Extensão
+
+
+Guias e tutoriais
+^^^^^^^^^^^^^^^^^
+
+* Índice da API de alto nível
+
+* Índice de APIs de baixo nível
+
+* Desenvolvendo com asyncio
+
+Nota:
+
+  O código-fonte para o asyncio pode ser encontrado em Lib/asyncio/.

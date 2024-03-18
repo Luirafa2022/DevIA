@@ -1,0 +1,227 @@
+"email.mime": Criando e-mail e objetos MIME fo zero
+***************************************************
+
+**Código-fonte:** Lib/email/mime/
+
+======================================================================
+
+Este módulo faz parte da API de e-mail legada ("Compat32"). Sua
+funcionalidade é parcialmente substituída por "contentmanager" na nova
+API, mas em certos aplicativos essas classes ainda podem ser úteis,
+mesmo em código não legado.
+
+Normalmente, você obtém uma estrutura de objeto de mensagem passando
+um arquivo ou algum texto para um analisador, que analisa o texto e
+retorna o objeto de mensagem raiz. No entanto, você também pode criar
+uma estrutura de mensagem completa do zero, ou até objetos individuais
+de "Message" manualmente. De fato, você também pode pegar uma
+estrutura existente e adicionar novos objetos "Message", movê-los,
+etc. Isso cria uma interface muito conveniente para fatiar e cortar
+dados de mensagens MIME.
+
+Você pode criar uma nova estrutura de objeto criando instâncias de
+"Message", adicionando anexos e todos os cabeçalhos apropriados
+manualmente. Porém, para mensagens MIME, o pacote "email" fornece
+algumas subclasses convenientes para facilitar as coisas.
+
+Arquivo estão as classes:
+
+class email.mime.base.MIMEBase(_maintype, _subtype, *, policy=compat32, **_params)
+
+   Módulo: "email.mime.base"
+
+   Esta é a classe base para todas as subclasses específicas de MIME
+   de "Message". Normalmente você não criará instâncias
+   especificamente de "MIMEBase", embora possa. A "MIMEBase" é
+   fornecida principalmente como uma classe base conveniente para
+   subclasses mais específicas para MIME.
+
+   *_maintype* é o tipo principal de *Content-Type* (ex., *text* ou
+   *image*) e *_subtype* é o tipo principal de *Content-Type* (ex.,
+   *plain* ou *gif*). *_params* é um dicionário de parâmetros
+   chave/valor e é passado diretamente para "Message.add_header".
+
+   Se *policy* for especificado, (o padrão é a política "compat32")
+   será passado para "Message".
+
+   A classe "MIMEBase" sempre adiciona um cabeçalho *Content-Type*
+   (com base em *_maintype*, *_subtype* e *_params*) e um cabeçalho
+   *MIME-Version* (sempre definido como "1.0").
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.nonmultipart.MIMENonMultipart
+
+   Módulo: "email.mime.nonmultipart"
+
+   Uma subclasse de "MIMEBase", esta é uma classe base intermediária
+   para mensagens MIME que não são *multipart*. O principal objetivo
+   desta classe é impedir o uso do método "attach()", que só faz
+   sentido para mensagens *multipart*. Se "attach()" for chamado, uma
+   exceção "MultipartConversionError" será levantada.
+
+class email.mime.multipart.MIMEMultipart(_subtype='mixed', boundary=None, _subparts=None, *, policy=compat32, **_params)
+
+   Módulo: "email.mime.multipart"
+
+   Uma subclasse de "MIMEBase", esta é uma classe base intermediária
+   para mensagens MIME que são *multipart*. O *_subtype* opcional é
+   padronizado como *mixed*, mas pode ser usado para especificar o
+   subtipo da mensagem. Um cabeçalho *Content-Type* de
+   *multipart/_subtype* será adicionado ao objeto da mensagem. Um
+   cabeçalho *MIME-Version* também será adicionado.
+
+   O *boundary* opcional é a string de limites de várias partes.
+   Quando "None" (o padrão), o limite é calculado quando necessário
+   (por exemplo, quando a mensagem é serializada).
+
+   *_subparts* é uma sequência de subpartes iniciais para a carga.
+   Deve ser possível converter essa sequência em uma lista. Você
+   sempre pode anexar novas subpartes à mensagem usando o método
+   "Message.attach".
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   Additional parameters for the *Content-Type* header are taken from
+   the keyword arguments, or passed into the *_params* argument, which
+   is a keyword dictionary.
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.application.MIMEApplication(_data, _subtype='octet-stream', _encoder=email.encoders.encode_base64, *, policy=compat32, **_params)
+
+   Módulo: "email.mime.application"
+
+   A subclass of "MIMENonMultipart", the "MIMEApplication" class is
+   used to represent MIME message objects of major type *application*.
+   *_data* contains the bytes for the raw application data.  Optional
+   *_subtype* specifies the MIME subtype and defaults to *octet-
+   stream*.
+
+   O *_encoder* opcional é um chamável (isto é, função) que executará
+   a codificação real dos dados para transporte. Esse chamável requer
+   um argumento, que é a instância "MIMEApplication". Ele deve usar
+   "get_payload()" e "set_payload()" para alterar a carga útil para o
+   formulário codificado. Também deve adicionar *Content-Transfer-
+   Encoding* ou outros cabeçalhos ao objeto de mensagem, conforme
+   necessário. A codificação padrão é base64. Veja o módulo
+   "email.encoders" para obter uma lista dos codificadores embutidos.
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   *_params* são passados diretamente para o construtor da classe
+   base.
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.audio.MIMEAudio(_audiodata, _subtype=None, _encoder=email.encoders.encode_base64, *, policy=compat32, **_params)
+
+   Módulo: "email.mime.audio"
+
+   A subclass of "MIMENonMultipart", the "MIMEAudio" class is used to
+   create MIME message objects of major type *audio*. *_audiodata*
+   contains the bytes for the raw audio data.  If this data can be
+   decoded as au, wav, aiff, or aifc, then the subtype will be
+   automatically included in the *Content-Type* header. Otherwise you
+   can explicitly specify the audio subtype via the *_subtype*
+   argument.  If the minor type could not be guessed and *_subtype*
+   was not given, then "TypeError" is raised.
+
+   O *_encoder* opcional é um chamável (ou seja, função) que executará
+   a codificação real dos dados de áudio para transporte. Esse
+   chamável requer um argumento, que é a instância "MIMEAudio". Ele
+   deve usar "get_payload()" e "set_payload()" para alterar a carga
+   útil para a forma codificada. Também deve adicionar *Content-
+   Transfer-Encoding* ou outros cabeçalhos ao objeto de mensagem,
+   conforme necessário. A codificação padrão é base64. Veja o módulo
+   "email.encoders" para obter uma lista dos codificadores embutidos.
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   *_params* são passados diretamente para o construtor da classe
+   base.
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.image.MIMEImage(_imagedata, _subtype=None, _encoder=email.encoders.encode_base64, *, policy=compat32, **_params)
+
+   Módulo: "email.mime.image"
+
+   A subclass of "MIMENonMultipart", the "MIMEImage" class is used to
+   create MIME message objects of major type *image*. *_imagedata*
+   contains the bytes for the raw image data.  If this data type can
+   be detected (jpeg, png, gif, tiff, rgb, pbm, pgm, ppm, rast, xbm,
+   bmp, webp, and exr attempted), then the subtype will be
+   automatically included in the *Content-Type* header. Otherwise you
+   can explicitly specify the image subtype via the *_subtype*
+   argument. If the minor type could not be guessed and *_subtype* was
+   not given, then "TypeError" is raised.
+
+   Optional *_encoder* is a callable (i.e. function) which will
+   perform the actual encoding of the image data for transport.  This
+   callable takes one argument, which is the "MIMEImage" instance. It
+   should use "get_payload()" and "set_payload()" to change the
+   payload to encoded form.  It should also add any *Content-Transfer-
+   Encoding* or other headers to the message object as necessary.  The
+   default encoding is base64.  See the "email.encoders" module for a
+   list of the built-in encoders.
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   *_params* are passed straight through to the "MIMEBase"
+   constructor.
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.message.MIMEMessage(_msg, _subtype='rfc822', *, policy=compat32)
+
+   Module: "email.mime.message"
+
+   A subclass of "MIMENonMultipart", the "MIMEMessage" class is used
+   to create MIME objects of main type *message*. *_msg* is used as
+   the payload, and must be an instance of class "Message" (or a
+   subclass thereof), otherwise a "TypeError" is raised.
+
+   Optional *_subtype* sets the subtype of the message; it defaults to
+   *rfc822*.
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.
+
+class email.mime.text.MIMEText(_text, _subtype='plain', _charset=None, *, policy=compat32)
+
+   Módulo: "email.mime.text"
+
+   A subclass of "MIMENonMultipart", the "MIMEText" class is used to
+   create MIME objects of major type *text*. *_text* is the string for
+   the payload.  *_subtype* is the minor type and defaults to *plain*.
+   *_charset* is the character set of the text and is passed as an
+   argument to the "MIMENonMultipart" constructor; it defaults to "us-
+   ascii" if the string contains only "ascii" code points, and "utf-8"
+   otherwise.  The *_charset* parameter accepts either a string or a
+   "Charset" instance.
+
+   Unless the *_charset* argument is explicitly set to "None", the
+   MIMEText object created will have both a *Content-Type* header with
+   a "charset" parameter, and a *Content-Transfer-Encoding* header.
+   This means that a subsequent "set_payload" call will not result in
+   an encoded payload, even if a charset is passed in the
+   "set_payload" command.  You can "reset" this behavior by deleting
+   the "Content-Transfer-Encoding" header, after which a "set_payload"
+   call will automatically encode the new payload (and add a new
+   *Content-Transfer-Encoding* header).
+
+   O argumento opcional *policy* tem como padrão "compat32".
+
+   Alterado na versão 3.5: *_charset* also accepts "Charset"
+   instances.
+
+   Alterado na versão 3.6: Adicionado o parâmetro somente-nomeado
+   *policy*.

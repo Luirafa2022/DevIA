@@ -1,0 +1,185 @@
+Índice da API de alto nível
+***************************
+
+Esta página lista todas as APIs asyncio de alto nível habilitadas por
+async/await.
+
+
+Tarefas
+=======
+
+Utilitários para executar programas asyncio, criar Tarefas, e esperar
+por múltiplas coisas com tempos limites.
+
++----------------------------------------------------+----------------------------------------------------+
+| "run()"                                            | Cria um laço de eventos, roda uma corrotina, fecha |
+|                                                    | o laço.                                            |
++----------------------------------------------------+----------------------------------------------------+
+| "Runner"                                           | A context manager that simplifies multiple async   |
+|                                                    | function calls.                                    |
++----------------------------------------------------+----------------------------------------------------+
+| "Task"                                             | Objeto Task.                                       |
++----------------------------------------------------+----------------------------------------------------+
+| "TaskGroup"                                        | A context manager that holds a group of tasks.     |
+|                                                    | Provides a convenient and reliable way to wait for |
+|                                                    | all tasks in the group to finish.                  |
++----------------------------------------------------+----------------------------------------------------+
+| "create_task()"                                    | Start an asyncio Task, then returns it.            |
++----------------------------------------------------+----------------------------------------------------+
+| "current_task()"                                   | Retorna para a Tarefa atual.                       |
++----------------------------------------------------+----------------------------------------------------+
+| "all_tasks()"                                      | Return all tasks that are not yet finished for an  |
+|                                                    | event loop.                                        |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "sleep()"                                  | Dorme for um número de segundos.                   |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "gather()"                                 | Agenda e espera por coisas concorrentemente.       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "wait_for()"                               | Executa com um tempo limite.                       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "shield()"                                 | Protege contra cancelamento.                       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "wait()"                                   | Monitora para conclusão.                           |
++----------------------------------------------------+----------------------------------------------------+
+| "timeout()"                                        | Run with a timeout. Useful in cases when           |
+|                                                    | "wait_for" is not suitable.                        |
++----------------------------------------------------+----------------------------------------------------+
+| "to_thread()"                                      | Executa uma função assincronamente em uma thread   |
+|                                                    | separada.                                          |
++----------------------------------------------------+----------------------------------------------------+
+| "run_coroutine_threadsafe()"                       | Agenda uma corrotina a partir de outra thread do   |
+|                                                    | sistema operacional.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "for in" "as_completed()"                          | Monitora a conclusão com um loop "for".            |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Usando asyncio.gather() para executar coisas em paralelo.
+
+* Usando asyncio.wait_for() para forçar um tempo limite de execução.
+
+* Cancelamento.
+
+* Usando asyncio.sleep().
+
+* Veja também a página principal de documentação sobre Tarefas.
+
+
+Filas
+=====
+
+Filas devem ser usadas para distribuir trabalho entre múltiplas
+Tarefas asyncio, implementar pools de conexão, e padrões pub/sub.
+
++----------------------------------------------------+----------------------------------------------------+
+| "Queue"                                            | Uma fila FIFO - Primeiro que entra, é o primeiro   |
+|                                                    | que sai.                                           |
++----------------------------------------------------+----------------------------------------------------+
+| "PriorityQueue"                                    | Uma fila de prioridade.                            |
++----------------------------------------------------+----------------------------------------------------+
+| "LifoQueue"                                        | Uma fila LIFO - Último que entra, é o primeiro que |
+|                                                    | sai.                                               |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Usando asyncio.Queue para distribuir cargas de trabalho entre
+  diversas Tasks.
+
+* Veja também a Página de documentação da classe Queue.
+
+
+Subprocessos
+============
+
+Utilitários para iniciar subprocessos e executar comandos no console.
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "create_subprocess_exec()"                 | Cria um subprocesso.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "create_subprocess_shell()"                | Executa um comando no console.                     |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Executando um comando no console.
+
+* Veja também a documentação de subprocessos de APIs.
+
+
+Streams
+=======
+
+APIs de alto nível para trabalhar com entrada e saída de rede.
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "open_connection()"                        | Estabelece uma conexão TCP.                        |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "open_unix_connection()"                   | Estabelece uma conexão com soquete Unix.           |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "start_server()"                           | Inicia um servidor TCP.                            |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "start_unix_server()"                      | Inicia um servidor com soquete Unix.               |
++----------------------------------------------------+----------------------------------------------------+
+| "StreamReader"                                     | Objeto async/await de alto nível para receber      |
+|                                                    | dados de rede.                                     |
++----------------------------------------------------+----------------------------------------------------+
+| "StreamWriter"                                     | Objeto async/await de alto nível para enviar dados |
+|                                                    | pela rede.                                         |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Exemplo de cliente TCP.
+
+* Veja também a documentação das APIs de streams.
+
+
+Sincronização
+=============
+
+Primitivas de sincronização similares a threads, que podem ser usadas
+em tarefas.
+
++----------------------------------------------------+----------------------------------------------------+
+| "Lock"                                             | Um bloqueio mutex.                                 |
++----------------------------------------------------+----------------------------------------------------+
+| "Event"                                            | Um objeto de evento.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "Condition"                                        | Um objeto de condição.                             |
++----------------------------------------------------+----------------------------------------------------+
+| "Semaphore"                                        | Um semáforo.                                       |
++----------------------------------------------------+----------------------------------------------------+
+| "BoundedSemaphore"                                 | Um semáforo limitado.                              |
++----------------------------------------------------+----------------------------------------------------+
+| "Barrier"                                          | A barrier object.                                  |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Usando asyncio.Event.
+
+* Using asyncio.Barrier.
+
+* Veja também a documentação das primitivas de sincronização de
+  asyncio.
+
+
+Exceções
+========
+
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.CancelledError"                           | Levantado quanto a Tarefa é cancelada. Veja também |
+|                                                    | "Task.cancel()".                                   |
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.BrokenBarrierError"                       | Raised when a Barrier is broken. See also          |
+|                                                    | "Barrier.wait()".                                  |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Manipulando CancelledError para executar código no cancelamento de
+  uma requisição.
+
+* Veja também a lista completa de exceções específicas de asyncio.

@@ -1,0 +1,256 @@
+"array"--- Vetores eficientes de valores numéricos
+**************************************************
+
+======================================================================
+
+Esse módulo define um tipo de objeto que pode representar
+compactamente um vetor de valores básicos: caracteres, inteiros,
+números de ponto flutuante. Vetores são tipos de sequência e funcionam
+bem parecidamente com listas, porém o tipo dos objetos armazenados é
+restringido. O tipo é especificado na criação do objeto usando um
+*código de tipo*, que é um único caractere. São definidos os seguintes
+códigos de tipo:
+
++-------------+----------------------+---------------------+-------------------------+---------+
+| Código de   | Tipo em C            | Tipo em Python      | Tamanho mínimo em bytes | Notas   |
+| tipo        |                      |                     |                         |         |
+|=============|======================|=====================|=========================|=========|
+| "'b'"       | signed char          | int                 | 1                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'B'"       | unsigned char        | int                 | 1                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'u'"       | wchar_t              | Caractere unicode   | 2                       | (1)     |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'h'"       | signed short         | int                 | 2                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'H'"       | unsigned short       | int                 | 2                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'i'"       | signed int           | int                 | 2                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'I'"       | unsigned int         | int                 | 2                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'l'"       | signed long          | int                 | 4                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'L'"       | unsigned long        | int                 | 4                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'q'"       | signed long long     | int                 | 8                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'Q'"       | unsigned long long   | int                 | 8                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'f'"       | float                | float               | 4                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+| "'d'"       | double               | float               | 8                       |         |
++-------------+----------------------+---------------------+-------------------------+---------+
+
+Notas:
+
+1. Pode ser de 16 ou 32 bits dependendo da plataforma.
+
+   Alterado na versão 3.9: "array('u')" now uses "wchar_t" as C type
+   instead of deprecated "Py_UNICODE". This change doesn't affect its
+   behavior because "Py_UNICODE" is alias of "wchar_t" since Python
+   3.3.
+
+   Descontinuado desde a versão 3.3, será removido na versão 4.0.
+
+The actual representation of values is determined by the machine
+architecture (strictly speaking, by the C implementation).  The actual
+size can be accessed through the "array.itemsize" attribute.
+
+The module defines the following item:
+
+array.typecodes
+
+   String com todos os códigos de tipo disponíveis.
+
+O módulo define o seguinte tipo:
+
+class array.array(typecode[, initializer])
+
+   A new array whose items are restricted by *typecode*, and
+   initialized from the optional *initializer* value, which must be a
+   "bytes" or "bytearray" object, a Unicode string, or iterable over
+   elements of the appropriate type.
+
+   If given a "bytes" or "bytearray" object, the initializer is passed
+   to the new array's "frombytes()" method; if given a Unicode string,
+   the initializer is passed to the "fromunicode()" method; otherwise,
+   the initializer's iterator is passed to the "extend()" method to
+   add initial items to the array.
+
+   Objetos array tem suporte para as operações de sequência comuns:
+   indexação, fatiamento, concatenação, e multiplicação.  Quando
+   usando a atribuição de fatias, o valor associado deve ser um objeto
+   array com o mesmo código de tipo; caso contrário, "TypeError" é
+   levantada. Objetos array também implementam a interface buffer, e
+   também podem ser usados em qualquer lugar onde *objetos byte ou
+   similar* é permitido.
+
+   Levanta um evento de auditoria "array.__new__" com argumentos
+   "typecode", "initializer".
+
+   typecode
+
+      O caractere typecode usado para criar o vetor.
+
+   itemsize
+
+      O tamanho em bytes de um item do vetor em representação interna.
+
+   append(x)
+
+      Adiciona um novo item com valor *x* ao final do vetor.
+
+   buffer_info()
+
+      Return a tuple "(address, length)" giving the current memory
+      address and the length in elements of the buffer used to hold
+      array's contents.  The size of the memory buffer in bytes can be
+      computed as "array.buffer_info()[1] * array.itemsize".  This is
+      occasionally useful when working with low-level (and inherently
+      unsafe) I/O interfaces that require memory addresses, such as
+      certain "ioctl()" operations.  The returned numbers are valid as
+      long as the array exists and no length-changing operations are
+      applied to it.
+
+      Nota:
+
+        Quando se está usando vetores de código escrito em C ou C++ (o
+        único jeito efetivo de usar essa informação), faz mais sentido
+        usar a interface do buffer suportada pelos vetores. Esse
+        método é mantido para retrocompatibilidade e deve ser evitado
+        em código novo. A interface de buffers está documentada em
+        Protocolo de Buffer.
+
+   byteswap()
+
+      "Byteswap" todos os itens do vetor. Isso é somente suportado
+      para valores de 1, 2, 4 ou 8 bytes de tamanho; para outros tipos
+      de valores é levantada "RuntimeError" .  Isso é útil quando
+      estamos lendo dados de um arquivo para serem escritos em um
+      arquivo de outra máquina de ordem de bytes diferente.
+
+   count(x)
+
+      Retorna a quantidade de ocorrências de *x* no vetor.
+
+   extend(iterable)
+
+      Acrescenta os itens de *iterable* ao final do vetor. Se
+      *iterable* for outro vetor, ele deve ter *exatamente* o mesmo
+      código de tipo; senão, ocorrerá uma "TypeError". Se *iterable*
+      não for um vetor, ele deve ser iterável e seus elementos devem
+      ser do tipo correto para ser acrescentado ao vetor.
+
+   frombytes(buffer)
+
+      Appends items from the *bytes-like object*, interpreting its
+      content as an array of machine values (as if it had been read
+      from a file using the "fromfile()" method).
+
+      Novo na versão 3.2: "fromstring()" is renamed to "frombytes()"
+      for clarity.
+
+   fromfile(f, n)
+
+      Lê *n* itens (como valores de máquinas) do *objeto arquivo* *f*
+      e adiciona-os ao fim do vetor. Se estão disponíveis menos de *n*
+      itens, "EOFError" é levantada, mas os itens disponíveis ainda
+      são inseridos ao final do vetor.
+
+   fromlist(list)
+
+      Adiciona itens de *list*.  Isso é equivalente a "for x in list:
+      a.append(x)" exceto que se ocorrer um errro de tipo, o vetor não
+      é alterado.
+
+   fromunicode(s)
+
+      Extends this array with data from the given Unicode string. The
+      array must have type code "'u'"; otherwise a "ValueError" is
+      raised. Use "array.frombytes(unicodestring.encode(enc))" to
+      append Unicode data to an array of some other type.
+
+   index(x[, start[, stop]])
+
+      Return the smallest *i* such that *i* is the index of the first
+      occurrence of *x* in the array.  The optional arguments *start*
+      and *stop* can be specified to search for *x* within a
+      subsection of the array.  Raise "ValueError" if *x* is not
+      found.
+
+      Alterado na versão 3.10: Added optional *start* and *stop*
+      parameters.
+
+   insert(i, x)
+
+      Insere um novo item com o *x* no vetor antes da posição *i*.
+      Valores negativos são tratados como sendo em relação ao fim do
+      vetor.
+
+   pop([i])
+
+      Remove o item com o índice *i* do vetor e retorna este item. O
+      valor padrão do argumento é "-1", assim por padrão o último item
+      é removido e retornado.
+
+   remove(x)
+
+      Remove a primeira ocorrência de *x* do vetor.
+
+   reverse()
+
+      Inverte a ordem dos itens no vetor.
+
+   tobytes()
+
+      Devolve os itens do vetor como um vetor de valores de máquina
+      com a representação em bytes (a mesma sequência de bytes que
+      seria escrita pelo método "tofile()".)
+
+      Novo na versão 3.2: "tostring()" is renamed to "tobytes()" for
+      clarity.
+
+   tofile(f)
+
+      Escreve todos os itens (como valores de máquinas) para o *objeto
+      arquivo* *f*.
+
+   tolist()
+
+      Devolve os itens do vetor como uma lista comum.
+
+   tounicode()
+
+      Convert the array to a Unicode string.  The array must have a
+      type "'u'"; otherwise a "ValueError" is raised. Use
+      "array.tobytes().decode(enc)" to obtain a Unicode string from an
+      array of some other type.
+
+The string representation of array objects has the form
+"array(typecode, initializer)". The *initializer* is omitted if the
+array is empty, otherwise it is a Unicode string if the *typecode* is
+"'u'", otherwise it is a list of numbers. The string representation is
+guaranteed to be able to be converted back to an array with the same
+type and value using "eval()", so long as the "array" class has been
+imported using "from array import array". Variables "inf" and "nan"
+must also be defined if it contains corresponding floating point
+values. Examples:
+
+   array('l')
+   array('u', 'hello \u2641')
+   array('l', [1, 2, 3, 4, 5])
+   array('d', [1.0, 2.0, 3.14, -inf, nan])
+
+Ver também:
+
+  Módulo "struct"
+     Empacotamento e desempacotamento de dados binários heterogêneos.
+
+  Módulo "xdrlib"
+     Empacotamento e desempacotamento de dados External Data
+     Representation (XDR) usados em alguns sistemas para chamada
+     remota de procedimentos.
+
+  NumPy
+     The NumPy package defines another array type.

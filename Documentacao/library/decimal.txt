@@ -1,0 +1,2189 @@
+"decimal" --- Aritmética de ponto fixo decimal e ponto flutuante
+****************************************************************
+
+**Código-fonte:** Lib/decimal.py
+
+======================================================================
+
+The "decimal" module provides support for fast correctly rounded
+decimal floating point arithmetic. It offers several advantages over
+the "float" datatype:
+
+* Decimal "é baseado em um modelo de ponto flutuante que foi projetado
+  com as pessoas em mente e necessariamente tem um princípio
+  orientador primordial -- os computadores devem fornecer uma
+  aritmética que funcione da mesma maneira que a aritmética que as
+  pessoas aprendem na escola". -- trecho da especificação aritmética
+  decimal.
+
+* Decimal numbers can be represented exactly.  In contrast, numbers
+  like "1.1" and "2.2" do not have exact representations in binary
+  floating point. End users typically would not expect "1.1 + 2.2" to
+  display as "3.3000000000000003" as it does with binary floating
+  point.
+
+* The exactness carries over into arithmetic.  In decimal floating
+  point, "0.1 + 0.1 + 0.1 - 0.3" is exactly equal to zero.  In binary
+  floating point, the result is "5.5511151231257827e-017".  While near
+  to zero, the differences prevent reliable equality testing and
+  differences can accumulate. For this reason, decimal is preferred in
+  accounting applications which have strict equality invariants.
+
+* The decimal module incorporates a notion of significant places so
+  that "1.30 + 1.20" is "2.50".  The trailing zero is kept to indicate
+  significance. This is the customary presentation for monetary
+  applications. For multiplication, the "schoolbook" approach uses all
+  the figures in the multiplicands.  For instance, "1.3 * 1.2" gives
+  "1.56" while "1.30 * 1.20" gives "1.5600".
+
+* Diferentemente do ponto flutuante binário baseado em hardware, o
+  módulo decimal possui uma precisão alterável pelo usuário (padrão de
+  28 casas), que pode ser tão grande quanto necessário para um
+  determinado problema:
+
+  >>> from decimal import *
+  >>> getcontext().prec = 6
+  >>> Decimal(1) / Decimal(7)
+  Decimal('0.142857')
+  >>> getcontext().prec = 28
+  >>> Decimal(1) / Decimal(7)
+  Decimal('0.1428571428571428571428571429')
+
+* O ponto flutuante binário e decimal é implementado em termos de
+  padrões publicados. Enquanto o tipo ponto flutuante embutido expõe
+  apenas uma parte modesta de seus recursos, o módulo decimal expõe
+  todas as partes necessárias do padrão. Quando necessário, o
+  programador tem controle total sobre o arredondamento e o manuseio
+  do sinal. Isso inclui uma opção para impor aritmética exata usando
+  exceções para bloquear quaisquer operações inexatas.
+
+* O módulo decimal foi projetado para dar suporte, "sem prejuízo, a
+  aritmética decimal não arredondada exata (às vezes chamada
+  aritmética de ponto fixo) e aritmética arredondada de ponto
+  flutuante". -- trecho da especificação aritmética decimal.
+
+O design do módulo é centrado em torno de três conceitos: o número
+decimal, o contexto da aritmética e os sinais.
+
+A decimal number is immutable.  It has a sign, coefficient digits, and
+an exponent.  To preserve significance, the coefficient digits do not
+truncate trailing zeros.  Decimals also include special values such as
+"Infinity", "-Infinity", and "NaN".  The standard also differentiates
+"-0" from "+0".
+
+O contexto da aritmética é um ambiente que especifica precisão, regras
+de arredondamento, limites de expoentes, sinalizadores indicando os
+resultados das operações e ativadores de interceptação que determinam
+se os sinais são tratados como exceções. As opções de arredondamento
+incluem "ROUND_CEILING", "ROUND_DOWN", "ROUND_FLOOR",
+"ROUND_HALF_DOWN", "ROUND_HALF_EVEN", "ROUND_HALF_UP", "ROUND_UP" e
+"ROUND_05UP".
+
+Sinais são grupos de condições excepcionais que surgem durante o curso
+da computação. Dependendo das necessidades do aplicativo, os sinais
+podem ser ignorados, considerados informativos ou tratados como
+exceções. Os sinais no módulo decimal são: "Clamped",
+"InvalidOperation", "DivisionByZero", "Inexact", "Rounded",
+"Subnormal", "Overflow", "Underflow" e "FloatOperation".
+
+Para cada sinal, há um sinalizador e um ativador de interceptação.
+Quando um sinal é encontrado, seu sinalizador é definido como um e, se
+o ativador de interceptação estiver definido como um, uma exceção será
+gerada. Os sinalizadores são fixos; portanto, o usuário precisa
+redefini-los antes de monitorar um cálculo.
+
+Ver também:
+
+  * IBM's General Decimal Arithmetic Specification, The General
+    Decimal Arithmetic Specification.
+
+
+Tutorial de início rápido
+=========================
+
+O início usual do uso de decimais é importar o módulo, exibir o
+contexto atual com "getcontext()" e, se necessário, definir novos
+valores para precisão, arredondamento ou armadilhas ativados:
+
+   >>> from decimal import *
+   >>> getcontext()
+   Context(prec=28, rounding=ROUND_HALF_EVEN, Emin=-999999, Emax=999999,
+           capitals=1, clamp=0, flags=[], traps=[Overflow, DivisionByZero,
+           InvalidOperation])
+
+   >>> getcontext().prec = 7       # Set a new precision
+
+Decimal instances can be constructed from integers, strings, floats,
+or tuples. Construction from an integer or a float performs an exact
+conversion of the value of that integer or float.  Decimal numbers
+include special values such as "NaN" which stands for "Not a number",
+positive and negative "Infinity", and "-0":
+
+   >>> getcontext().prec = 28
+   >>> Decimal(10)
+   Decimal('10')
+   >>> Decimal('3.14')
+   Decimal('3.14')
+   >>> Decimal(3.14)
+   Decimal('3.140000000000000124344978758017532527446746826171875')
+   >>> Decimal((0, (3, 1, 4), -2))
+   Decimal('3.14')
+   >>> Decimal(str(2.0 ** 0.5))
+   Decimal('1.4142135623730951')
+   >>> Decimal(2) ** Decimal('0.5')
+   Decimal('1.414213562373095048801688724')
+   >>> Decimal('NaN')
+   Decimal('NaN')
+   >>> Decimal('-Infinity')
+   Decimal('-Infinity')
+
+Se o sinal "FloatOperation" for capturado na armadilha, a mistura
+acidental de decimais e pontos flutuantes em construtores ou
+comparações de ordenação levanta uma exceção:
+
+   >>> c = getcontext()
+   >>> c.traps[FloatOperation] = True
+   >>> Decimal(3.14)
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   decimal.FloatOperation: [<class 'decimal.FloatOperation'>]
+   >>> Decimal('3.5') < 3.7
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   decimal.FloatOperation: [<class 'decimal.FloatOperation'>]
+   >>> Decimal('3.5') == 3.5
+   True
+
+Novo na versão 3.3.
+
+O significado de um novo decimal é determinado apenas pelo número de
+dígitos inseridos. A precisão e o arredondamento do contexto só entram
+em jogo durante operações aritméticas.
+
+   >>> getcontext().prec = 6
+   >>> Decimal('3.0')
+   Decimal('3.0')
+   >>> Decimal('3.1415926535')
+   Decimal('3.1415926535')
+   >>> Decimal('3.1415926535') + Decimal('2.7182818285')
+   Decimal('5.85987')
+   >>> getcontext().rounding = ROUND_UP
+   >>> Decimal('3.1415926535') + Decimal('2.7182818285')
+   Decimal('5.85988')
+
+Se os limites internos da versão C forem excedidos, a construção de um
+decimal levanta "InvalidOperation":
+
+   >>> Decimal("1e9999999999999999999")
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+
+Alterado na versão 3.3.
+
+Os decimais interagem bem com grande parte do resto do Python. Aqui
+está um pequeno circo voador de ponto flutuante decimal:
+
+   >>> data = list(map(Decimal, '1.34 1.87 3.45 2.35 1.00 0.03 9.25'.split()))
+   >>> max(data)
+   Decimal('9.25')
+   >>> min(data)
+   Decimal('0.03')
+   >>> sorted(data)
+   [Decimal('0.03'), Decimal('1.00'), Decimal('1.34'), Decimal('1.87'),
+    Decimal('2.35'), Decimal('3.45'), Decimal('9.25')]
+   >>> sum(data)
+   Decimal('19.29')
+   >>> a,b,c = data[:3]
+   >>> str(a)
+   '1.34'
+   >>> float(a)
+   1.34
+   >>> round(a, 1)
+   Decimal('1.3')
+   >>> int(a)
+   1
+   >>> a * 5
+   Decimal('6.70')
+   >>> a * b
+   Decimal('2.5058')
+   >>> c % a
+   Decimal('0.77')
+
+E algumas funções matemáticas também estão disponíveis no Decimal:
+
+>>> getcontext().prec = 28
+>>> Decimal(2).sqrt()
+Decimal('1.414213562373095048801688724')
+>>> Decimal(1).exp()
+Decimal('2.718281828459045235360287471')
+>>> Decimal('10').ln()
+Decimal('2.302585092994045684017991455')
+>>> Decimal('10').log10()
+Decimal('1')
+
+The "quantize()" method rounds a number to a fixed exponent.  This
+method is useful for monetary applications that often round results to
+a fixed number of places:
+
+>>> Decimal('7.325').quantize(Decimal('.01'), rounding=ROUND_DOWN)
+Decimal('7.32')
+>>> Decimal('7.325').quantize(Decimal('1.'), rounding=ROUND_UP)
+Decimal('8')
+
+Como mostrado acima, a função "getcontext()" acessa o contexto atual e
+permite que as configurações sejam alteradas. Essa abordagem atende às
+necessidades da maioria das aplicações.
+
+Para trabalhos mais avançados, pode ser útil criar contextos
+alternativos usando o construtor Context(). Para ativar uma
+alternativa, use a função "setcontext()".
+
+De acordo com o padrão, o módulo "decimal" fornece dois contextos
+padrão prontos para uso, "BasicContext" e "ExtendedContext". O
+primeiro é especialmente útil para depuração porque muitas das
+armadilhas estão ativadas:
+
+   >>> myothercontext = Context(prec=60, rounding=ROUND_HALF_DOWN)
+   >>> setcontext(myothercontext)
+   >>> Decimal(1) / Decimal(7)
+   Decimal('0.142857142857142857142857142857142857142857142857142857142857')
+
+   >>> ExtendedContext
+   Context(prec=9, rounding=ROUND_HALF_EVEN, Emin=-999999, Emax=999999,
+           capitals=1, clamp=0, flags=[], traps=[])
+   >>> setcontext(ExtendedContext)
+   >>> Decimal(1) / Decimal(7)
+   Decimal('0.142857143')
+   >>> Decimal(42) / Decimal(0)
+   Decimal('Infinity')
+
+   >>> setcontext(BasicContext)
+   >>> Decimal(42) / Decimal(0)
+   Traceback (most recent call last):
+     File "<pyshell#143>", line 1, in -toplevel-
+       Decimal(42) / Decimal(0)
+   DivisionByZero: x / 0
+
+Contexts also have signal flags for monitoring exceptional conditions
+encountered during computations.  The flags remain set until
+explicitly cleared, so it is best to clear the flags before each set
+of monitored computations by using the "clear_flags()" method.
+
+   >>> setcontext(ExtendedContext)
+   >>> getcontext().clear_flags()
+   >>> Decimal(355) / Decimal(113)
+   Decimal('3.14159292')
+   >>> getcontext()
+   Context(prec=9, rounding=ROUND_HALF_EVEN, Emin=-999999, Emax=999999,
+           capitals=1, clamp=0, flags=[Inexact, Rounded], traps=[])
+
+The *flags* entry shows that the rational approximation to pi was
+rounded (digits beyond the context precision were thrown away) and
+that the result is inexact (some of the discarded digits were non-
+zero).
+
+Individual traps are set using the dictionary in the "traps" attribute
+of a context:
+
+   >>> setcontext(ExtendedContext)
+   >>> Decimal(1) / Decimal(0)
+   Decimal('Infinity')
+   >>> getcontext().traps[DivisionByZero] = 1
+   >>> Decimal(1) / Decimal(0)
+   Traceback (most recent call last):
+     File "<pyshell#112>", line 1, in -toplevel-
+       Decimal(1) / Decimal(0)
+   DivisionByZero: x / 0
+
+A maioria dos programas ajusta o contexto atual apenas uma vez, no
+início do programa. E, em muitas aplicações, os dados são convertidos
+para "Decimal" com uma única conversão dentro de um loop. Com o
+conjunto de contextos e decimais criados, a maior parte do programa
+manipula os dados de maneira diferente do que com outros tipos
+numéricos do Python.
+
+
+Objetos de Decimal
+==================
+
+class decimal.Decimal(value='0', context=None)
+
+   Constrói um novo objeto de "Decimal" com base em *value*.
+
+   *value* pode ser um inteiro, string, tupla, "float" ou outro objeto
+   de "Decimal". Se nenhum *value* for fornecido, retornará
+   "Decimal('0')". Se *value* for uma string, ele deverá estar em
+   conformidade com a sintaxe da string numérica decimal após
+   caracteres de espaço em branco à esquerda e à direita, bem como
+   sublinhados em toda parte, serem removidos:
+
+      sign           ::=  '+' | '-'
+      digit          ::=  '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+      indicator      ::=  'e' | 'E'
+      digits         ::=  digit [digit]...
+      decimal-part   ::=  digits '.' [digits] | ['.'] digits
+      exponent-part  ::=  indicator [sign] digits
+      infinity       ::=  'Infinity' | 'Inf'
+      nan            ::=  'NaN' [digits] | 'sNaN' [digits]
+      numeric-value  ::=  decimal-part [exponent-part] | infinity
+      numeric-string ::=  [sign] numeric-value | [sign] nan
+
+   Outros dígitos decimais Unicode também são permitidos onde "digit"
+   aparece acima. Isso inclui dígitos decimais de vários outros
+   alfabetos (por exemplo, dígitos em árabes-índicos e devanágaris),
+   além dos dígitos de largura total "'\uff10'" a "'\uff19'".
+
+   If *value* is a "tuple", it should have three components, a sign
+   ("0" for positive or "1" for negative), a "tuple" of digits, and an
+   integer exponent. For example, "Decimal((0, (1, 4, 1, 4), -3))"
+   returns "Decimal('1.414')".
+
+   Se *value* é um "float", o valor do ponto flutuante binário é
+   convertido sem perdas no seu equivalente decimal exato. Essa
+   conversão geralmente requer 53 ou mais dígitos de precisão. Por
+   exemplo, "Decimal(float('1.1'))" converte para
+   "Decimal('1.100000000000000088817841970012523233890533447265625')".
+
+   A precisão *context* não afeta quantos dígitos estão armazenados.
+   Isso é determinado exclusivamente pelo número de dígitos em
+   *value*. Por exemplo, "Decimal('3.00000')" registra todos os cinco
+   zeros, mesmo que a precisão do contexto seja apenas três.
+
+   The purpose of the *context* argument is determining what to do if
+   *value* is a malformed string.  If the context traps
+   "InvalidOperation", an exception is raised; otherwise, the
+   constructor returns a new Decimal with the value of "NaN".
+
+   Uma vez construídos, objetos de "Decimal" são imutáveis.
+
+   Alterado na versão 3.2: O argumento para o construtor agora pode
+   ser uma instância de "float".
+
+   Alterado na versão 3.3: Os argumentos de "float" levantam uma
+   exceção se a armadilha "FloatOperation" estiver definida. Por
+   padrão, a armadilha está desativada.
+
+   Alterado na versão 3.6: Sublinhados são permitidos para
+   agrupamento, como nos literais de ponto flutuante e integral no
+   código.
+
+   Objetos decimais de ponto flutuante compartilham muitas
+   propriedades com outros tipos numéricos embutidos, como "float" e
+   "int". Todas as operações matemáticas usuais e métodos especiais se
+   aplicam. Da mesma forma, objetos decimais podem ser copiados,
+   separados, impressos, usados como chaves de dicionário, usados como
+   elementos de conjunto, comparados, classificados e coagidos a outro
+   tipo (como "float" ou "int").
+
+   Existem algumas pequenas diferenças entre aritmética em objetos
+   decimais e aritmética em números inteiros e flutuantes. Quando o
+   operador de resto "%" é aplicado a objetos decimais, o sinal do
+   resultado é o sinal do *dividend* em vez do sinal do divisor:
+
+      >>> (-7) % 4
+      1
+      >>> Decimal(-7) % Decimal(4)
+      Decimal('-3')
+
+   O operador de divisão inteira "//" se comporta de maneira análoga,
+   retornando a parte inteira do quociente verdadeiro (truncando em
+   direção a zero) em vez de seu resto, de modo a preservar a
+   identidade usual "x == (x // y) * y + x % y":
+
+      >>> -7 // 4
+      -2
+      >>> Decimal(-7) // Decimal(4)
+      Decimal('-1')
+
+   Os operadores "%" e "//" implementam as operações de "módulo" e
+   "divisão inteira" (respectivamente) como descrito na especificação.
+
+   Objetos decimais geralmente não podem ser combinados com pontos
+   flutuantes ou instâncias de "fractions.Fraction" em operações
+   aritméticas: uma tentativa de adicionar um "Decimal" a um "float",
+   por exemplo, vai levantar um "TypeError". No entanto, é possível
+   usar os operadores de comparação do Python para comparar uma
+   instância de "Decimal" "x" com outro número "y". Isso evita
+   resultados confusos ao fazer comparações de igualdade entre números
+   de tipos diferentes.
+
+   Alterado na versão 3.2: As comparações de tipos mistos entre
+   instâncias de "Decimal" e outros tipos numéricos agora são
+   totalmente suportadas.
+
+   Além das propriedades numéricas padrão, os objetos de ponto
+   flutuante decimal também possuem vários métodos especializados:
+
+   adjusted()
+
+      Retorna o expoente ajustado depois de deslocar os dígitos mais à
+      direita do coeficiente até restar apenas o dígito principal:
+      "Decimal('321e+5').adjusted()" retorna sete. Usado para
+      determinar a posição do dígito mais significativo em relação ao
+      ponto decimal.
+
+   as_integer_ratio()
+
+      Retorna um par "(n, d)" de números inteiros que representam a
+      instância dada "Decimal" como uma fração, nos termos mais baixos
+      e com um denominador positivo:
+
+         >>> Decimal('-3.14').as_integer_ratio()
+         (-157, 50)
+
+      A conversão é exata. Levanta OverflowError em infinitos e
+      ValueError em NaNs.
+
+   Novo na versão 3.6.
+
+   as_tuple()
+
+      Retorna uma representação de *tupla nomeada* do número:
+      "DecimalTuple(sign, digits, exponent)".
+
+   canonical()
+
+      Retorna a codificação canônica do argumento. Atualmente, a
+      codificação de uma instância de "Decimal" é sempre canônica,
+      portanto, esta operação retorna seu argumento inalterado.
+
+   compare(other, context=None)
+
+      Compara os valores de duas instâncias decimais. "compare()"
+      retorna uma instância decimal, e se qualquer operando for um
+      NaN, o resultado será um NaN:
+
+         a or b is a NaN  ==> Decimal('NaN')
+         a < b            ==> Decimal('-1')
+         a == b           ==> Decimal('0')
+         a > b            ==> Decimal('1')
+
+   compare_signal(other, context=None)
+
+      Esta operação é idêntica ao método "compare()", exceto que todos
+      os NaNs sinalizam. Ou seja, se nenhum operando for um NaN
+      sinalizador, qualquer operando NaN silencioso será tratado como
+      se fosse um NaN sinalizador.
+
+   compare_total(other, context=None)
+
+      Compara dois operandos usando sua representação abstrata em vez
+      de seu valor numérico. Semelhante ao método "compare()", mas o
+      resultado fornece uma ordem total nas instâncias de "Decimal".
+      Duas instâncias de "Decimal" com o mesmo valor numérico, mas
+      diferentes representações, se comparam desiguais nesta ordem:
+
+      >>> Decimal('12.0').compare_total(Decimal('12'))
+      Decimal('-1')
+
+      Os NaNs silenciosos e sinalizadores também estão incluídos no
+      pedido total. O resultado dessa função é "Decimal('0')" se os
+      dois operandos tiverem a mesma representação, "Decimal('-1')" se
+      o primeiro operando for menor na ordem total que o segundo e
+      "Decimal('1')" se o primeiro operando for maior na ordem total
+      que o segundo operando. Veja a especificação para detalhes da
+      ordem total.
+
+      Esta operação não é afetada pelo contexto e é silenciosa: nenhum
+      sinalizador é alterado e nenhum arredondamento é executado. Como
+      uma exceção, a versão C pode levantar InvalidOperation se o
+      segundo operando não puder ser convertido exatamente.
+
+   compare_total_mag(other, context=None)
+
+      Compara dois operandos usando sua representação abstrata em vez
+      de seu valor, como em "compare_total()", mas ignorando o sinal
+      de cada operando. "x.compare_total_mag(y)" é equivalente a
+      "x.copy_abs().compare_total(y.copy_abs())".
+
+      Esta operação não é afetada pelo contexto e é silenciosa: nenhum
+      sinalizador é alterado e nenhum arredondamento é executado. Como
+      uma exceção, a versão C pode levantar InvalidOperation se o
+      segundo operando não puder ser convertido exatamente.
+
+   conjugate()
+
+      Apenas retorna a si próprio, sendo esse método apenas para
+      atender à Especificação de Decimal.
+
+   copy_abs()
+
+      Retorna o valor absoluto do argumento. Esta operação não é
+      afetada pelo contexto e é silenciosa: nenhum sinalizador é
+      alterado e nenhum arredondamento é executado.
+
+   copy_negate()
+
+      Retorna a negação do argumento. Esta operação não é afetada pelo
+      contexto e é silenciosa: nenhum sinalizador é alterado e nenhum
+      arredondamento é executado.
+
+   copy_sign(other, context=None)
+
+      Retorna uma cópia do primeiro operando com o sinal definido para
+      ser o mesmo que o sinal do segundo operando. Por exemplo:
+
+      >>> Decimal('2.3').copy_sign(Decimal('-1.5'))
+      Decimal('-2.3')
+
+      Esta operação não é afetada pelo contexto e é silenciosa: nenhum
+      sinalizador é alterado e nenhum arredondamento é executado. Como
+      uma exceção, a versão C pode levantar InvalidOperation se o
+      segundo operando não puder ser convertido exatamente.
+
+   exp(context=None)
+
+      Retorna o valor da função exponencial (natural) "e**x" no número
+      especificado. O resultado é arredondado corretamente usando o
+      modo de arredondamento "ROUND_HALF_EVEN".
+
+      >>> Decimal(1).exp()
+      Decimal('2.718281828459045235360287471')
+      >>> Decimal(321).exp()
+      Decimal('2.561702493119680037517373933E+139')
+
+   classmethod from_float(f)
+
+      Construtor  alternativo que aceita apenas instâncias de "float"
+      ou "int".
+
+      Note "Decimal.from_float(0.1)" is not the same as
+      "Decimal('0.1')". Since 0.1 is not exactly representable in
+      binary floating point, the value is stored as the nearest
+      representable value which is "0x1.999999999999ap-4".  That
+      equivalent value in decimal is
+      "0.1000000000000000055511151231257827021181583404541015625".
+
+      Nota:
+
+        A partir do Python 3.2 em diante, uma instância de "Decimal"
+        também pode ser construída diretamente a partir de um "float".
+
+         >>> Decimal.from_float(0.1)
+         Decimal('0.1000000000000000055511151231257827021181583404541015625')
+         >>> Decimal.from_float(float('nan'))
+         Decimal('NaN')
+         >>> Decimal.from_float(float('inf'))
+         Decimal('Infinity')
+         >>> Decimal.from_float(float('-inf'))
+         Decimal('-Infinity')
+
+      Novo na versão 3.1.
+
+   fma(other, third, context=None)
+
+      Multiplicação e adição fundidos. Retorna self*other+third sem
+      arredondamento do produto intermediário self*other.
+
+      >>> Decimal(2).fma(3, 5)
+      Decimal('11')
+
+   is_canonical()
+
+      Retorna "True" se o argumento for canônico e "False" caso
+      contrário. Atualmente, uma instância de "Decimal" é sempre
+      canônica, portanto, esta operação sempre retorna "True".
+
+   is_finite()
+
+      Retorna "True" se o argumento for um número finito e "False" se
+      o argumento for um infinito ou um NaN.
+
+   is_infinite()
+
+      Retorna "True" se o argumento for infinito positivo ou negativo
+      e "False" caso contrário.
+
+   is_nan()
+
+      Retorna "True" se o argumento for NaN (silencioso ou
+      sinalizador) e "False" caso contrário.
+
+   is_normal(context=None)
+
+      Retorna "True" se o argumento for um número finito *normal*.
+      Retorna "False" se o argumento for zero, subnormal, infinito ou
+      NaN.
+
+   is_qnan()
+
+      Retorna "True" se o argumento for um NaN silencioso, e "False"
+      caso contrário.
+
+   is_signed()
+
+      Retorna "True" se o argumento tiver um sinal negativo e "False"
+      caso contrário. Observe que zeros e NaNs podem carregar sinais.
+
+   is_snan()
+
+      Retorna "True" se o argumento for um sinal NaN e "False" caso
+      contrário.
+
+   is_subnormal(context=None)
+
+      Retorna "True" se o argumento for subnormal e "False" caso
+      contrário.
+
+   is_zero()
+
+      Retorna "True" se o argumento for um zero (positivo ou negativo)
+      e "False" caso contrário.
+
+   ln(context=None)
+
+      Retorna o logaritmo (base e) natural do operando. O resultado é
+      arredondado corretamente usando o modo de arredondamento
+      "ROUND_HALF_EVEN".
+
+   log10(context=None)
+
+      Retorna o logaritmo da base dez do operando. O resultado é
+      arredondado corretamente usando o modo de arredondamento
+      "ROUND_HALF_EVEN".
+
+   logb(context=None)
+
+      Para um número diferente de zero, retorna o expoente ajustado de
+      seu operando como uma instância de "Decimal". Se o operando é
+      zero, "Decimal('-Infinity')" é retornado e o sinalizador
+      "DivisionByZero" é levantado. Se o operando for um infinito,
+      "Decimal('Infinity')" será retornado.
+
+   logical_and(other, context=None)
+
+      "logical_and()" é uma operação lógica que leva dois *operandos
+      lógicos* (consulte Operandos lógicos). O resultado é o "and"
+      dígito a dígito dos dois operandos.
+
+   logical_invert(context=None)
+
+      "logical_invert()" é uma operação lógica. O resultado é a
+      inversão dígito a dígito do operando.
+
+   logical_or(other, context=None)
+
+      "logical_or()" é uma operação lógica que leva dois *operandos
+      lógicos* (consulte Operandos lógicos). O resultado é o "or"
+      dígito a dígito dos dois operandos.
+
+   logical_xor(other, context=None)
+
+      "logical_xor()" é uma operação lógica que leva dois *operandos
+      lógicos* (consulte Operandos lógicos). O resultado é o "ou
+      exclusivo" dígito a dígito ou dos dois operandos.
+
+   max(other, context=None)
+
+      Like "max(self, other)" except that the context rounding rule is
+      applied before returning and that "NaN" values are either
+      signaled or ignored (depending on the context and whether they
+      are signaling or quiet).
+
+   max_mag(other, context=None)
+
+      Semelhante ao método "max()", mas a comparação é feita usando os
+      valores absolutos dos operandos.
+
+   min(other, context=None)
+
+      Like "min(self, other)" except that the context rounding rule is
+      applied before returning and that "NaN" values are either
+      signaled or ignored (depending on the context and whether they
+      are signaling or quiet).
+
+   min_mag(other, context=None)
+
+      Semelhante ao método "min()", mas a comparação é feita usando os
+      valores absolutos dos operandos.
+
+   next_minus(context=None)
+
+      Retorna o maior número representável no contexto fornecido (ou
+      no contexto atual da thread, se nenhum contexto for fornecido)
+      que seja menor que o operando especificado.
+
+   next_plus(context=None)
+
+      Retorna o menor número representável no contexto fornecido (ou
+      no contexto atual da thread, se nenhum contexto for fornecido)
+      que seja maior que o operando fornecido.
+
+   next_toward(other, context=None)
+
+      Se os dois operandos forem desiguais, retorna o número mais
+      próximo ao primeiro operando na direção do segundo operando. Se
+      os dois operandos forem numericamente iguais, retorna uma cópia
+      do primeiro operando com o sinal configurado para ser o mesmo
+      que o sinal do segundo operando.
+
+   normalize(context=None)
+
+      Used for producing canonical values of an equivalence class
+      within either the current context or the specified context.
+
+      This has the same semantics as the unary plus operation, except
+      that if the final result is finite it is reduced to its simplest
+      form, with all trailing zeros removed and its sign preserved.
+      That is, while the coefficient is non-zero and a multiple of ten
+      the coefficient is divided by ten and the exponent is
+      incremented by 1. Otherwise (the coefficient is zero) the
+      exponent is set to 0. In all cases the sign is unchanged.
+
+      For example, "Decimal('32.100')" and "Decimal('0.321000e+2')"
+      both normalize to the equivalent value "Decimal('32.1')".
+
+      Note that rounding is applied *before* reducing to simplest
+      form.
+
+      In the latest versions of the specification, this operation is
+      also known as "reduce".
+
+   number_class(context=None)
+
+      Retorna uma string descrevendo a *classe* do operando. O valor
+      retornado é uma das dez sequências a seguir.
+
+      * ""-Infinity"", indicando que o operando é infinito negativo.
+
+      * ""-Normal"", indicando que o operando é um número normal
+        negativo.
+
+      * ""-Subnormal"", indicando que o operando é negativo e
+        subnormal.
+
+      * ""-Zero"", indicando que o operando é um zero negativo.
+
+      * ""+Zero"", indicando que o operando é um zero positivo.
+
+      * ""+Subnormal"", indicando que o operando é positivo e
+        subnormal.
+
+      * ""+Normal"", indicando que o operando é um número normal
+        positivo.
+
+      * ""+Infinity"", indicando que o operando é infinito positivo.
+
+      * ""NaN"", indicando que o operando é um NaN ("Not a Number")
+        silencioso.
+
+      * ""sNaN"", indicando que o operando é um NaN sinalizador.
+
+   quantize(exp, rounding=None, context=None)
+
+      Retorna um valor igual ao primeiro operando após o
+      arredondamento e com o expoente do segundo operando.
+
+      >>> Decimal('1.41421356').quantize(Decimal('1.000'))
+      Decimal('1.414')
+
+      Diferentemente de outras operações, se o comprimento do
+      coeficiente após a operação de quantização for maior que a
+      precisão, então "InvalidOperation" é sinalizado. Isso garante
+      que, a menos que haja uma condição de erro, o expoente
+      quantizado é sempre igual ao do operando do lado direito.
+
+      Também, diferentemente de outras operações, a quantização nunca
+      sinaliza Underflow, mesmo que o resultado seja subnormal e
+      inexato.
+
+      Se o expoente do segundo operando for maior que o do primeiro, o
+      arredondamento poderá ser necessário. Nesse caso, o modo de
+      arredondamento é determinado pelo argumento "rounding", se
+      fornecido, ou pelo argumento "context" fornecido; se nenhum
+      argumento for fornecido, o modo de arredondamento do contexto da
+      thread atual será usado.
+
+      An error is returned whenever the resulting exponent is greater
+      than "Emax" or less than "Etiny()".
+
+   radix()
+
+      Retorna "Decimal(10)", a raiz (base) na qual a classe "Decimal"
+      faz toda a sua aritmética. Incluído para compatibilidade com a
+      especificação.
+
+   remainder_near(other, context=None)
+
+      Retorna o resto da divisão de *self* por *other*. Isso é
+      diferente de "self % other", pois o sinal do resto é escolhido
+      para minimizar seu valor absoluto. Mais precisamente, o valor de
+      retorno é "self - n * other", onde "n" é o número inteiro mais
+      próximo do valor exato de "self / other", e se dois números
+      inteiros estiverem igualmente próximos, o par será é escolhido.
+
+      Se o resultado for zero, seu sinal será o sinal de *self*.
+
+      >>> Decimal(18).remainder_near(Decimal(10))
+      Decimal('-2')
+      >>> Decimal(25).remainder_near(Decimal(10))
+      Decimal('5')
+      >>> Decimal(35).remainder_near(Decimal(10))
+      Decimal('-5')
+
+   rotate(other, context=None)
+
+      Retorna o resultado da rotação dos dígitos do primeiro operando
+      em uma quantidade especificada pelo segundo operando. O segundo
+      operando deve ser um número inteiro no intervalo - precisão
+      através da precisão. O valor absoluto do segundo operando
+      fornece o número de locais a serem rotacionados. Se o segundo
+      operando for positivo, a rotação será para a esquerda; caso
+      contrário, a rotação será para a direita. O coeficiente do
+      primeiro operando é preenchido à esquerda com zeros na precisão
+      do comprimento, se necessário. O sinal e o expoente do primeiro
+      operando não são alterados.
+
+   same_quantum(other, context=None)
+
+      Test whether self and other have the same exponent or whether
+      both are "NaN".
+
+      Esta operação não é afetada pelo contexto e é silenciosa: nenhum
+      sinalizador é alterado e nenhum arredondamento é executado. Como
+      uma exceção, a versão C pode levantar InvalidOperation se o
+      segundo operando não puder ser convertido exatamente.
+
+   scaleb(other, context=None)
+
+      Retorna o primeiro operando com o expoente ajustado pelo
+      segundo. Da mesma forma, retorna o primeiro operando
+      multiplicado por "10**other". O segundo operando deve ser um
+      número inteiro.
+
+   shift(other, context=None)
+
+      Retorna o resultado da troca dos dígitos do primeiro operando em
+      uma quantidade especificada pelo segundo operando. O segundo
+      operando deve ser um número inteiro no intervalo - precisão
+      através da precisão. O valor absoluto do segundo operando
+      fornece o número de locais a serem deslocados. Se o segundo
+      operando for positivo, o deslocamento será para a esquerda; caso
+      contrário, a mudança é para a direita. Os dígitos deslocados
+      para o coeficiente são zeros. O sinal e o expoente do primeiro
+      operando não são alterados.
+
+   sqrt(context=None)
+
+      Retorna a raiz quadrada do argumento para a precisão total.
+
+   to_eng_string(context=None)
+
+      Converte em uma string, usando notação de engenharia, se for
+      necessário um expoente.
+
+      A notação de engenharia possui um expoente que é múltiplo de 3.
+      Isso pode deixar até 3 dígitos à esquerda da casa decimal e pode
+      exigir a adição de um ou dois zeros à direita.
+
+      Por exemplo, isso converte "Decimal('123E+1')" para
+      "Decimal('1.23E+3')".
+
+   to_integral(rounding=None, context=None)
+
+      Idêntico ao método "to_integral_value()". O nome "to_integral"
+      foi mantido para compatibilidade com versões mais antigas.
+
+   to_integral_exact(rounding=None, context=None)
+
+      Arredonda para o número inteiro mais próximo, sinalizando
+      "Inexact" ou "Rounded", conforme apropriado, se o arredondamento
+      ocorrer. O modo de arredondamento é determinado pelo parâmetro
+      "rouding", se fornecido, ou pelo "context" especificado. Se
+      nenhum parâmetro for fornecido, o modo de arredondamento do
+      contexto atual será usado.
+
+   to_integral_value(rounding=None, context=None)
+
+      Arredonda para o número inteiro mais próximo sem sinalizar
+      "Inexact" ou "Rounding". Se fornecido, aplica *rounding*; caso
+      contrário, usa o método de arredondamento no *context*
+      especificado ou no contexto atual.
+
+
+Operandos lógicos
+-----------------
+
+The "logical_and()", "logical_invert()", "logical_or()", and
+"logical_xor()" methods expect their arguments to be *logical
+operands*.  A *logical operand* is a "Decimal" instance whose exponent
+and sign are both zero, and whose digits are all either "0" or "1".
+
+
+Objetos de contexto
+===================
+
+Contextos são ambientes para operações aritméticas. Eles governam a
+precisão, estabelecem regras para arredondamento, determinam quais
+sinais são tratados como exceções e limitam o intervalo dos expoentes.
+
+Cada thread possui seu próprio contexto atual que é acessado ou
+alterado usando as funções "getcontext()" e "setcontext()":
+
+decimal.getcontext()
+
+   Retorna o contexto atual para a thread ativa.
+
+decimal.setcontext(c)
+
+   Define o contexto atual para a thread ativa como *C*.
+
+Você também pode usar a instrução "with" e a função "localcontext()"
+para alterar temporariamente o contexto ativo.
+
+decimal.localcontext(ctx=None, **kwargs)
+
+   Return a context manager that will set the current context for the
+   active thread to a copy of *ctx* on entry to the with-statement and
+   restore the previous context when exiting the with-statement. If no
+   context is specified, a copy of the current context is used.  The
+   *kwargs* argument is used to set the attributes of the new context.
+
+   Por exemplo, o código a seguir define a precisão decimal atual para
+   42 casas, executa um cálculo e restaura automaticamente o contexto
+   anterior:
+
+      from decimal import localcontext
+
+      with localcontext() as ctx:
+          ctx.prec = 42   # Perform a high precision calculation
+          s = calculate_something()
+      s = +s  # Round the final result back to the default precision
+
+   Using keyword arguments, the code would be the following:
+
+      from decimal import localcontext
+
+      with localcontext(prec=42) as ctx:
+          s = calculate_something()
+      s = +s
+
+   Raises "TypeError" if *kwargs* supplies an attribute that "Context"
+   doesn't support.  Raises either "TypeError" or "ValueError" if
+   *kwargs* supplies an invalid value for an attribute.
+
+   Alterado na versão 3.11: "localcontext()" now supports setting
+   context attributes through the use of keyword arguments.
+
+Novos contextos também podem ser criados usando o construtor "Context"
+descrito abaixo. Além disso, o módulo fornece três contextos
+pré-criados:
+
+class decimal.BasicContext
+
+   Este é um contexto padrão definido pela Especificação Aritmética
+   Decimal Geral. A precisão está definida como nove. O arredondamento
+   está definido como "ROUND_HALF_UP". Todos os sinalizadores estão
+   limpos. Todos as armadilhas estão ativadas (tratadas como
+   exceções), exceto por "Inexact", "Rounded" e "Subnormal".
+
+   Como muitas das armadilhas estão ativadas, esse contexto é útil
+   para depuração.
+
+class decimal.ExtendedContext
+
+   Este é um contexto padrão definido pela Especificação Aritmética
+   Decimal Geral. A precisão está definida como nove. O arredondamento
+   está definido como "ROUND_HALF_EVEN". Todos os sinalizadores estão
+   limpos. Nenhuma armadilha está ativada (de forma que exceções não
+   são levantadas durante os cálculos).
+
+   Because the traps are disabled, this context is useful for
+   applications that prefer to have result value of "NaN" or
+   "Infinity" instead of raising exceptions.  This allows an
+   application to complete a run in the presence of conditions that
+   would otherwise halt the program.
+
+class decimal.DefaultContext
+
+   Este contexto é usado pelo construtor "Context" como um protótipo
+   para novos contextos. Alterar um campo (tal como precisão) tem o
+   efeito de alterar o padrão para novos contextos criados pelo
+   construtor "Context".
+
+   Esse contexto é mais útil em ambientes multithread. A alteração de
+   um dos campos antes do início das threads tem o efeito de definir
+   os padrões para todo o sistema. Não é recomendável alterar os
+   campos após o início das threads, pois exigiria sincronização de
+   threads para evitar condições de corrida.
+
+   Em ambientes de thread única, é preferível não usar esse contexto.
+   Em vez disso, basta criar contextos explicitamente, conforme
+   descrito abaixo.
+
+   The default values are "Context.prec"="28",
+   "Context.rounding"="ROUND_HALF_EVEN", and enabled traps for
+   "Overflow", "InvalidOperation", and "DivisionByZero".
+
+Além dos três contextos fornecidos, novos contextos podem ser criados
+com o construtor "Context".
+
+class decimal.Context(prec=None, rounding=None, Emin=None, Emax=None, capitals=None, clamp=None, flags=None, traps=None)
+
+   Cria um novo contexto. Se um campo não for especificado ou for
+   "None", os valores padrão serão copiados de "DefaultContext". Se o
+   campo *flags* não for especificado ou for "None", todos os
+   sinalizadores serão limpados.
+
+   *prec* is an integer in the range ["1", "MAX_PREC"] that sets the
+   precision for arithmetic operations in the context.
+
+   A opção *rounding* é uma das constantes listadas na seção Modos de
+   arredondamento.
+
+   Os campos *traps* e *flags* listam todos os sinais a serem
+   configurados. Geralmente, novos contextos devem apenas definir
+   armadilhas e deixar os sinalizadores limpos.
+
+   The *Emin* and *Emax* fields are integers specifying the outer
+   limits allowable for exponents. *Emin* must be in the range
+   ["MIN_EMIN", "0"], *Emax* in the range ["0", "MAX_EMAX"].
+
+   The *capitals* field is either "0" or "1" (the default). If set to
+   "1", exponents are printed with a capital "E"; otherwise, a
+   lowercase "e" is used: "Decimal('6.02e+23')".
+
+   The *clamp* field is either "0" (the default) or "1". If set to
+   "1", the exponent "e" of a "Decimal" instance representable in this
+   context is strictly limited to the range "Emin - prec + 1 <= e <=
+   Emax - prec + 1".  If *clamp* is "0" then a weaker condition holds:
+   the adjusted exponent of the "Decimal" instance is at most "Emax".
+   When *clamp* is "1", a large normal number will, where possible,
+   have its exponent reduced and a corresponding number of zeros added
+   to its coefficient, in order to fit the exponent constraints; this
+   preserves the value of the number but loses information about
+   significant trailing zeros.  For example:
+
+      >>> Context(prec=6, Emax=999, clamp=1).create_decimal('1.23e999')
+      Decimal('1.23000E+999')
+
+   A *clamp* value of "1" allows compatibility with the fixed-width
+   decimal interchange formats specified in IEEE 754.
+
+   The "Context" class defines several general purpose methods as well
+   as a large number of methods for doing arithmetic directly in a
+   given context. In addition, for each of the "Decimal" methods
+   described above (with the exception of the "adjusted()" and
+   "as_tuple()" methods) there is a corresponding "Context" method.
+   For example, for a "Context" instance "C" and "Decimal" instance
+   "x", "C.exp(x)" is equivalent to "x.exp(context=C)".  Each
+   "Context" method accepts a Python integer (an instance of "int")
+   anywhere that a Decimal instance is accepted.
+
+   clear_flags()
+
+      Resets all of the flags to "0".
+
+   clear_traps()
+
+      Resets all of the traps to "0".
+
+      Novo na versão 3.3.
+
+   copy()
+
+      Retorna uma duplicata do contexto.
+
+   copy_decimal(num)
+
+      Retorna uma cópia da instância de Decimal *num*.
+
+   create_decimal(num)
+
+      Cria uma nova instância decimal a partir de *num*, mas usando
+      *self* como contexto. Diferentemente do construtor de "Decimal",
+      a precisão do contexto, o método de arredondamento, os
+      sinalizadores e as armadilhas são aplicadas à conversão.
+
+      Isso é útil porque as constantes geralmente são fornecidas com
+      uma precisão maior do que a necessária pela aplicação. Outro
+      benefício é que o arredondamento elimina imediatamente os
+      efeitos indesejados dos dígitos além da precisão atual. No
+      exemplo a seguir, o uso de entradas não arredondadas significa
+      que adicionar zero a uma soma pode alterar o resultado:
+
+         >>> getcontext().prec = 3
+         >>> Decimal('3.4445') + Decimal('1.0023')
+         Decimal('4.45')
+         >>> Decimal('3.4445') + Decimal(0) + Decimal('1.0023')
+         Decimal('4.44')
+
+      Este método implementa a operação "to-number" da especificação
+      IBM. Se o argumento for uma string, nenhum espaço em branco à
+      esquerda ou à direita ou sublinhado serão permitidos.
+
+   create_decimal_from_float(f)
+
+      Cria uma nova instância de Decimal a partir de um ponto
+      flutuante *f*, mas arredondando usando *self* como contexto.
+      Diferentemente do método da classe "Decimal.from_float()", a
+      precisão do contexto, o método de arredondamento, os
+      sinalizadores e as armadilhas são aplicados à conversão.
+
+         >>> context = Context(prec=5, rounding=ROUND_DOWN)
+         >>> context.create_decimal_from_float(math.pi)
+         Decimal('3.1415')
+         >>> context = Context(prec=5, traps=[Inexact])
+         >>> context.create_decimal_from_float(math.pi)
+         Traceback (most recent call last):
+             ...
+         decimal.Inexact: None
+
+      Novo na versão 3.1.
+
+   Etiny()
+
+      Retorna um valor igual a "Emin - prec + 1", que é o valor mínimo
+      do expoente para resultados subnormais. Quando ocorre o estouro
+      negativo, o expoente é definido como "Etiny".
+
+   Etop()
+
+      Retorna um valor igual a "Emax - prec + 1".
+
+   A abordagem usual para trabalhar com decimais é criar instâncias de
+   "Decimal" e depois aplicar operações aritméticas que ocorrem no
+   contexto atual da thread ativa. Uma abordagem alternativa é usar
+   métodos de contexto para calcular dentro de um contexto específico.
+   Os métodos são semelhantes aos da classe "Decimal" e são contados
+   apenas brevemente aqui.
+
+   abs(x)
+
+      Retorna o valor absoluto de *x*.
+
+   add(x, y)
+
+      Retorna a soma de *x* e *y*.
+
+   canonical(x)
+
+      Retorna o mesmo objeto de Decimal *x*.
+
+   compare(x, y)
+
+      Compara *x* e *y* numericamente.
+
+   compare_signal(x, y)
+
+      Compara os valores dos dois operandos numericamente.
+
+   compare_total(x, y)
+
+      Compara dois operandos usando sua representação abstrata.
+
+   compare_total_mag(x, y)
+
+      Compara dois operandos usando sua representação abstrata,
+      ignorando o sinal.
+
+   copy_abs(x)
+
+      Retorna uma cópia de *x* com o sinal definido para 0.
+
+   copy_negate(x)
+
+      Retorna uma cópia de *x* com o sinal invertido.
+
+   copy_sign(x, y)
+
+      Copia o sinal de *y* para *x*.
+
+   divide(x, y)
+
+      Retorna *x* dividido por *y*.
+
+   divide_int(x, y)
+
+      Retorna *x* dividido por *y*, truncado para um inteiro.
+
+   divmod(x, y)
+
+      Divide dois números e retorna a parte inteira do resultado.
+
+   exp(x)
+
+      Returns "e ** x".
+
+   fma(x, y, z)
+
+      Retorna *x* multiplicado por *y*, mais *z*.
+
+   is_canonical(x)
+
+      Retorna "True" se *x* for canonical; caso contrário, retorna
+      "False".
+
+   is_finite(x)
+
+      Retorna "True" se *x* for finito; caso contrário, retorna
+      "False".
+
+   is_infinite(x)
+
+      Retorna "True" se *x* for infinito; caso contrário, retorna
+      "False".
+
+   is_nan(x)
+
+      Retorna "True" se *x* for qNaN ou sNaN; caso contrário, retorna
+      "False".
+
+   is_normal(x)
+
+      Retorna "True" se *x* for um número normal; caso contrário,
+      retorna "False".
+
+   is_qnan(x)
+
+      Retorna "True" se *x* for um NaN silencioso; caso contrário,
+      retorna "False".
+
+   is_signed(x)
+
+      Retorna "True" se *x* for negativo; caso contrário, retorna
+      "False".
+
+   is_snan(x)
+
+      Retorna "True" se *x* for um NaN sinalizador; caso contrário,
+      retorna "False".
+
+   is_subnormal(x)
+
+      Retorna "True" se *x* for subnormal; caso contrário, retorna
+      "False".
+
+   is_zero(x)
+
+      Retorna "True" se *x* for zero; caso contrário, retorna "False".
+
+   ln(x)
+
+      Retorna o logaritmo natural (base e) de *x*.
+
+   log10(x)
+
+      Retorna o logaritmo de base 10 de *x*.
+
+   logb(x)
+
+      Retorna o expoente da magnitude do MSD do operando.
+
+   logical_and(x, y)
+
+      Aplica a operação lógica *e* entre cada dígito do operando.
+
+   logical_invert(x)
+
+      Inverte todos os dígitos em *x*.
+
+   logical_or(x, y)
+
+      Aplica a operação lógica *ou* entre cada dígito do operando.
+
+   logical_xor(x, y)
+
+      Aplica a operação lógica *ou exclusivo* entre cada dígito do
+      operando.
+
+   max(x, y)
+
+      Compara dois valores numericamente e retorna o máximo.
+
+   max_mag(x, y)
+
+      Compara dois valores numericamente com seu sinal ignorado.
+
+   min(x, y)
+
+      Compara dois valores numericamente e retorna o mínimo.
+
+   min_mag(x, y)
+
+      Compara dois valores numericamente com seu sinal ignorado.
+
+   minus(x)
+
+      Minus corresponde ao operador de subtração de prefixo unário no
+      Python.
+
+   multiply(x, y)
+
+      Retorna o produto de *x* e *y*.
+
+   next_minus(x)
+
+      Retorna o maior número representável menor que *x*.
+
+   next_plus(x)
+
+      Retorna o menor número representável maior que *x*.
+
+   next_toward(x, y)
+
+      Retorna o número mais próximo a *x*, em direção a *y*.
+
+   normalize(x)
+
+      Reduz *x* para sua forma mais simples.
+
+   number_class(x)
+
+      Retorna uma indicação da classe de *x*.
+
+   plus(x)
+
+      Plus corresponde ao operador de soma de prefixo unário no
+      Python. Esta operação aplica a precisão e o arredondamento do
+      contexto, portanto *não* é uma operação de identidade.
+
+   power(x, y, modulo=None)
+
+      Retorna "x" à potência de "y", com a redução de módulo "modulo"
+      se fornecido.
+
+      With two arguments, compute "x**y".  If "x" is negative then "y"
+      must be integral.  The result will be inexact unless "y" is
+      integral and the result is finite and can be expressed exactly
+      in 'precision' digits. The rounding mode of the context is used.
+      Results are always correctly rounded in the Python version.
+
+      "Decimal(0) ** Decimal(0)" resulta em "InvalidOperation", e se
+      "InvalidOperation" não for capturado, resulta em
+      "Decimal('NaN')".
+
+      Alterado na versão 3.3: The C module computes "power()" in terms
+      of the correctly rounded "exp()" and "ln()" functions. The
+      result is well-defined but only "almost always correctly
+      rounded".
+
+      Com três argumentos, calcula "(x**y) % modulo". Para o
+      formulário de três argumentos, as seguintes restrições nos
+      argumentos são válidas:
+
+      * todos os três argumentos devem ser inteiros
+
+      * "y" não pode ser negativo
+
+      * pelo menos um de "x" ou "y" não pode ser negativo
+
+      * "modulo" não pode ser zero e deve ter pelo menos "precisão"
+        dígitos
+
+      O valor resultante de "Context.power(x, y, modulo)" é igual ao
+      valor que seria obtido ao computar "(x**y) % modulo" com
+      precisão ilimitada, mas é calculado com mais eficiência . O
+      expoente do resultado é zero, independentemente dos expoentes de
+      "x", "y" e "modulo". O resultado é sempre exato.
+
+   quantize(x, y)
+
+      Retorna um valor igual a *x* (arredondado), com o expoente de
+      *y*.
+
+   radix()
+
+      Só retorna 10, já que isso é Decimal, :)
+
+   remainder(x, y)
+
+      Retorna o resto da divisão inteira.
+
+      O sinal do resultado, se diferente de zero, é o mesmo que o do
+      dividendo original.
+
+   remainder_near(x, y)
+
+      Retorna "x - y * n", onde *n* é o número inteiro mais próximo do
+      valor exato de "x / y" (se o resultado for 0, seu sinal será o
+      sinal de *x*).
+
+   rotate(x, y)
+
+      Retorna uma cópia re de *x*, *y* vezes.
+
+   same_quantum(x, y)
+
+      Retorna "True" se os dois operandos tiverem o mesmo expoente.
+
+   scaleb(x, y)
+
+      Retorna o primeiro operando após adicionar o segundo valor seu
+      exp.
+
+   shift(x, y)
+
+      Retorna uma cópia deslocada de *x*, *y* vezes.
+
+   sqrt(x)
+
+      Raiz quadrada de um número não negativo para precisão do
+      contexto.
+
+   subtract(x, y)
+
+      Retorna a diferença entre *x* e *y*.
+
+   to_eng_string(x)
+
+      Converte em uma string, usando notação de engenharia, se for
+      necessário um expoente.
+
+      A notação de engenharia possui um expoente que é múltiplo de 3.
+      Isso pode deixar até 3 dígitos à esquerda da casa decimal e pode
+      exigir a adição de um ou dois zeros à direita.
+
+   to_integral_exact(x)
+
+      Arredonda para um número inteiro.
+
+   to_sci_string(x)
+
+      Converte um número em uma string usando notação científica.
+
+
+Constantes
+==========
+
+As constantes nesta seção são relevantes apenas para o módulo C. Eles
+também estão incluídos na versão pura do Python para compatibilidade.
+
++-----------------------+-----------------------+---------------------------------+
+|                       | 32 bits               | 64 bits                         |
+|=======================|=======================|=================================|
+| decimal.MAX_PREC      | "425000000"           | "999999999999999999"            |
++-----------------------+-----------------------+---------------------------------+
+| decimal.MAX_EMAX      | "425000000"           | "999999999999999999"            |
++-----------------------+-----------------------+---------------------------------+
+| decimal.MIN_EMIN      | "-425000000"          | "-999999999999999999"           |
++-----------------------+-----------------------+---------------------------------+
+| decimal.MIN_ETINY     | "-849999999"          | "-1999999999999999997"          |
++-----------------------+-----------------------+---------------------------------+
+
+decimal.HAVE_THREADS
+
+   O valor é "True". Descontinuado porque o Python agora sempre tem
+   threads.
+
+Obsoleto desde a versão 3.9.
+
+decimal.HAVE_CONTEXTVAR
+
+   O valor padrão é "True". Se o Python for "configurado usando a
+   opção --without-decimal-contextvar", a versão C usará um contexto
+   local de thread em vez de local de corrotina e o valor será
+   "False". Isso é um pouco mais rápido em alguns cenários de contexto
+   aninhados.
+
+Novo na versão 3.8.3.
+
+
+Modos de arredondamento
+=======================
+
+decimal.ROUND_CEILING
+
+   Round towards "Infinity".
+
+decimal.ROUND_DOWN
+
+   Arredonda para zero.
+
+decimal.ROUND_FLOOR
+
+   Round towards "-Infinity".
+
+decimal.ROUND_HALF_DOWN
+
+   Arrendonda para o mais próximo com empates tendendo a zero.
+
+decimal.ROUND_HALF_EVEN
+
+   Arredonda para o mais próximo com empates indo para o mais próximo
+   inteiro par.
+
+decimal.ROUND_HALF_UP
+
+   Arrendonda para o mais próximo com empates se afastando de zero.
+
+decimal.ROUND_UP
+
+   Arredonda se afastando de zero.
+
+decimal.ROUND_05UP
+
+   Arredonda se afastando de zero se o último dígito após o
+   arredondamento para zero fosse 0 ou 5; caso contrário, arredonda
+   para zero.
+
+
+Sinais
+======
+
+Sinais representam condições que surgem durante o cálculo. Cada um
+corresponde a um sinalizador de contexto e um ativador de armadilha de
+contexto.
+
+O sinalizador de contexto é definido sempre que a condição é
+encontrada. Após o cálculo, os sinalizadores podem ser verificados
+para fins informativos (por exemplo, para determinar se um cálculo era
+exato). Depois de verificar os sinalizadores, certifique-se de limpar
+todos os sinalizadores antes de iniciar o próximo cálculo.
+
+Se o ativador de armadilha de contexto estiver definido para o sinal,
+a condição fará com que uma exceção Python seja levantada. Por
+exemplo, se a armadilha "DivisionByZero" for configurada, uma exceção
+"DivisionByZero" será levantada ao encontrar a condição.
+
+class decimal.Clamped
+
+   Altera um expoente para ajustar as restrições de representação.
+
+   Typically, clamping occurs when an exponent falls outside the
+   context's "Emin" and "Emax" limits.  If possible, the exponent is
+   reduced to fit by adding zeros to the coefficient.
+
+class decimal.DecimalException
+
+   Classe base para outros sinais e uma subclasse de
+   "ArithmeticError".
+
+class decimal.DivisionByZero
+
+   Sinaliza a divisão de um número não infinito por zero.
+
+   Can occur with division, modulo division, or when raising a number
+   to a negative power.  If this signal is not trapped, returns
+   "Infinity" or "-Infinity" with the sign determined by the inputs to
+   the calculation.
+
+class decimal.Inexact
+
+   Indica que o arredondamento ocorreu e o resultado não é exato.
+
+   Sinaliza quando dígitos diferentes de zero foram descartados
+   durante o arredondamento. O resultado arredondado é retornado. O
+   sinalizador ou armadilha de sinal é usado para detectar quando os
+   resultados são inexatos.
+
+class decimal.InvalidOperation
+
+   Uma operação inválida foi realizada.
+
+   Indicates that an operation was requested that does not make sense.
+   If not trapped, returns "NaN".  Possible causes include:
+
+      Infinity - Infinity
+      0 * Infinity
+      Infinity / Infinity
+      x % 0
+      Infinity % x
+      sqrt(-x) and x > 0
+      0 ** 0
+      x ** (non-integer)
+      x ** Infinity
+
+class decimal.Overflow
+
+   Estouro numérico.
+
+   Indicates the exponent is larger than "Context.Emax" after rounding
+   has occurred.  If not trapped, the result depends on the rounding
+   mode, either pulling inward to the largest representable finite
+   number or rounding outward to "Infinity".  In either case,
+   "Inexact" and "Rounded" are also signaled.
+
+class decimal.Rounded
+
+   O arredondamento ocorreu, embora possivelmente nenhuma informação
+   tenha sido perdida.
+
+   Signaled whenever rounding discards digits; even if those digits
+   are zero (such as rounding "5.00" to "5.0").  If not trapped,
+   returns the result unchanged.  This signal is used to detect loss
+   of significant digits.
+
+class decimal.Subnormal
+
+   Exponent was lower than "Emin" prior to rounding.
+
+   Ocorre quando um resultado da operação é subnormal (o expoente é
+   muito pequeno). Se não for capturado, retorna o resultado
+   inalterado.
+
+class decimal.Underflow
+
+   Estouro negativo numérico com resultado arredondado para zero.
+
+   Ocorre quando um resultado subnormal é empurrado para zero
+   arredondando. "Inexact" e "Subnormal" também são sinalizados.
+
+class decimal.FloatOperation
+
+   Ativa semânticas mais rigorosas para misturar objetos de float com
+   de Decimal.
+
+   Se o sinal não for capturado (padrão), a mistura de tipos float e
+   Decimal será permitida no construtor "Decimal", "create_decimal()"
+   e em todos os operadores de comparação. Tanto a conversão quanto as
+   comparações são exatas. Qualquer ocorrência de uma operação mista é
+   registrada silenciosamente pela configuração "FloatOperation" nos
+   sinalizadores de contexto. Conversões explícitas com "from_float()"
+   ou "create_decimal_from_float()" não definem o sinalizador.
+
+   Caso contrário (o sinal é capturado), apenas comparações de
+   igualdade e conversões explícitas são silenciosas. Todas as outras
+   operações mistas levantam "FloatOperation".
+
+A tabela a seguir resume a hierarquia de sinais:
+
+   exceptions.ArithmeticError(exceptions.Exception)
+       DecimalException
+           Clamped
+           DivisionByZero(DecimalException, exceptions.ZeroDivisionError)
+           Inexact
+               Overflow(Inexact, Rounded)
+               Underflow(Inexact, Rounded, Subnormal)
+           InvalidOperation
+           Rounded
+           Subnormal
+           FloatOperation(DecimalException, exceptions.TypeError)
+
+
+Observações sobre ponto flutuante
+=================================
+
+
+Atenuando o erro de arredondamento com maior precisão
+-----------------------------------------------------
+
+The use of decimal floating point eliminates decimal representation
+error (making it possible to represent "0.1" exactly); however, some
+operations can still incur round-off error when non-zero digits exceed
+the fixed precision.
+
+Os efeitos do erro de arredondamento podem ser amplificados pela
+adição ou subtração de quantidades quase compensadoras, resultando em
+perda de significância. Knuth fornece dois exemplos instrutivos em que
+a aritmética de ponto flutuante arredondado com precisão insuficiente
+causa a quebra das propriedades associativas e distributivas da
+adição:
+
+   # Examples from Seminumerical Algorithms, Section 4.2.2.
+   >>> from decimal import Decimal, getcontext
+   >>> getcontext().prec = 8
+
+   >>> u, v, w = Decimal(11111113), Decimal(-11111111), Decimal('7.51111111')
+   >>> (u + v) + w
+   Decimal('9.5111111')
+   >>> u + (v + w)
+   Decimal('10')
+
+   >>> u, v, w = Decimal(20000), Decimal(-6), Decimal('6.0000003')
+   >>> (u*v) + (u*w)
+   Decimal('0.01')
+   >>> u * (v+w)
+   Decimal('0.0060000')
+
+O módulo "decimal" permite restaurar as identidades expandindo a
+precisão o suficiente para evitar perda de significância:
+
+   >>> getcontext().prec = 20
+   >>> u, v, w = Decimal(11111113), Decimal(-11111111), Decimal('7.51111111')
+   >>> (u + v) + w
+   Decimal('9.51111111')
+   >>> u + (v + w)
+   Decimal('9.51111111')
+   >>>
+   >>> u, v, w = Decimal(20000), Decimal(-6), Decimal('6.0000003')
+   >>> (u*v) + (u*w)
+   Decimal('0.0060000')
+   >>> u * (v+w)
+   Decimal('0.0060000')
+
+
+Valores especiais
+-----------------
+
+The number system for the "decimal" module provides special values
+including "NaN", "sNaN", "-Infinity", "Infinity", and two zeros, "+0"
+and "-0".
+
+Os infinitos podem ser construídos diretamente com:
+"Decimal('Infinity')". Além disso, eles podem resultar da divisão por
+zero quando o sinal "DivisionByZero" não é capturado. Da mesma forma,
+quando o sinal "Overflow" não é capturado, o infinito pode resultar do
+arredondamento além dos limites do maior número representável.
+
+Os infinitos contêm sinais (afins) e podem ser usados em operações
+aritméticas, onde são tratados como números muito grandes e
+indeterminados. Por exemplo, adicionar uma constante ao infinito
+fornece outro resultado infinito.
+
+Some operations are indeterminate and return "NaN", or if the
+"InvalidOperation" signal is trapped, raise an exception.  For
+example, "0/0" returns "NaN" which means "not a number".  This variety
+of "NaN" is quiet and, once created, will flow through other
+computations always resulting in another "NaN".  This behavior can be
+useful for a series of computations that occasionally have missing
+inputs --- it allows the calculation to proceed while flagging
+specific results as invalid.
+
+A variant is "sNaN" which signals rather than remaining quiet after
+every operation.  This is a useful return value when an invalid result
+needs to interrupt a calculation for special handling.
+
+The behavior of Python's comparison operators can be a little
+surprising where a "NaN" is involved.  A test for equality where one
+of the operands is a quiet or signaling "NaN" always returns "False"
+(even when doing "Decimal('NaN')==Decimal('NaN')"), while a test for
+inequality always returns "True".  An attempt to compare two Decimals
+using any of the "<", "<=", ">" or ">=" operators will raise the
+"InvalidOperation" signal if either operand is a "NaN", and return
+"False" if this signal is not trapped.  Note that the General Decimal
+Arithmetic specification does not specify the behavior of direct
+comparisons; these rules for comparisons involving a "NaN" were taken
+from the IEEE 854 standard (see Table 3 in section 5.7).  To ensure
+strict standards-compliance, use the "compare()" and
+"compare_signal()" methods instead.
+
+Os zeros com sinais podem resultar de cálculos insuficientes. Eles
+mantêm o sinal que teria resultado se o cálculo tivesse sido realizado
+com maior precisão. Como sua magnitude é zero, os zeros positivos e
+negativos são tratados como iguais e seu sinal é informacional.
+
+Além dos dois zeros com sinais que são distintos e iguais, existem
+várias representações de zero com diferentes precisões e ainda com
+valor equivalente. Isso leva um pouco de tempo para se acostumar. Para
+um olho acostumado a representações de ponto flutuante normalizadas,
+não é imediatamente óbvio que o seguinte cálculo retorne um valor
+igual a zero:
+
+>>> 1 / Decimal('Infinity')
+Decimal('0E-1000026')
+
+
+Trabalhando com threads
+=======================
+
+A função "getcontext()" acessa um objeto "Context" diferente para cada
+thread. Ter contextos de threads separadas significa que as threads
+podem fazer alterações (como "getcontext().prec=10") sem interferir em
+outras threads.
+
+Da mesma forma, a função "setcontext()" atribui automaticamente seu
+alvo à thread atual.
+
+Se "setcontext()" não tiver sido chamado antes de "getcontext()",
+então "getcontext()" criará automaticamente um novo contexto para uso
+na thread atual.
+
+O novo contexto é copiado de um contexto protótipo chamado
+*DefaultContext*. Para controlar os padrões para que cada thread, use
+os mesmos valores em todo o aplicativo, modifique diretamente o objeto
+*DefaultContext*. Isso deve ser feito *antes* de qualquer thread ser
+iniciada, para que não haja uma condição de corrida entre as threads
+chamando "getcontext()". Por exemplo:
+
+   # Set applicationwide defaults for all threads about to be launched
+   DefaultContext.prec = 12
+   DefaultContext.rounding = ROUND_DOWN
+   DefaultContext.traps = ExtendedContext.traps.copy()
+   DefaultContext.traps[InvalidOperation] = 1
+   setcontext(DefaultContext)
+
+   # Afterwards, the threads can be started
+   t1.start()
+   t2.start()
+   t3.start()
+    . . .
+
+
+Receitas
+========
+
+Aqui estão algumas receitas que servem como funções utilitárias e que
+demonstram maneiras de trabalhar com a classe "Decimal":
+
+   def moneyfmt(value, places=2, curr='', sep=',', dp='.',
+                pos='', neg='-', trailneg=''):
+       """Convert Decimal to a money formatted string.
+
+       places:  required number of places after the decimal point
+       curr:    optional currency symbol before the sign (may be blank)
+       sep:     optional grouping separator (comma, period, space, or blank)
+       dp:      decimal point indicator (comma or period)
+                only specify as blank when places is zero
+       pos:     optional sign for positive numbers: '+', space or blank
+       neg:     optional sign for negative numbers: '-', '(', space or blank
+       trailneg:optional trailing minus indicator:  '-', ')', space or blank
+
+       >>> d = Decimal('-1234567.8901')
+       >>> moneyfmt(d, curr='$')
+       '-$1,234,567.89'
+       >>> moneyfmt(d, places=0, sep='.', dp='', neg='', trailneg='-')
+       '1.234.568-'
+       >>> moneyfmt(d, curr='$', neg='(', trailneg=')')
+       '($1,234,567.89)'
+       >>> moneyfmt(Decimal(123456789), sep=' ')
+       '123 456 789.00'
+       >>> moneyfmt(Decimal('-0.02'), neg='<', trailneg='>')
+       '<0.02>'
+
+       """
+       q = Decimal(10) ** -places      # 2 places --> '0.01'
+       sign, digits, exp = value.quantize(q).as_tuple()
+       result = []
+       digits = list(map(str, digits))
+       build, next = result.append, digits.pop
+       if sign:
+           build(trailneg)
+       for i in range(places):
+           build(next() if digits else '0')
+       if places:
+           build(dp)
+       if not digits:
+           build('0')
+       i = 0
+       while digits:
+           build(next())
+           i += 1
+           if i == 3 and digits:
+               i = 0
+               build(sep)
+       build(curr)
+       build(neg if sign else pos)
+       return ''.join(reversed(result))
+
+   def pi():
+       """Compute Pi to the current precision.
+
+       >>> print(pi())
+       3.141592653589793238462643383
+
+       """
+       getcontext().prec += 2  # extra digits for intermediate steps
+       three = Decimal(3)      # substitute "three=3.0" for regular floats
+       lasts, t, s, n, na, d, da = 0, three, 3, 1, 0, 0, 24
+       while s != lasts:
+           lasts = s
+           n, na = n+na, na+8
+           d, da = d+da, da+32
+           t = (t * n) / d
+           s += t
+       getcontext().prec -= 2
+       return +s               # unary plus applies the new precision
+
+   def exp(x):
+       """Return e raised to the power of x.  Result type matches input type.
+
+       >>> print(exp(Decimal(1)))
+       2.718281828459045235360287471
+       >>> print(exp(Decimal(2)))
+       7.389056098930650227230427461
+       >>> print(exp(2.0))
+       7.38905609893
+       >>> print(exp(2+0j))
+       (7.38905609893+0j)
+
+       """
+       getcontext().prec += 2
+       i, lasts, s, fact, num = 0, 0, 1, 1, 1
+       while s != lasts:
+           lasts = s
+           i += 1
+           fact *= i
+           num *= x
+           s += num / fact
+       getcontext().prec -= 2
+       return +s
+
+   def cos(x):
+       """Return the cosine of x as measured in radians.
+
+       The Taylor series approximation works best for a small value of x.
+       For larger values, first compute x = x % (2 * pi).
+
+       >>> print(cos(Decimal('0.5')))
+       0.8775825618903727161162815826
+       >>> print(cos(0.5))
+       0.87758256189
+       >>> print(cos(0.5+0j))
+       (0.87758256189+0j)
+
+       """
+       getcontext().prec += 2
+       i, lasts, s, fact, num, sign = 0, 0, 1, 1, 1, 1
+       while s != lasts:
+           lasts = s
+           i += 2
+           fact *= i * (i-1)
+           num *= x * x
+           sign *= -1
+           s += num / fact * sign
+       getcontext().prec -= 2
+       return +s
+
+   def sin(x):
+       """Return the sine of x as measured in radians.
+
+       The Taylor series approximation works best for a small value of x.
+       For larger values, first compute x = x % (2 * pi).
+
+       >>> print(sin(Decimal('0.5')))
+       0.4794255386042030002732879352
+       >>> print(sin(0.5))
+       0.479425538604
+       >>> print(sin(0.5+0j))
+       (0.479425538604+0j)
+
+       """
+       getcontext().prec += 2
+       i, lasts, s, fact, num, sign = 1, 0, x, 1, x, 1
+       while s != lasts:
+           lasts = s
+           i += 2
+           fact *= i * (i-1)
+           num *= x * x
+           sign *= -1
+           s += num / fact * sign
+       getcontext().prec -= 2
+       return +s
+
+
+Perguntas Frequentes sobre Decimal
+==================================
+
+P. É complicado digitar "decimal.Decimal('1234.5')". Existe uma
+maneira de minimizar a digitação ao usar o interpretador interativo?
+
+R. Alguns usuários abreviam o construtor para apenas uma única letra:
+
+>>> D = decimal.Decimal
+>>> D('1.23') + D('3.45')
+Decimal('4.68')
+
+P. Em uma aplicação de ponto fixo com duas casas decimais, algumas
+entradas têm muitas casas e precisam ser arredondadas. Outros não
+devem ter dígitos em excesso e precisam ser validados. Quais métodos
+devem ser usados?
+
+A. The "quantize()" method rounds to a fixed number of decimal places.
+If the "Inexact" trap is set, it is also useful for validation:
+
+>>> TWOPLACES = Decimal(10) ** -2       # same as Decimal('0.01')
+
+>>> # Round to two places
+>>> Decimal('3.214').quantize(TWOPLACES)
+Decimal('3.21')
+
+>>> # Validate that a number does not exceed two places
+>>> Decimal('3.21').quantize(TWOPLACES, context=Context(traps=[Inexact]))
+Decimal('3.21')
+
+>>> Decimal('3.214').quantize(TWOPLACES, context=Context(traps=[Inexact]))
+Traceback (most recent call last):
+   ...
+Inexact: None
+
+P. Depois de validar entradas de duas casas, como mantenho essa
+invariável em uma aplicação?
+
+A. Some operations like addition, subtraction, and multiplication by
+an integer will automatically preserve fixed point.  Others
+operations, like division and non-integer multiplication, will change
+the number of decimal places and need to be followed-up with a
+"quantize()" step:
+
+>>> a = Decimal('102.72')           # Initial fixed-point values
+>>> b = Decimal('3.17')
+>>> a + b                           # Addition preserves fixed-point
+Decimal('105.89')
+>>> a - b
+Decimal('99.55')
+>>> a * 42                          # So does integer multiplication
+Decimal('4314.24')
+>>> (a * b).quantize(TWOPLACES)     # Must quantize non-integer multiplication
+Decimal('325.62')
+>>> (b / a).quantize(TWOPLACES)     # And quantize division
+Decimal('0.03')
+
+In developing fixed-point applications, it is convenient to define
+functions to handle the "quantize()" step:
+
+>>> def mul(x, y, fp=TWOPLACES):
+...     return (x * y).quantize(fp)
+...
+>>> def div(x, y, fp=TWOPLACES):
+...     return (x / y).quantize(fp)
+
+>>> mul(a, b)                       # Automatically preserve fixed-point
+Decimal('325.62')
+>>> div(b, a)
+Decimal('0.03')
+
+Q. There are many ways to express the same value.  The numbers "200",
+"200.000", "2E2", and ".02E+4" all have the same value at various
+precisions. Is there a way to transform them to a single recognizable
+canonical value?
+
+A. The "normalize()" method maps all equivalent values to a single
+representative:
+
+>>> values = map(Decimal, '200 200.000 2E2 .02E+4'.split())
+>>> [v.normalize() for v in values]
+[Decimal('2E+2'), Decimal('2E+2'), Decimal('2E+2'), Decimal('2E+2')]
+
+Q. When does rounding occur in a computation?
+
+A. It occurs *after* the computation.  The philosophy of the decimal
+specification is that numbers are considered exact and are created
+independent of the current context.  They can even have greater
+precision than current context.  Computations process with those exact
+inputs and then rounding (or other context operations) is applied to
+the *result* of the computation:
+
+   >>> getcontext().prec = 5
+   >>> pi = Decimal('3.1415926535')   # More than 5 digits
+   >>> pi                             # All digits are retained
+   Decimal('3.1415926535')
+   >>> pi + 0                         # Rounded after an addition
+   Decimal('3.1416')
+   >>> pi - Decimal('0.00005')        # Subtract unrounded numbers, then round
+   Decimal('3.1415')
+   >>> pi + 0 - Decimal('0.00005').   # Intermediate values are rounded
+   Decimal('3.1416')
+
+P. Alguns valores decimais sempre são exibidas com notação
+exponencial. Existe uma maneira de obter uma representação não
+exponencial?
+
+A. For some values, exponential notation is the only way to express
+the number of significant places in the coefficient.  For example,
+expressing "5.0E+3" as "5000" keeps the value constant but cannot show
+the original's two-place significance.
+
+Se uma aplicação não se importa com o rastreamento da significância, é
+fácil remover o expoente e os zeros à direita, perdendo a
+significância, mas mantendo o valor inalterado:
+
+>>> def remove_exponent(d):
+...     return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
+
+>>> remove_exponent(Decimal('5E+3'))
+Decimal('5000')
+
+P. Existe uma maneira de converter um float comum em um "Decimal"?
+
+R. Sim, qualquer número de ponto flutuante binário pode ser expresso
+exatamente como um Decimal, embora uma conversão exata possa exigir
+mais precisão do que a intuição sugere:
+
+   >>> Decimal(math.pi)
+   Decimal('3.141592653589793115997963468544185161590576171875')
+
+P. Em um cálculo complexo, como posso ter certeza de que não obtive um
+resultado falso devido à precisão insuficiente ou a anomalias de
+arredondamento.
+
+R. O módulo decimal facilita o teste de resultados. Uma prática
+recomendada é executar novamente os cálculos usando maior precisão e
+com vários modos de arredondamento. Resultados amplamente diferentes
+indicam precisão insuficiente, problemas no modo de arredondamento,
+entradas mal condicionadas ou um algoritmo numericamente instável.
+
+P. Notei que a precisão do contexto é aplicada aos resultados das
+operações, mas não às entradas. Há algo a observar ao misturar valores
+de diferentes precisões?
+
+R. Sim. O princípio é que todos os valores são considerados exatos,
+assim como a aritmética desses valores. Somente os resultados são
+arredondados. A vantagem das entradas é que "o que você vê é o que
+você obtém". Uma desvantagem é que os resultados podem parecer
+estranhos se você esquecer que as entradas não foram arredondadas:
+
+   >>> getcontext().prec = 3
+   >>> Decimal('3.104') + Decimal('2.104')
+   Decimal('5.21')
+   >>> Decimal('3.104') + Decimal('0.000') + Decimal('2.104')
+   Decimal('5.20')
+
+A solução é aumentar a precisão ou forçar o arredondamento das
+entradas usando a operação unária de mais:
+
+   >>> getcontext().prec = 3
+   >>> +Decimal('1.23456789')      # unary plus triggers rounding
+   Decimal('1.23')
+
+Como alternativa, as entradas podem ser arredondadas na criação usando
+o método "Context.create_decimal()":
+
+>>> Context(prec=5, rounding=ROUND_DOWN).create_decimal('1.2345678')
+Decimal('1.2345')
+
+P. A implementação do CPython é rápida para números grandes?
+
+A. Yes.  In the CPython and PyPy3 implementations, the C/CFFI versions
+of the decimal module integrate the high speed libmpdec library for
+arbitrary precision correctly rounded decimal floating point
+arithmetic [1]. "libmpdec" uses Karatsuba multiplication for medium-
+sized numbers and the Number Theoretic Transform for very large
+numbers.
+
+The context must be adapted for exact arbitrary precision arithmetic.
+"Emin" and "Emax" should always be set to the maximum values, "clamp"
+should always be 0 (the default).  Setting "prec" requires some care.
+
+The easiest approach for trying out bignum arithmetic is to use the
+maximum value for "prec" as well [2]:
+
+   >>> setcontext(Context(prec=MAX_PREC, Emax=MAX_EMAX, Emin=MIN_EMIN))
+   >>> x = Decimal(2) ** 256
+   >>> x / 128
+   Decimal('904625697166532776746648320380374280103671755200316906558262375061821325312')
+
+Para resultados inexatos, "MAX_PREC" é muito grande em plataformas de
+64 bits e a memória disponível será insuficiente:
+
+   >>> Decimal(1) / 3
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   MemoryError
+
+On systems with overallocation (e.g. Linux), a more sophisticated
+approach is to adjust "prec" to the amount of available RAM.  Suppose
+that you have 8GB of RAM and expect 10 simultaneous operands using a
+maximum of 500MB each:
+
+   >>> import sys
+   >>>
+   >>> # Maximum number of digits for a single operand using 500MB in 8-byte words
+   >>> # with 19 digits per word (4-byte and 9 digits for the 32-bit build):
+   >>> maxdigits = 19 * ((500 * 1024**2) // 8)
+   >>>
+   >>> # Check that this works:
+   >>> c = Context(prec=maxdigits, Emax=MAX_EMAX, Emin=MIN_EMIN)
+   >>> c.traps[Inexact] = True
+   >>> setcontext(c)
+   >>>
+   >>> # Fill the available precision with nines:
+   >>> x = Decimal(0).logical_invert() * 9
+   >>> sys.getsizeof(x)
+   524288112
+   >>> x + 2
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+     decimal.Inexact: [<class 'decimal.Inexact'>]
+
+Em geral (e especialmente em sistemas sem alocação excessiva),
+recomenda-se estimar limites ainda mais apertados e definir a
+armadilha "Inexact" se for esperado que todos os cálculos sejam mais
+precisos.
+
+[1] Novo na versão 3.3.
+
+[2] Alterado na versão 3.9: Esta abordagem agora funciona para todos
+    os resultados exatos, exceto para potências de números que não
+    sejam inteiros.

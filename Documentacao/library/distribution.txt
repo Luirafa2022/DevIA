@@ -1,0 +1,41 @@
+Empacotamento e Distribuição de Software
+****************************************
+
+Essas bibliotecas ajudam você a publicar e instalar software do
+Python. Embora esses módulos sejam projetados para funcionar em
+conjunto com o Python Package Index, eles também podem ser usados com
+um servidor de indexação local ou sem qualquer servidor de indexação.
+
+* "ensurepip" --- Inicialização do instalador do "pip"
+
+  * Interface de linha de comando
+
+  * API do módulo
+
+* "venv"--- Criação de ambientes virtuais
+
+  * Criando ambientes virtuais
+
+  * Como funcionam os venvs
+
+  * API
+
+  * Um exemplo de extensão de "EnvBuilder"
+
+* "zipapp" --- Manage executable Python zip archives
+
+  * Basic Example
+
+  * Interface de Linha de Comando
+
+  * API Python
+
+  * Exemplos
+
+  * Especificando o interpretador
+
+  * Creating Standalone Applications with zipapp
+
+    * Caveats
+
+  * The Python Zip Application Archive Format

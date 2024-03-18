@@ -1,0 +1,107 @@
+Depuração e perfilamento
+************************
+
+Essas bibliotecas ajudam no desenvolvimento do Python: o depurador
+permite que você percorra o código, analise os quadros de pilha e
+defina pontos de interrupção etc., e os criadores de perfil executam o
+código e fornecem uma análise detalhada dos tempos de execução,
+permitindo identificar gargalos em seus programas. Os eventos de
+auditoria fornecem visibilidade dos comportamentos de tempo de
+execução que, de outra forma, exigiriam depuração ou correção
+intrusiva.
+
+* Tabela de eventos de auditoria
+
+* "bdb" --- Debugger framework
+
+* "faulthandler" --- Dump the Python traceback
+
+  * Dumping the traceback
+
+  * Fault handler state
+
+  * Dumping the tracebacks after a timeout
+
+  * Dumping the traceback on a user signal
+
+  * Issue with file descriptors
+
+  * Exemplo
+
+* "pdb" --- O Depurador do Python
+
+  * Comandos de depuração
+
+* The Python Profilers
+
+  * Introduction to the profilers
+
+  * Instant User's Manual
+
+  * "profile" and "cProfile" Module Reference
+
+  * The "Stats" Class
+
+  * What Is Deterministic Profiling?
+
+  * Limitations
+
+  * Calibration
+
+  * Using a custom timer
+
+* "timeit" --- Measure execution time of small code snippets
+
+  * Exemplos básicos
+
+  * Python Interface
+
+  * Interface de Linha de Comando
+
+  * Exemplos
+
+* "trace" --- Rastreia ou acompanha a execução de instruções Python
+
+  * Uso da linha de comando
+
+    * Opções principais
+
+    * Modificadores
+
+    * Filtros
+
+  * Interface programática
+
+* "tracemalloc" --- Trace memory allocations
+
+  * Exemplos
+
+    * Exibe o top 10
+
+    * Compute differences
+
+    * Get the traceback of a memory block
+
+    * Pretty top
+
+      * Record the current and peak size of all traced memory blocks
+
+  * API
+
+    * Funções
+
+    * DomainFilter
+
+    * Filter
+
+    * Frame
+
+    * Snapshot
+
+    * Statistic
+
+    * StatisticDiff
+
+    * Trace
+
+    * Traceback

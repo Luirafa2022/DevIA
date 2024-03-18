@@ -1,0 +1,78 @@
+Serviços de Dados Binários
+**************************
+
+Os módulos descritos neste capítulo fornecem algumas operações de
+serviços básicos para manipulação de dados binários. Outras operações
+sobre dados binários, especificamente em relação a formatos de arquivo
+e protocolos de rede, são descritas nas seções relevantes.
+
+Algumas bibliotecas descritas em Serviços de Processamento de Texto
+também funcionam com formatos binários compatíveis com ASCII (por
+exemplo "re") ou com todos os dados binários (por exemplo "difflib").
+
+Além disso, consulte a documentação dos tipos de dados binários
+embutidos do Python em Tipos de Sequência Binária --- bytes,
+bytearray, memoryview.
+
+* "struct" --- Interpret bytes as packed binary data
+
+  * Funções e Exceções
+
+  * Format Strings
+
+    * Byte Order, Size, and Alignment
+
+    * Caracteres Formatados
+
+    * Exemplos
+
+  * Applications
+
+    * Native Formats
+
+    * Standard Formats
+
+  * Classes
+
+* "codecs" --- Codec registry and base classes
+
+  * Codec Base Classes
+
+    * Error Handlers
+
+    * Stateless Encoding and Decoding
+
+    * Incremental Encoding and Decoding
+
+      * IncrementalEncoder Objects
+
+      * IncrementalDecoder Objects
+
+    * Stream Encoding and Decoding
+
+      * StreamWriter Objects
+
+      * StreamReader Objects
+
+      * StreamReaderWriter Objects
+
+      * StreamRecoder Objects
+
+  * Encodings and Unicode
+
+  * Standard Encodings
+
+  * Python Specific Encodings
+
+    * Text Encodings
+
+    * Binary Transforms
+
+    * Text Transforms
+
+  * "encodings.idna" --- Internationalized Domain Names in
+    Applications
+
+  * "encodings.mbcs" --- Windows ANSI codepage
+
+  * "encodings.utf_8_sig" --- UTF-8 codec with BOM signature

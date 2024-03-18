@@ -1,0 +1,62 @@
+Serviços Criptográficos
+***********************
+
+Os módulos descritos nesse capítulo implementam vários algoritmos de
+natureza criptográfica. Eles estão disponíveis a critério da
+instalação. Em sistemas Unix, o módulo "crypt" pode estar disponível
+também. Eis uma visão geral:
+
+* "hashlib" --- Secure hashes and message digests
+
+  * Hash algorithms
+
+  * Uso
+
+  * Constructors
+
+  * Attributes
+
+  * Hash Objects
+
+  * SHAKE variable length digests
+
+  * File hashing
+
+  * Key derivation
+
+  * BLAKE2
+
+    * Creating hash objects
+
+    * Constantes
+
+    * Exemplos
+
+      * Simple hashing
+
+      * Using different digest sizes
+
+      * Keyed hashing
+
+      * Randomized hashing
+
+      * Personalization
+
+      * Modo árvore
+
+    * Credits
+
+* "hmac" --- Keyed-Hashing for Message Authentication
+
+* "secrets" --- Gera números aleatórios seguros para gerenciar
+  segredos
+
+  * Números aleatórios
+
+  * Gerando tokens
+
+    * Quantos bytes os tokens devem usar?
+
+  * Outras funções
+
+  * Receitas e melhores práticas

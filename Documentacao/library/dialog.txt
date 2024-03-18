@@ -1,0 +1,224 @@
+Diálogos Tkinter
+****************
+
+
+"tkinter.simpledialog" --- Diálogos de entrada padrão do Tkinter
+================================================================
+
+**Código-fonte:** Lib/tkinter/simpledialog.py
+
+======================================================================
+
+O módulo "tkinter.simpledialog" contém classes de conveniência e
+funções para criar diálogos modais simples para obter um valor do
+usuário.
+
+tkinter.simpledialog.askfloat(title, prompt, **kw)
+tkinter.simpledialog.askinteger(title, prompt, **kw)
+tkinter.simpledialog.askstring(title, prompt, **kw)
+
+   As três funções acima fornecem caixas de diálogo que solicitam que
+   o usuário insira um valor do tipo desejado.
+
+class tkinter.simpledialog.Dialog(parent, title=None)
+
+   A classe base para diálogos personalizados.
+
+   body(master)
+
+      Substitui para construir a interface da caixa de diálogo e
+      retornar o widget que deve ter foco inicial.
+
+   buttonbox()
+
+      O comportamento padrão adiciona botões OK e Cancelar. Substitua
+      para layouts de botão personalizados.
+
+
+"tkinter.filedialog" --- Caixas de diálogo de seleção de arquivo
+================================================================
+
+**Código-fonte:** Lib/tkinter/filedialog.py
+
+======================================================================
+
+The módulo "tkinter.filedialog" fornece classes e funções de fábrica
+para criar janelas de seleção de arquivo/diretório.
+
+
+Caixas de diálogo nativos de carregar/salvar
+--------------------------------------------
+
+As seguintes classes e funções fornecem janelas de diálogo de arquivo
+que combinam uma aparência nativa com opções de configuração para
+personalizar o comportamento. Os seguintes argumentos nomeados são
+aplicáveis ​​às classes e funções listado abaixo:
+
+      *parent* - a janela para colocar a caixa de diálogo no topo
+
+      *title* - o título da janela
+
+      *initialdir* - o diretório no qual a caixa de diálogo começa
+
+      *initialfile* - o arquivo selecionado ao abrir a caixa de diálogo
+
+      *filetypes* - uma sequência de tuplas (rótulo, padrão), o caractere curinga '*' é permitido
+
+      *defaultextension* - extensão padrão para anexar ao arquivo (caixas de diálogo para salvar)
+
+      *multiple* - quando verdadeiro, a seleção de vários itens é permitida
+
+**Fábrica de funções estáticas**
+
+As funções a seguir, quando chamadas, criam uma caixa de diálogo modal
+e nativa, aguardam a seleção do usuário e, em seguida, retornam o(s)
+valor(es) selecionado(s) ou "None" para o chamador.
+
+tkinter.filedialog.askopenfile(mode='r', **options)
+tkinter.filedialog.askopenfiles(mode='r', **options)
+
+   As duas funções acima criam uma caixa de diálogo "Open" e retornam
+   a caixa de diálogo com um ou mais objetos arquivo abertos em modo
+   somente leitura.
+
+tkinter.filedialog.asksaveasfile(mode='w', **options)
+
+   Cria uma caixa de diálogo "SaveAs" e retorna um objeto arquivo
+   aberto em modo somente escrita.
+
+tkinter.filedialog.askopenfilename(**options)
+tkinter.filedialog.askopenfilenames(**options)
+
+   As duas funções acima criam uma caixa de diálogo "Open" e retornam
+   um ou mais nomes de arquivos selecionados que correspondem aos
+   arquivos existentes.
+
+tkinter.filedialog.asksaveasfilename(**options)
+
+   Cria uma caixa de diálogo "SaveAs" e retorna o nome do arquivo
+   selecionado.
+
+tkinter.filedialog.askdirectory(**options)
+
+      Solicita ao usuário que selecione um diretório.
+      Opção de palavra reservada adicional:
+         *mustexist* - determina se a seleção deve ser um diretório existente.
+
+class tkinter.filedialog.Open(master=None, **options)
+class tkinter.filedialog.SaveAs(master=None, **options)
+
+   As duas classes acima fornecem janelas de diálogo nativas para
+   salvar e carregar files.
+
+**Classes de conveniência**
+
+As classes abaixo são usadas para criar janelas de arquivos/diretórios
+desde o início. Elas não emulam a aparência nativa da plataforma.
+
+class tkinter.filedialog.Directory(master=None, **options)
+
+   Cria uma caixa de diálogo solicitando que o usuário selecione um
+   diretório.
+
+Nota:
+
+  A classe *FileDialog* deve ser uma subclasse para manipulação e
+  comportamento de eventos personalizados.
+
+class tkinter.filedialog.FileDialog(master, title=None)
+
+   Cria uma caixa de diálogo básica de seleção de arquivo.
+
+   cancel_command(event=None)
+
+      Aciona o encerramento da janela de diálogo.
+
+   dirs_double_event(event)
+
+      Manipulador de eventos para evento de clique duplo no diretório.
+
+   dirs_select_event(event)
+
+      Manipulador de eventos para evento de clique no diretório.
+
+   files_double_event(event)
+
+      Manipulador de eventos para evento de clique duplo no arquivo.
+
+   files_select_event(event)
+
+      Manipulador de eventos para evento de clique único no arquivo.
+
+   filter_command(event=None)
+
+      Filtra os arquivos por diretório.
+
+   get_filter()
+
+      Recupera o filtro de arquivo atualmente em uso.
+
+   get_selection()
+
+      Recupera o item atualmente selecionado.
+
+   go(dir_or_file=os.curdir, pattern='*', default='', key=None)
+
+      Caixa de diálogo de renderização e inicia um laço de eventos.
+
+   ok_event(event)
+
+      Sai da caixa de diálogo retornando a seleção atual.
+
+   quit(how=None)
+
+      Sai da caixa de diálogo retornando o nome do arquivo, se houver.
+
+   set_filter(dir, pat)
+
+      Define o filtro de arquivo.
+
+   set_selection(file)
+
+      Atualiza a seleção de arquivo atual para *file*.
+
+class tkinter.filedialog.LoadFileDialog(master, title=None)
+
+   Uma subclasse de FileDialog que cria uma janela de diálogo para
+   selecionar um arquivo existente.
+
+   ok_command()
+
+      Testa se um arquivo é fornecido e se a seleção indica um já
+      arquivo existente.
+
+class tkinter.filedialog.SaveFileDialog(master, title=None)
+
+   Uma subclasse de FileDialog que cria uma janela de diálogo para
+   selecionar um arquivo de destino.
+
+   ok_command()
+
+      Testa se a seleção aponta ou não para um arquivo válido que não
+      é um diretório. A confirmação é necessária se um arquivo já
+      existente for selecionado.
+
+
+"tkinter.commondialog" --- Modelos de janela de diálogo
+=======================================================
+
+**Código-fonte:** Lib/tkinter/commondialog.py
+
+======================================================================
+
+O módulo "tkinter.commondialog" fornece a a classe "Dialog", que é a
+classe base para diálogos definidos em outros módulos de suporte.
+
+class tkinter.commondialog.Dialog(master=None, **options)
+
+   show(color=None, **options)
+
+      Renderiza a janela de diálogo.
+
+Ver também:
+
+  Módulos "tkinter.messagebox", Leitura e escrita de arquivos

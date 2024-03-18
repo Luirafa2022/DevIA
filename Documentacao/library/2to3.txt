@@ -1,0 +1,486 @@
+2to3 --- Tradução Automatizada de Código Python 2 para 3
+********************************************************
+
+2to3 é um programa Python que lê código-fonte Python 2.x e aplica uma
+série de *fixers* para transformá-lo em código válido para a versão do
+Python 3.x. A biblioteca padrão contém um conjunto rico de *fixers*
+que lidarão com quase todos os códigos. A biblioteca de suporte
+"lib2to3" é, no entanto, uma biblioteca genérica e flexível, por isso
+é possível escrever seus próprios fixadores para o 2to3.
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "lib2to3" foi marcado como pendente para descontinuação no
+Python 3.9 (levantando "PendingDeprecationWarning" na importação) e
+totalmente descontinuado no Python 3.11 (levantando
+"DeprecationWarning"). A ferramenta "2to3" faz parte disso. Ele será
+removido no Python 3.13.
+
+
+Usando o 2to3
+=============
+
+O 2to3 geralmente será instalado junto com o interpretador Python como
+se fosse um script. Ele também está localizado no diretório
+"Tools/scripts" na raiz da instalação do Python.
+
+Os argumentos básicos de 2to3 são uma lista de arquivos ou diretórios
+a serem transformados. Os diretórios são recursivamente percorridos
+pelos fontes Python.
+
+Aqui temos um exemplo de arquivo fonte Python 2.x, "example.py":
+
+   def greet(name):
+       print "Hello, {0}!".format(name)
+   print "What's your name?"
+   name = raw_input()
+   greet(name)
+
+O mesmo pode ser convertido para código Python 3.x através de 2to3
+através da linha de comando:
+
+   $ 2to3 example.py
+
+É impresso um diff contra o arquivo original. O 2to3 também pode
+escrever as modificações necessárias de volta ao arquivo de origem.
+(Um backup do arquivo original sempre será feito, salvo se a opção:
+"-n" for utilizada.) Escrever as alterações de volta está disponível
+com o uso do sinalizador "-w":
+
+   $ 2to3 -w example.py
+
+Após a transformação, o arquivo "example.py" se parecerá com isso:
+
+   def greet(name):
+       print("Hello, {0}!".format(name))
+   print("What's your name?")
+   name = input()
+   greet(name)
+
+Os comentários e recuo exato são preservados ao longo do processo de
+tradução.
+
+Por padrão, 2to3 executa um conjunto de fixadores predefinidos. O
+sinalizador "-l" lista todos os fixadores disponíveis. Um conjunto
+explícito de fixadores para execução pode ser fornecido com a opção:
+"-f". Da mesma forma, a opção "-x" desabilita explicitamente um
+fixadores. O exemplo a seguir executa apenas os fixadores "imports" e
+"has_key":
+
+   $ 2to3 -f imports -f has_key example.py
+
+Este comando executa todos os fixadores, exceto o fixadores "apply":
+
+   $ 2to3 -x apply example.py
+
+Alguns fixadores são *explícitos*, o que significa que eles não são
+executados por padrão e devem estar listados na linha de comando a
+para serem executados. Aqui, além dos fixadores padrão, o fixador
+"idioms" também será executado:
+
+   $ 2to3 -f all -f idioms example.py
+
+Observe como a passagem de "all" permite todos os fixadores padrão.
+
+Às vezes, 2to3 encontrará um lugar em seu código-fonte que precisa ser
+alterado, mas o 2to3 não pode corrigir automaticamente. Nesse caso, o
+2to3 imprimirá um aviso abaixo do diff para um arquivo. Você deve
+endereçar o aviso para ter o código 3.x compatível.
+
+O 2to3 também pode refatorar o doctests. Para ativar este modo, use o
+sinalizador "-d". Observe que os doctests *somente* serão refatorados.
+Isso também não exige que o módulo Python seja válido. Por exemplo, os
+exemplos doctest como em um documento reST também podem ser
+refatorados com esta opção.
+
+A opção "-v" permite a saída de mais informações sobre o processo de
+tradução.
+
+Uma vez que algumas instruções de impressão podem ser analisadas como
+chamadas de função ou instruções, 2to3 nem sempre pode ler arquivos
+que contêm a função de impressão. Quando 2to3 detecta a presença da
+diretiva de compilação "from __future__ import print_function", ele
+modifica sua gramática interna para interpretar funções "print()" como
+uma função. Esta alteração também pode ser ativada manualmente com o
+sinalizador "-p". Use o sinalizador "-p" para executar fixadores no
+código que já tiveram suas instruções impressas convertidas. Além
+disso, "-e" pode ser usado para aplicar "exec()" em uma função.
+
+A opção "-o" ou "--output-dir" permite especificar um diretório
+alternativo para a escrita dos arquivos de saída processados. O
+sinalizador "-n" é necessária ao usá-lo como arquivos de backup, não
+faz sentido quando não está sobrescrevendo os arquivos de entrada.
+
+Novo na versão 3.2.3: A opção "-o" foi adicionada.
+
+O sinalizador "-W" ou "--write-unchanged-files`diz ao 2to3 para sempre
+salvar arquivos de saída, mesmo que nenhuma alteração tenha sido
+necessária no arquivo. Isso é mais útil com: :option:"!-o`, de modo
+que uma árvore de código Python inteiro é copiada com a tradução de um
+diretório para outro. Esta opção implica o uso do sinalizador "-w",
+pois não faria sentido de outro modo.
+
+Novo na versão 3.2.3: O sinalizador "-W" foi adicionado.
+
+A opção "--add-suffix" determina a string que será adicionada a todos
+os nomes de arquivos. O sinalizador "-n" é necessário quando
+especificamos isso, pois os backups não são necessários quando
+escrevemos em nomes de arquivos diferentes. Por exemplo:
+
+   $ 2to3 -n -W --add-suffix=3 example.py
+
+Resultará num arquivo convertido de nome "example.py3" a ser escrito.
+
+Novo na versão 3.2.3: A opção "--add-suffix" foi adicionada.
+
+Para traduzir um projeto inteiro de uma árvore de diretório para
+outra, use:
+
+   $ 2to3 --output-dir=python3-version/mycode -W -n python2-version/mycode
+
+
+Fixadores
+=========
+
+Cada passo de transformação do código é encapsulado em um fixador. O
+comando "2to3 -l" lista todos. Assim como documentado acima, cada um
+pode ser ativado ou desativado individualmente. Eles são descritos
+aqui com mais detalhes.
+
+apply
+
+   Remove o uso de "apply()". Por exemplo "apply(function, *args,
+   **kwargs)" é convertido para "function(*args, **kwargs)".
+
+asserts
+
+   Substitui o nome de método descontinuado "unittest" pelo nome
+   correto.
+
+   +----------------------------------+--------------------------------------------+
+   | De                               | Para                                       |
+   |==================================|============================================|
+   | "failUnlessEqual(a, b)"          | "assertEqual(a, b)"                        |
+   +----------------------------------+--------------------------------------------+
+   | "assertEquals(a, b)"             | "assertEqual(a, b)"                        |
+   +----------------------------------+--------------------------------------------+
+   | "failIfEqual(a, b)"              | "assertNotEqual(a, b)"                     |
+   +----------------------------------+--------------------------------------------+
+   | "assertNotEquals(a, b)"          | "assertNotEqual(a, b)"                     |
+   +----------------------------------+--------------------------------------------+
+   | "failUnless(a)"                  | "assertTrue(a)"                            |
+   +----------------------------------+--------------------------------------------+
+   | "assert_(a)"                     | "assertTrue(a)"                            |
+   +----------------------------------+--------------------------------------------+
+   | "failIf(a)"                      | "assertFalse(a)"                           |
+   +----------------------------------+--------------------------------------------+
+   | "failUnlessRaises(exc, cal)"     | "assertRaises(exc, cal)"                   |
+   +----------------------------------+--------------------------------------------+
+   | "failUnlessAlmostEqual(a, b)"    | "assertAlmostEqual(a, b)"                  |
+   +----------------------------------+--------------------------------------------+
+   | "assertAlmostEquals(a, b)"       | "assertAlmostEqual(a, b)"                  |
+   +----------------------------------+--------------------------------------------+
+   | "failIfAlmostEqual(a, b)"        | "assertNotAlmostEqual(a, b)"               |
+   +----------------------------------+--------------------------------------------+
+   | "assertNotAlmostEquals(a, b)"    | "assertNotAlmostEqual(a, b)"               |
+   +----------------------------------+--------------------------------------------+
+
+basestring
+
+   Converte a classe "basestring" para a classe "str".
+
+buffer
+
+   Converte a classe "buffer" para "memoryview". Este fixador é
+   opcional porque a a API da classe "memoryview" é semelhante, mas
+   não exatamente a mesma que a da classe "buffer".
+
+dict
+
+   Corrige os métodos de iteração de dicionário. "dict.iteritems()" é
+   convertido para "dict.items()", "dict.iterkeys()" para
+   "dict.keys()", e "dict.itervalues()" para "dict.values()".
+   Similarmente temos o método, "dict.viewitems()", "dict.viewkeys()"
+   e "dict.viewvalues()" que são convertidos respectivamente para
+   "dict.items()", "dict.keys()" e "dict.values()". Também encapsula
+   os usos existentes de "dict.items()", "dict.keys()", e
+   "dict.values()" em uma chamada para "list".
+
+except
+
+   Converte "except X, T" para "except X as T".
+
+exec
+
+   Converte a "exec" declaração para a função "exec()".
+
+execfile
+
+   Remove o uso da função "execfile()". O argumento para "execfile()"
+   é encapsulado pelas funções "open()", "compile()", e "exec()".
+
+exitfunc
+
+   Mudança de declaração de "sys.exitfunc" para usar o módulo
+   "atexit".
+
+filter
+
+   Encapsula a função "filter()" usando uma chamada para a classe
+   "list".
+
+funcattrs
+
+   Corrige atributos de funções que foram renomeados. Por exemplo,
+   "my_function.func_closure" é convertido para
+   "my_function.__closure__".
+
+future
+
+   Remove a declaração "from __future__ import new_feature".
+
+getcwdu
+
+   Renomeia a função "os.getcwdu()" para "os.getcwd()".
+
+has_key
+
+   Modifica "dict.has_key(key)" para "key in dict".
+
+idioms
+
+   Este fixador opcional executa várias transformações que tornam o
+   código Python mais idiomático. Comparações de tipo como "type(x) is
+   SomeClass" e "type(x) == SomeClass" são convertidas para
+   "isinstance(x, SomeClass)". "while 1" vira "while True". Este
+   fixador também tenta usar "sorted()" nos lugares apropriados. Por
+   exemplo, este bloco
+
+      L = list(some_iterable)
+      L.sort()
+
+   é alterado para:
+
+      L = sorted(some_iterable)
+
+import
+
+   Detecta importações de irmãos e as converte em importações
+   relativas.
+
+imports
+
+   Muda o nome do módulo na biblioteca padrão.
+
+imports2
+
+   Lida com outras renomeações de módulos na biblioteca padrão. É
+   separado do fixador "imports" apenas por causa de limitações
+   técnicas.
+
+input
+
+   Converte "input(prompt)" para "eval(input(prompt))".
+
+intern
+
+   Converte a função "intern()" para "sys.intern()".
+
+isinstance
+
+   Corrige tipos duplicados no segundo argumento de "isinstance()".
+   Por exemplo, "isinstance(x, (int, int))" é convertido para
+   "isinstance(x, int)" e "isinstance(x, (int, float, int))" é
+   convertido para "isinstance(x, (int, float))".
+
+itertools_imports
+
+   Remove importações de "itertools.ifilter()", "itertools.izip()", e
+   "itertools.imap()". Importações de "itertools.ifilterfalse()"
+   também são alteradas para "itertools.filterfalse()".
+
+itertools
+
+   Altera o uso de "itertools.ifilter()", "itertools.izip()", e
+   "itertools.imap()" para os seus equivalentes embutidos.
+   "itertools.ifilterfalse()" é alterado para
+   "itertools.filterfalse()".
+
+long
+
+   Renomeia a classe "long" para "int".
+
+map
+
+   Encapsula a função "map()" numa chamada a classe "list". Isso
+   também altera "map(None, x)" para "list(x)". Usando "from
+   future_builtins import map" desabilitará esse fixador.
+
+metaclass
+
+   Converte a sintaxe da metaclasse antiga ("__metaclass__ = Meta" no
+   corpo da classe) para o novo formato ("class X(metaclass=Meta)").
+
+methodattrs
+
+   Corrige nomes de atributos de métodos antigos. Por exemplo
+   "meth.im_func" é convertido para "meth.__func__".
+
+ne
+
+   Converte a sintaxe antiga "diferente", "<>", para "!=".
+
+next
+
+   Converte o uso de métodos de iterador "next()" para a função
+   "next()". Também renomeia métodos "next()" para "__next__()".
+
+nonzero
+
+   Renomeia as definições de métodos chamados "__nonzero__()" para
+   "__bool__()".
+
+numliterals
+
+   Converte os literais octal para a nova sintaxe.
+
+operator
+
+   Converte chamadas para várias funções no módulo "operator" para
+   chamadas de função diferentes, mas equivalentes. Quando necessário,
+   são adicionadas as declarações "import" adequadas, por exemplo
+   "import collections.abc". Os seguintes mapeamento são feitos:
+
+   +------------------------------------+-----------------------------------------------+
+   | De                                 | Para                                          |
+   |====================================|===============================================|
+   | "operator.isCallable(obj)"         | "callable(obj)"                               |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.sequenceIncludes(obj)"   | "operator.contains(obj)"                      |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.isSequenceType(obj)"     | "isinstance(obj, collections.abc.Sequence)"   |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.isMappingType(obj)"      | "isinstance(obj, collections.abc.Mapping)"    |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.isNumberType(obj)"       | "isinstance(obj, numbers.Number)"             |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.repeat(obj, n)"          | "operator.mul(obj, n)"                        |
+   +------------------------------------+-----------------------------------------------+
+   | "operator.irepeat(obj, n)"         | "operator.imul(obj, n)"                       |
+   +------------------------------------+-----------------------------------------------+
+
+paren
+
+   Adiciona parênteses onde os mesmos não eram necessários em lista
+   comprehensions. Por exemplo, "[x for x in 1, 2]" se torna "[x for x
+   in (1, 2)]".
+
+print
+
+   Converte a declaração "print" para a função "print()".
+
+raise
+
+   Converte "raise E, V" para "raise E(V)", e "raise E, V, T" para
+   "raise E(V).with_traceback(T)". Se "E" for uma tupla, a tradução
+   ficará incorreta porque a substituição de tuplas por exceções foi
+   removida no Python 3x.
+
+raw_input
+
+   Converte a função "raw_input()" para "input()".
+
+reduce
+
+   Manipula o movimento de "reduce()" para "functools.reduce()".
+
+reload
+
+   Converte a função "reload()" para "importlib:reload()".
+
+renames
+
+   Altera o "sys.maxint" para "sys.maxsize".
+
+repr
+
+   Substitui o repr de backtick pela função "repr()".
+
+set_literal
+
+   Substitui o uso da classe "set" construtor pelo seu literal. Este
+   fixador é opcional.
+
+standarderror
+
+   Renomeia "StandardError" para "Exception".
+
+sys_exc
+
+   Altera os descontinuados "sys.exc_value", "sys.exc_type",
+   "sys.exc_traceback" para utilizar agora a função "sys.exc_info()".
+
+throw
+
+   Corrige a mudança de API no método gerador "throw()".
+
+tuple_params
+
+   Remove o desempacotamento implícito do parâmetro da tupla. Este
+   fixador insere variáveis temporárias.
+
+types
+
+   Corrige o código quebrado pela remoção de alguns membros no módulo
+   "types".
+
+unicode
+
+   Renomeia a classe "unicode" para "str".
+
+urllib
+
+   Manipula a renomeação dos módulos "urllib" e "urllib2" para o
+   pacote "urllib".
+
+ws_comma
+
+   Remove o espaço excessivo de itens separados por vírgulas. Este
+   fixador é opcional.
+
+xrange
+
+   Renomeia a função "xrange()" para "range()" e encapsula a chamada
+   para função existente "range()" com "list".
+
+xreadlines
+
+   Altera de "for x in file.xreadlines()" para "for x in file".
+
+zip
+
+   Encapsula o uso da função "zip()" na chamada a classe "list". Isso
+   está desativado quando "from future_builtins import zip" aparecer.
+
+
+"lib2to3" --- biblioteca do 2to3
+================================
+
+**Código-fonte:** Lib/lib2to3/
+
+======================================================================
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13:
+Python 3.9 mudou para um analisador GASE (veja **PEP 617**) enquanto
+lib2to3 está usando um analisador LL(1) menos flexível. Python 3.10
+inclui uma nova sintaxe de linguagem não analisável pelo analisador
+sintático LL(1) da lib2to3 (veja **PEP 634**). O módulo "lib2to3" foi
+marcado como pendente para descontinuação na versão Python 3.9
+(levantando "PendingDeprecationWarning" na importação) e totalmente
+descontinuado na versão Python 3.11 (levantando "DeprecationWarning").
+Ele será removido da biblioteca padrão na versão Python 3.13.
+Considere alternativas de terceiros como LibCST ou parso.
+
+Nota:
+
+  A API do módulo "lib2to3" deve ser considerado instável e pode mudar
+  drasticamente no futuro.

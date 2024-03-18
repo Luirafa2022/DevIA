@@ -1,0 +1,279 @@
+"contextvars" --- Variáveis de contexto
+***************************************
+
+======================================================================
+
+Este módulo fornece APIs para gerenciar, armazenar e acessar o estado
+local do contexto. A classe "ContextVar" é usada para declarar e
+trabalhar com *Variáveis de Contexto*. A função "copy_context()" e a
+classe "Context" devem ser usadas para gerenciar o contexto atual em
+frameworks assíncronos.
+
+Os gerenciadores de contexto que possuem estado devem usar Variáveis
+de Contexto ao invés de "threading.local()" para evitar que seu estado
+vaze para outro código inesperadamente, quando usado em código
+concorrente.
+
+Veja também a **PEP 567** para detalhes adicionais.
+
+Novo na versão 3.7.
+
+
+Variáveis de contexto
+=====================
+
+class contextvars.ContextVar(name[, *, default])
+
+   Esta classe é usada para declarar uma nova variável de contexto,
+   como, por exemplo:
+
+      var: ContextVar[int] = ContextVar('var', default=42)
+
+   O parâmetro obrigatório *name* é usado para fins de introspecção e
+   depuração.
+
+   O parâmetro somente-nomeado opcional *default* é retornado por
+   "ContextVar.get()" quando nenhum valor para a variável é encontrado
+   no contexto atual.
+
+   **Importante:** Variáveis de Contexto devem ser criadas no nível do
+   módulo superior e nunca em fechamentos. Os objetos "Context" contêm
+   referências fortes a variáveis de contexto que evitam que as
+   variáveis de contexto sejam coletadas como lixo corretamente.
+
+   name
+
+      O nome da variável. Esta é uma propriedade somente leitura.
+
+      Novo na versão 3.7.1.
+
+   get([default])
+
+      Retorna um valor para a variável de contexto para o contexto
+      atual.
+
+      Se não houver valor para a variável no contexto atual, o método
+      vai:
+
+      * retornar o valor do argumento *default* do método, se
+        fornecido; ou
+
+      * retornar o valor padrão para a variável de contexto, se ela
+        foi criada com uma; ou
+
+      * levantar uma "LookupError".
+
+   set(value)
+
+      Chame para definir um novo valor para a variável de contexto no
+      contexto atual.
+
+      O argumento *value* obrigatório é o novo valor para a variável
+      de contexto.
+
+      Retorna um objeto "Token" que pode ser usado para restaurar a
+      variável ao seu valor anterior através do método
+      "ContextVar.reset()".
+
+   reset(token)
+
+      Redefine a variável de contexto para o valor que tinha antes de
+      "ContextVar.set()". que criou o *token*, ser usado.
+
+      Por exemplo:
+
+         var = ContextVar('var')
+
+         token = var.set('new value')
+         # code that uses 'var'; var.get() returns 'new value'.
+         var.reset(token)
+
+         # After the reset call the var has no value again, so
+         # var.get() would raise a LookupError.
+
+class contextvars.Token
+
+   Objetos *token* são retornados pelo método "ContextVar.set()". Eles
+   podem ser passados para o método "ContextVar.reset()" para reverter
+   o valor da variável para o que era antes do *set* correspondente.
+
+   var
+
+      Uma propriedade somente leitura. Aponta para o objeto
+      "ContextVar" que criou o token.
+
+   old_value
+
+      Uma propriedade somente leitura. Defina como o valor que a
+      variável tinha antes da chamada do método "ContextVar.set()" que
+      criou o token. Aponta para "Token.MISSING" se a variável não foi
+      definida antes da chamada.
+
+   MISSING
+
+      Um objeto marcador usado por "Token.old_value".
+
+
+Gerenciamento de contexto manual
+================================
+
+contextvars.copy_context()
+
+   Retorna uma cópia do objeto "Context" atual.
+
+   O trecho a seguir obtém uma cópia do contexto atual e imprime todas
+   as variáveis e seus valores que são definidos nele:
+
+      ctx: Context = copy_context()
+      print(list(ctx.items()))
+
+   The function has an *O*(1) complexity, i.e. works equally fast for
+   contexts with a few context variables and for contexts that have a
+   lot of them.
+
+class contextvars.Context
+
+   Um mapeamento de "ContextVars" para seus valores.
+
+   "Context()" cria um contexto vazio sem valores nele. Para obter uma
+   cópia do contexto atual, use a função "copy_context()".
+
+   Cada thread terá um objeto "Context" de nível superior diferente.
+   Isso significa que um objeto "ContextVar" se comporta de maneira
+   semelhante a "threading.local()" quando valores são atribuídos em
+   diferentes threads.
+
+   Context implementa a interface "collections.abc.Mapping".
+
+   run(callable, *args, **kwargs)
+
+      Executa o código "callable(*args, **kwargs)" no objeto contexto
+      em que o método *run* é chamado. Retorna o resultado da execução
+      ou propaga uma exceção, se ocorrer.
+
+      Quaisquer mudanças em quaisquer variáveis de contexto que
+      *callable* faça estarão contidas no objeto de contexto:
+
+         var = ContextVar('var')
+         var.set('spam')
+
+         def main():
+             # 'var' was set to 'spam' before
+             # calling 'copy_context()' and 'ctx.run(main)', so:
+             # var.get() == ctx[var] == 'spam'
+
+             var.set('ham')
+
+             # Now, after setting 'var' to 'ham':
+             # var.get() == ctx[var] == 'ham'
+
+         ctx = copy_context()
+
+         # Any changes that the 'main' function makes to 'var'
+         # will be contained in 'ctx'.
+         ctx.run(main)
+
+         # The 'main()' function was run in the 'ctx' context,
+         # so changes to 'var' are contained in it:
+         # ctx[var] == 'ham'
+
+         # However, outside of 'ctx', 'var' is still set to 'spam':
+         # var.get() == 'spam'
+
+      O método levanta uma "RuntimeError" quando chamado no mesmo
+      objeto de contexto de mais de uma thread do sistema operacional,
+      ou quando chamado recursivamente.
+
+   copy()
+
+      Retorna uma cópia rasa do objeto contexto.
+
+   var in context
+
+      Retorna "True" se *context* tem uma variável para *var*
+      definida; do contrário, retorna "False".
+
+   context[var]
+
+      Retorna o valor da variável "ContextVar" *var*. Se a variável
+      não for definida no objeto contexto, uma "KeyError" é levantada.
+
+   get(var[, default])
+
+      Retorna o valor para *var* se *var* tiver o valor no objeto
+      contexto. Caso contrário, retorna *default*. Se *default* não
+      for fornecido, retorna "None".
+
+   iter(context)
+
+      Retorna um iterador sobre as variáveis armazenadas no objeto
+      contexto.
+
+   len(proxy)
+
+      Retorna o número das variáveis definidas no objeto contexto.
+
+   keys()
+
+      Retorna uma lista de todas as variáveis no objeto contexto.
+
+   values()
+
+      Retorna uma lista dos valores de todas as variáveis no objeto
+      contexto.
+
+   items()
+
+      Retorna uma lista de tuplas de 2 elementos contendo todas as
+      variáveis e seus valores no objeto contexto.
+
+
+Suporte a asyncio
+=================
+
+Variáveis de contexto encontram suporte nativo em "asyncio" e estão
+prontas para serem usadas sem qualquer configuração extra. Por
+exemplo, aqui está um servidor simples de eco, que usa uma variável de
+contexto para disponibilizar o endereço de um cliente remoto na Task
+que lida com esse cliente:
+
+   import asyncio
+   import contextvars
+
+   client_addr_var = contextvars.ContextVar('client_addr')
+
+   def render_goodbye():
+       # The address of the currently handled client can be accessed
+       # without passing it explicitly to this function.
+
+       client_addr = client_addr_var.get()
+       return f'Good bye, client @ {client_addr}\n'.encode()
+
+   async def handle_request(reader, writer):
+       addr = writer.transport.get_extra_info('socket').getpeername()
+       client_addr_var.set(addr)
+
+       # In any code that we call is now possible to get
+       # client's address by calling 'client_addr_var.get()'.
+
+       while True:
+           line = await reader.readline()
+           print(line)
+           if not line.strip():
+               break
+           writer.write(line)
+
+       writer.write(render_goodbye())
+       writer.close()
+
+   async def main():
+       srv = await asyncio.start_server(
+           handle_request, '127.0.0.1', 8081)
+
+       async with srv:
+           await srv.serve_forever()
+
+   asyncio.run(main())
+
+   # To test it you can use telnet:
+   #     telnet 127.0.0.1 8081

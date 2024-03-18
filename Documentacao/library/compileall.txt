@@ -1,0 +1,362 @@
+"compileall" --- Compilar bibliotecas do Python para bytecode
+*************************************************************
+
+**Código-fonte:** Lib/compileall.py
+
+======================================================================
+
+Este módulo fornece algumas funções utilitárias para dar suporte à
+instalação de bibliotecas Python. Essas funções compilam arquivos
+fonte Python em uma árvore de diretórios. Este módulo pode ser usado
+para criar os arquivos de bytecodes em cache no momento da instalação
+da biblioteca, o que os torna disponíveis para uso mesmo por usuários
+que não têm permissão de gravação nos diretórios da biblioteca.
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+
+Uso na linha de comando
+=======================
+
+Este módulo pode funcionar como um script (usando **python -m
+compileall**) para compilar fontes do Python.
+
+directory ...
+file ...
+
+   Argumentos posicionais são arquivos a serem compilados ou
+   diretórios que contêm arquivos de origem, percorridos
+   recursivamente. Se nenhum argumento for fornecido, comporta-se como
+   se a linha de comando fosse  "-l *<diretórios do sys.path>*".
+
+-l
+
+   Não atua recursivamente em subdiretórios, apenas compila arquivos
+   de código-fonte diretamente contidos nos diretórios nomeados ou
+   implícitos.
+
+-f
+
+   Força a recompilação, mesmo que os carimbos de data e hora estejam
+   atualizados.
+
+-q
+
+   Não imprime a lista de arquivos compilados. Se passado uma vez, as
+   mensagens de erro ainda serão impressas. Se passado duas vezes
+   ("-qq"), toda a saída é suprimida.
+
+-d destdir
+
+   Diretório anexado ao caminho de cada arquivo que está sendo
+   compilado. Isso aparecerá nos tracebacks em tempo de compilação e
+   também será compilado no arquivo de bytecode, onde será usado em
+   tracebacks e outras mensagens nos casos em que o arquivo de origem
+   não exista no momento em que o arquivo de bytecode for executado.
+
+-s strip_prefix
+
+-p prepend_prefix
+
+   Remove ("-s") ou acrescenta ("-p") o prefixo especificado dos
+   caminhos gravados nos arquivos ".pyc". Não pode ser combinado com
+   "-d".
+
+-x regex
+
+   A expressão regular "regex" é usada para pesquisar o caminho
+   completo para cada arquivo considerado para compilação e, se a
+   "regex" produzir uma correspondência, o arquivo será ignorado.
+
+-i list
+
+   Lê o arquivo "list" e adicione cada linha que ele contém à lista de
+   arquivos e diretórios a serem compilados. Se "list" for "-", lê as
+   linhas do "stdin".
+
+-b
+
+   Escreve os arquivos de bytecode em seus locais e nomes legados, que
+   podem sobrescrever arquivos de bytecode criados por outra versão do
+   Python. O padrão é gravar arquivos em seus locais e nomes do **PEP
+   3147**, o que permite que arquivos de bytecode de várias versões do
+   Python coexistam.
+
+-r
+
+   Controla o nível máximo de recursão para subdiretórios. Se isso for
+   dado, a opção "-l" não será levada em consideração. **python -m
+   compileall <diretório> -r 0** é equivalente a **python -m
+   compileall <diretório> -l**.
+
+-j N
+
+   Use *N* workers para compilar os arquivos dentro do diretório
+   especificado. Se "0" for usado, o resultado de "os.cpu_count()"
+   será usado.
+
+--invalidation-mode [timestamp|checked-hash|unchecked-hash]
+
+   Controla como os arquivos de bytecode gerados são invalidados no
+   tempo de execução. O valor "timestamp" significa que os arquivos
+   ".pyc" com o carimbo de data/hora do fonte e o tamanho incorporado
+   serão gerados. Os valores "selected-hash" e "unchecked-hash" fazem
+   com que os pycs baseados em hash sejam gerados. Arquivos pycs
+   baseados em hash incorporam um hash do conteúdo do arquivo fonte em
+   vez de um carimbo de data/hora. Veja Cached bytecode invalidation
+   para obter mais informações sobre como o Python valida os arquivos
+   de cache do bytecode em tempo de execução. O padrão é "timestamp"
+   se a variável de ambiente "SOURCE_DATE_EPOCH" não estiver
+   configurada e "selected-hash" se a variável de ambiente
+   "SOURCE_DATE_EPOCH" estiver configurada.
+
+-o level
+
+   Compila com o nível de otimização fornecido. Pode ser usado várias
+   vezes para compilar para vários níveis por vez (por exemplo,
+   "compileall -o 1 -o 2").
+
+-e dir
+
+   Ignora links simbólicos que apontam para fora do diretório
+   especificado.
+
+--hardlink-dupes
+
+   Se dois arquivos ".pyc" com nível de otimização diferente tiverem o
+   mesmo conteúdo, usa links físicos para consolidar arquivos
+   duplicados.
+
+Alterado na versão 3.2: Adicionadas as opções "-i", "-b" e "-h".
+
+Alterado na versão 3.5: Adicionadas as opções "-j", "-r" e "-qq". A
+opção "-q" foi alterada para um valor multinível. "-b" sempre
+produzirá um arquivo de bytecodes que termina em ".pyc", nunca em
+".pyo".
+
+Alterado na versão 3.7: Adicionada a opção "--invalidation-mode".
+
+Alterado na versão 3.9: Adicionadas as opções "-s", "-p", "-e" e "--
+hardlink-dupes". Aumentado o limite de recursão padrão de 10 para
+"sys.getrecursionlimit()". Adicionada a possibilidade de especificar a
+opção "-o" várias vezes.
+
+Não há opção na linha de comando para controlar o nível de otimização
+usado pela função "compile()" porque o próprio interpretador Python já
+fornece a opção: **python -O -m compileall**.
+
+Da mesma forma, a função "compile()" respeita a configuração
+"sys.pycache_prefix". O cache do bytecode gerado somente será útil se
+"compile()" for executado com o mesmo "sys.pycache_prefix" (se houver)
+que será usado em tempo de execução.
+
+
+Funções públicas
+================
+
+compileall.compile_dir(dir, maxlevels=sys.getrecursionlimit(), ddir=None, force=False, rx=None, quiet=0, legacy=False, optimize=-1, workers=1, invalidation_mode=None, *, stripdir=None, prependdir=None, limit_sl_dest=None, hardlink_dupes=False)
+
+   Desce recursivamente a árvore de diretórios nomeada por *dir*,
+   compilando todos os arquivos ".py" ao longo do caminho. Retorna um
+   valor verdadeiro se todos os arquivos forem compilados com êxito e
+   um valor falso caso contrário.
+
+   O parâmetro *maxlevels* é usado para limitar a profundidade da
+   recursão; o padrão é "sys.getrecursionlimit()".
+
+   Se *ddir* for fornecido, ele será anexado ao caminho de cada
+   arquivo que está sendo compilado para uso em tracebacks em tempo de
+   compilação e também será compilado no arquivo de bytecode, onde
+   será usado em tracebacks e outras mensagens nos casos em que o
+   arquivo de origem não existe no momento em que o arquivo de
+   bytecode é executado.
+
+   Se *force* for verdadeiro, os módulos serão recompilados, mesmo que
+   os carimbos de data e hora estejam atualizados.
+
+   Se *rx* for fornecido, seu método "search" será chamado no caminho
+   completo para cada arquivo considerado para compilação e, se
+   retornar um valor verdadeiro, o arquivo será ignorado. Isso pode
+   ser usado para excluir arquivos correspondendo a uma expressão
+   regular, dado como um objeto re.Pattern.
+
+   Se *quiet* for "False" ou "0" (o padrão), os nomes dos arquivos e
+   outras informações serão impressos com o padrão. Definido como "1",
+   apenas os erros são impressos. Definido como "2", toda a saída é
+   suprimida.
+
+   Se *legacy* for verdadeiro, os arquivos de bytecodes serão gravados
+   em seus locais e nomes herdados, o que poderá sobrescrever arquivos
+   de bytecodes criados por outra versão do Python. O padrão é gravar
+   arquivos em seus locais e nomes do **PEP 3147**, o que permite que
+   arquivos de bytecodes de várias versões do Python coexistam.
+
+   *optimize* especifica o nível de otimização para o compilador. Ele
+   é passado para a função embutida "compile()". Aceita também uma
+   sequência de níveis de otimização que levam a várias compilações de
+   um arquivo ".py" em uma chamada.
+
+   O argumento *workers* especifica quantos workers são usados para
+   compilar arquivos em paralelo. O padrão é não usar vários workers.
+   Se a plataforma não puder usar vários workers e o argumento
+   *workers* for fornecido, a compilação sequencial será usada como
+   reserva. Se *workers* for 0, o número de núcleos no sistema é
+   usado. Se *workers* for menor que "0", a "ValueError" será
+   levantada.
+
+   *invalidation_mode* deve ser um membro de enum
+   "py_compile.PycInvalidationMode" e controla como os pycs gerados
+   são invalidados em tempo de execução.
+
+   Os argumentos *stripdir*, *prependdir* e *limit_sl_dest*
+   correspondem às opções "-s", "-p" e "-e" descrita acima. eles podem
+   ser especificados como "str" ou "os.PathLike".
+
+   Se *hardlink_dupes* for verdadeiro e dois arquivos ".pyc" com nível
+   de otimização diferente tiverem o mesmo conteúdo, usa links físicos
+   para consolidar arquivos duplicados.
+
+   Alterado na versão 3.2: Adicionado os parâmetros *legacy* e
+   *optimize*.
+
+   Alterado na versão 3.5: Adicionado o parâmetro *workers*.
+
+   Alterado na versão 3.5: O parâmetro *quiet* foi alterado para um
+   valor multinível.
+
+   Alterado na versão 3.5: O parâmetro *legacy* grava apenas arquivos
+   ".pyc", não os arquivos ".pyo", independentemente do valor de
+   *optimize*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.7: O parâmetro *invalidation_mode* foi
+   adicionado.
+
+   Alterado na versão 3.7.2: O valor padrão do parâmetro
+   *invalidation_mode* é atualizado para None.
+
+   Alterado na versão 3.8: A definição de *workers* como 0 agora
+   escolhe o número ideal de núcleos.
+
+   Alterado na versão 3.9: Adicionados os argumentos *stripdir*,
+   *prependdir*, *limit_sl_dest* e *hardlink_dupes*. O valor padrão de
+   *maxlevels* foi alterado de "10" para "sys.getrecursionlimit()"
+
+compileall.compile_file(fullname, ddir=None, force=False, rx=None, quiet=0, legacy=False, optimize=-1, invalidation_mode=None, *, stripdir=None, prependdir=None, limit_sl_dest=None, hardlink_dupes=False)
+
+   Compila o arquivo com o caminho *fullname*. Retorna um valor
+   verdadeiro se o arquivo compilado com êxito e um valor falso caso
+   contrário.
+
+   Se *ddir* for fornecido, ele será anexado ao caminho do arquivo que
+   está sendo compilado para uso em rastreamentos em tempo de
+   compilação e também será compilado no arquivo de bytecode, onde
+   será usado em tracebacks e outras mensagens nos casos em que o
+   arquivo fonte não existe no momento em que o arquivo de bytecode é
+   executado.
+
+   Se *rx* for fornecido, seu método "search" passará o nome do
+   caminho completo para o arquivo que está sendo compilado e, se
+   retornar um valor verdadeiro, o arquivo não será compilado e "True"
+   será retornado. Isso pode ser usado para excluir arquivos
+   correspondendo a uma expressão regular, dado como um objeto
+   re.Pattern.
+
+   Se *quiet* for "False" ou "0" (o padrão), os nomes dos arquivos e
+   outras informações serão impressos com o padrão. Definido como "1",
+   apenas os erros são impressos. Definido como "2", toda a saída é
+   suprimida.
+
+   Se *legacy* for verdadeiro, os arquivos de bytecodes serão gravados
+   em seus locais e nomes herdados, o que poderá sobrescrever arquivos
+   de bytecodes criados por outra versão do Python. O padrão é gravar
+   arquivos em seus locais e nomes do **PEP 3147**, o que permite que
+   arquivos de bytecodes de várias versões do Python coexistam.
+
+   *optimize* especifica o nível de otimização para o compilador. Ele
+   é passado para a função embutida "compile()". Aceita também uma
+   sequência de níveis de otimização que levam a várias compilações de
+   um arquivo ".py" em uma chamada.
+
+   *invalidation_mode* deve ser um membro de enum
+   "py_compile.PycInvalidationMode" e controla como os pycs gerados
+   são invalidados em tempo de execução.
+
+   Os argumentos *stripdir*, *prependdir* e *limit_sl_dest*
+   correspondem às opções "-s", "-p" e "-e" descrita acima. eles podem
+   ser especificados como "str" ou "os.PathLike".
+
+   Se *hardlink_dupes* for verdadeiro e dois arquivos ".pyc" com nível
+   de otimização diferente tiverem o mesmo conteúdo, usa links físicos
+   para consolidar arquivos duplicados.
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.5: O parâmetro *quiet* foi alterado para um
+   valor multinível.
+
+   Alterado na versão 3.5: O parâmetro *legacy* grava apenas arquivos
+   ".pyc", não os arquivos ".pyo", independentemente do valor de
+   *optimize*.
+
+   Alterado na versão 3.7: O parâmetro *invalidation_mode* foi
+   adicionado.
+
+   Alterado na versão 3.7.2: O valor padrão do parâmetro
+   *invalidation_mode* é atualizado para None.
+
+   Alterado na versão 3.9: Adicionados os argumentos *stripdir*,
+   *prependdir*, *limit_sl_dest* e *hardlink_dupes*.
+
+compileall.compile_path(skip_curdir=True, maxlevels=0, force=False, quiet=0, legacy=False, optimize=-1, invalidation_mode=None)
+
+   Compila Byte para bytecodes todos os arquivos ".py" encontrados ao
+   longo de "sys.path". Retorna um valor verdadeiro se todos os
+   arquivos forem compilados com êxito e um valor falso caso
+   contrário.
+
+   Se *skip_curdir* for verdadeiro (o padrão), o diretório atual não
+   será incluído na pesquisa. Todos os outros parâmetros são passados
+   para a função "compile_dir()". Note que, ao contrário das outras
+   funções de compilação, "maxlevels" é padronizado como "0".
+
+   Alterado na versão 3.2: Adicionado os parâmetros *legacy* e
+   *optimize*.
+
+   Alterado na versão 3.5: O parâmetro *quiet* foi alterado para um
+   valor multinível.
+
+   Alterado na versão 3.5: O parâmetro *legacy* grava apenas arquivos
+   ".pyc", não os arquivos ".pyo", independentemente do valor de
+   *optimize*.
+
+   Alterado na versão 3.7: O parâmetro *invalidation_mode* foi
+   adicionado.
+
+   Alterado na versão 3.7.2: O valor padrão do parâmetro
+   *invalidation_mode* é atualizado para None.
+
+Para forçar uma recompilação de todos os arquivos ".py" no
+subdiretório "Lib/" e todos os seus subdiretórios:
+
+   import compileall
+
+   compileall.compile_dir('Lib/', force=True)
+
+   # Perform same compilation, excluding files in .svn directories.
+   import re
+   compileall.compile_dir('Lib/', rx=re.compile(r'[/\\][.]svn'), force=True)
+
+   # pathlib.Path objects can also be used.
+   import pathlib
+   compileall.compile_dir(pathlib.Path('Lib/'), force=True)
+
+Ver também:
+
+  Módulo "py_compile"
+     Compila para bytecode um único arquivo fonte.

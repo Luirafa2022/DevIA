@@ -1,0 +1,1351 @@
+"collections" --- Tipos de dados de contêineres
+***********************************************
+
+**Código-fonte:** Lib/collections/__init__.py
+
+======================================================================
+
+Este módulo implementa tipos de dados de contêineres especializados
+que fornecem alternativas aos contêineres embutidos do Python, "dict",
+"list", "set" e "tuple".
+
++-----------------------+----------------------------------------------------------------------+
+| "namedtuple()"        | função fábrica (*factory function*) para criar subclasses de tuplas  |
+|                       | com campos nomeados                                                  |
++-----------------------+----------------------------------------------------------------------+
+| "deque"               | contêiner lista ou similar com acréscimos e retiradas rápidas nas    |
+|                       | duas extremidades                                                    |
++-----------------------+----------------------------------------------------------------------+
+| "ChainMap"            | classe dict ou similar para criar uma visão única de vários          |
+|                       | mapeamentos                                                          |
++-----------------------+----------------------------------------------------------------------+
+| "Counter"             | dict subclass for counting *hashable* objects                        |
++-----------------------+----------------------------------------------------------------------+
+| "OrderedDict"         | subclasse de dict que lembra a ordem que as entradas foram           |
+|                       | adicionadas                                                          |
++-----------------------+----------------------------------------------------------------------+
+| "defaultdict"         | subclasse de dict que chama uma função fábrica para fornecer valores |
+|                       | não encontrados                                                      |
++-----------------------+----------------------------------------------------------------------+
+| "UserDict"            | envoltório em torno de objetos dicionário para facilitar fazer       |
+|                       | subclasse de dict                                                    |
++-----------------------+----------------------------------------------------------------------+
+| "UserList"            | envoltório em torno de objetos lista para facilitar criação de       |
+|                       | subclasse de lista                                                   |
++-----------------------+----------------------------------------------------------------------+
+| "UserString"          | envoltório em torno de objetos string para uma facilitar criação de  |
+|                       | subclasse de string                                                  |
++-----------------------+----------------------------------------------------------------------+
+
+
+Objetos "ChainMap"
+==================
+
+Novo na versão 3.3.
+
+Uma classe "ChainMap" é fornecida para ligar rapidamente uma série de
+mapeamentos de forma que possam ser tratados como um só. O que é
+frequentemente mais rápido do que criar um novo dicionário e executar
+múltiplas chamadas de "update()".
+
+A classe pode ser usada para simular escopos aninhados e é útil em
+modelos.
+
+class collections.ChainMap(*maps)
+
+   "ChainMap" agrupa múltiplos dicts ou outros mapeamentos para criar
+   uma única vista atualizável. Se nenhum *maps* for especificado, um
+   dicionário vazio será fornecido para que uma nova cadeia tenha
+   sempre pelo menos um mapeamento.
+
+   Os mapeamentos subjacentes são armazenados em uma lista. Essa lista
+   é pública e pode ser acessada ou atualizada usando o atributo
+   *maps*. Não existe outro estado.
+
+   Faz uma busca nos mapeamentos subjacentes sucessivamente até que
+   uma chave seja encontrada. Em contraste, escrita, atualizações e
+   remoções operam apenas no primeiro mapeamento.
+
+   Uma "ChainMap" incorpora os mapeamentos subjacentes por referência.
+   Então, se um dos mapeamentos subjacentes for atualizado, essas
+   alterações serão refletidas na "ChainMap".
+
+   Todos os métodos usuais do dicionário são suportados. Além disso,
+   existe um atributo *maps*, um método para criar novos subcontextos
+   e uma propriedade para acessar todos, exceto o primeiro mapeamento:
+
+   maps
+
+      Uma lista de mapeamentos atualizáveis ​​pelo usuário. A lista é
+      ordenada desde o primeiro pesquisado até a última pesquisado. É
+      o único estado armazenado e pode ser modificado para alterar
+      quais mapeamentos são pesquisados. A lista deve sempre conter
+      pelo menos um mapeamento.
+
+   new_child(m=None, **kwargs)
+
+      Retorna uma nova "ChainMap" contendo um novo mapa seguido de
+      todos os mapas na instância atual. Se "m" for especificado,
+      torna-se o novo mapa na frente da lista de mapeamentos; Se não
+      especificado, é usado um dicionário vazio, de modo que chamar
+      "d.new_child()" é equivalente a: "ChainMap({}, *d.maps)". Se
+      algum argumento nomeado for especificado, ele atualizará o mapa
+      passado ou o novo dicionário vazio. Esse método é usado para
+      criar subcontextos que podem ser atualizados sem alterar valores
+      em nenhum dos mapeamentos pai.
+
+      Alterado na versão 3.4: O parâmetro opcional "m" foi adicionado.
+
+      Alterado na versão 3.10: Suporte a argumentos nomeados foi
+      adicionado.
+
+   parents
+
+      Propriedade que retorna um novo "ChainMap" contendo todos os
+      mapas da instância atual, exceto o primeiro. Isso é útil para
+      pular o primeiro mapa da pesquisa. Os casos de uso são
+      semelhantes aos do argumento nomeado "nonlocal" usada em
+      *escopos aninhados*. Os casos de uso também são paralelos aos da
+      função embutida "super()". Uma referência a "d.parents" é
+      equivalente a: "ChainMap(*d.maps[1:])".
+
+   Observe, a ordem de iteração de um "ChainMap()" é determinada pela
+   varredura dos mapeamentos do último ao primeiro:
+
+      >>> baseline = {'music': 'bach', 'art': 'rembrandt'}
+      >>> adjustments = {'art': 'van gogh', 'opera': 'carmen'}
+      >>> list(ChainMap(adjustments, baseline))
+      ['music', 'art', 'opera']
+
+   Isso dá a mesma ordem de uma série de chamadas de "dict.update()"
+   começando com o último mapeamento:
+
+      >>> combined = baseline.copy()
+      >>> combined.update(adjustments)
+      >>> list(combined)
+      ['music', 'art', 'opera']
+
+   Alterado na versão 3.9: Adicionado suporte para os operadores "|" e
+   "|=", especificados na **PEP 584**.
+
+Ver também:
+
+  * A classe MultiContext no pacote CodeTools de Enthought tem opções
+    para oferecer suporte à escrita em qualquer mapeamento na cadeia.
+
+  * A classe Context do Django para modelos é uma cadeia de
+    mapeamentos somente leitura. Ela também oferece o recurso de push
+    e pop (inserir e retirar) contextos semelhantes ao método
+    "new_child()" e a propriedade "parents".
+
+  * A receita de Contextos Aninhados possui opções para controlar se
+    escritas e outras mutações se aplicam a apenas o primeiro
+    mapeamento ou para qualquer mapeamento na cadeia.
+
+  * Uma versão muito simplificada somente leitura do Chainmap.
+
+
+Exemplos e Receitas de "ChainMap"
+---------------------------------
+
+Esta seção mostra várias abordagens para trabalhar com mapas
+encadeados.
+
+Exemplo de simulação da cadeia de busca interna do Python:
+
+   import builtins
+   pylookup = ChainMap(locals(), globals(), vars(builtins))
+
+Exemplo de como permitir que os argumentos de linha de comando
+especificados pelo usuário tenham precedência sobre as variáveis de
+ambiente que, por sua vez, têm precedência sobre os valores padrão:
+
+   import os, argparse
+
+   defaults = {'color': 'red', 'user': 'guest'}
+
+   parser = argparse.ArgumentParser()
+   parser.add_argument('-u', '--user')
+   parser.add_argument('-c', '--color')
+   namespace = parser.parse_args()
+   command_line_args = {k: v for k, v in vars(namespace).items() if v is not None}
+
+   combined = ChainMap(command_line_args, os.environ, defaults)
+   print(combined['color'])
+   print(combined['user'])
+
+Padrões de exemplo para utilização da classe "ChainMap" para simular
+contextos aninhados:
+
+   c = ChainMap()        # Create root context
+   d = c.new_child()     # Create nested child context
+   e = c.new_child()     # Child of c, independent from d
+   e.maps[0]             # Current context dictionary -- like Python's locals()
+   e.maps[-1]            # Root context -- like Python's globals()
+   e.parents             # Enclosing context chain -- like Python's nonlocals
+
+   d['x'] = 1            # Set value in current context
+   d['x']                # Get first key in the chain of contexts
+   del d['x']            # Delete from current context
+   list(d)               # All nested values
+   k in d                # Check all nested values
+   len(d)                # Number of nested values
+   d.items()             # All nested items
+   dict(d)               # Flatten into a regular dictionary
+
+A classe "ChainMap" só faz atualizações (escritas e remoções) no
+primeiro mapeamento na cadeia, enquanto as pesquisas irão buscar em
+toda a cadeia. Contudo, se há o desejo de escritas e remoções
+profundas, é fácil fazer uma  subclasse que atualiza chaves
+encontradas mais a fundo na cadeia:
+
+   class DeepChainMap(ChainMap):
+       'Variant of ChainMap that allows direct updates to inner scopes'
+
+       def __setitem__(self, key, value):
+           for mapping in self.maps:
+               if key in mapping:
+                   mapping[key] = value
+                   return
+           self.maps[0][key] = value
+
+       def __delitem__(self, key):
+           for mapping in self.maps:
+               if key in mapping:
+                   del mapping[key]
+                   return
+           raise KeyError(key)
+
+   >>> d = DeepChainMap({'zebra': 'black'}, {'elephant': 'blue'}, {'lion': 'yellow'})
+   >>> d['lion'] = 'orange'         # update an existing key two levels down
+   >>> d['snake'] = 'red'           # new keys get added to the topmost dict
+   >>> del d['elephant']            # remove an existing key one level down
+   >>> d                            # display result
+   DeepChainMap({'zebra': 'black', 'snake': 'red'}, {}, {'lion': 'orange'})
+
+
+Objetos "Counter"
+=================
+
+Uma ferramenta de contagem é fornecida para apoiar contas rápidas e
+convenientes. Por exemplo:
+
+   >>> # Tally occurrences of words in a list
+   >>> cnt = Counter()
+   >>> for word in ['red', 'blue', 'red', 'green', 'blue', 'blue']:
+   ...     cnt[word] += 1
+   ...
+   >>> cnt
+   Counter({'blue': 3, 'red': 2, 'green': 1})
+
+   >>> # Find the ten most common words in Hamlet
+   >>> import re
+   >>> words = re.findall(r'\w+', open('hamlet.txt').read().lower())
+   >>> Counter(words).most_common(10)
+   [('the', 1143), ('and', 966), ('to', 762), ('of', 669), ('i', 631),
+    ('you', 554),  ('a', 546), ('my', 514), ('hamlet', 471), ('in', 451)]
+
+class collections.Counter([iterable-or-mapping])
+
+   A "Counter" is a "dict" subclass for counting *hashable* objects.
+   It is a collection where elements are stored as dictionary keys and
+   their counts are stored as dictionary values.  Counts are allowed
+   to be any integer value including zero or negative counts.  The
+   "Counter" class is similar to bags or multisets in other languages.
+
+   Os elementos são contados a partir de um iterável *iterable* ou
+   inicializado a partir de um outro mapeamento *mapping* (ou
+   contador):
+
+   >>> c = Counter()                           # a new, empty counter
+   >>> c = Counter('gallahad')                 # a new counter from an iterable
+   >>> c = Counter({'red': 4, 'blue': 2})      # a new counter from a mapping
+   >>> c = Counter(cats=4, dogs=8)             # a new counter from keyword args
+
+   Objetos Counter tem uma interface de dicionário, com a diferença
+   que devolvem uma contagem zero para itens que não estão presentes
+   em vez de levantar a exceção "KeyError":
+
+   >>> c = Counter(['eggs', 'ham'])
+   >>> c['bacon']                              # count of a missing element is zero
+   0
+
+   Definir uma contagem como zero não remove um elemento do contador.
+   Use "del" para o remover completamente.
+
+   >>> c['sausage'] = 0                        # counter entry with a zero count
+   >>> del c['sausage']                        # del actually removes the entry
+
+   Novo na versão 3.1.
+
+   Alterado na versão 3.7: As a "dict" subclass, "Counter" inherited
+   the capability to remember insertion order.  Math operations on
+   *Counter* objects also preserve order.  Results are ordered
+   according to when an element is first encountered in the left
+   operand and then by the order encountered in the right operand.
+
+   Objetos Counter têm suporte a métodos adicionais além daqueles que
+   já estão disponíveis para todos os dicionários:
+
+   elements()
+
+      Retorna um iterador sobre os elementos, repetindo cada um tantas
+      vezes quanto sua contagem. Os elementos são retornados na ordem
+      em que foram encontrados pela primeira vez. Se a contagem de um
+      elemento é menor que um, ele será ignorado por "elements()" .
+
+      >>> c = Counter(a=4, b=2, c=0, d=-2)
+      >>> sorted(c.elements())
+      ['a', 'a', 'a', 'a', 'b', 'b']
+
+   most_common([n])
+
+      Retorna uma lista dos *n* elementos mais comuns e suas
+      contagens, do mais comum para o menos comum.  Se *n* for omitido
+      ou igual a "None", "most_common()" retorna *todos* os elementos
+      no contador. Elementos com contagens iguais são ordenados na
+      ordem em que foram encontrados pela primeira vez:
+
+      >>> Counter('abracadabra').most_common(3)
+      [('a', 5), ('b', 2), ('r', 2)]
+
+   subtract([iterable-or-mapping])
+
+      Os elementos são subtraídos de um iterável *iterable* ou de
+      outro mapeamento *mapping* (ou contador).  Funciona como
+      "dict.update()", mas subtraindo contagens ao invés de
+      substituí-las.  Tanto as entradas quanto as saídas podem ser
+      zero ou negativas.
+
+      >>> c = Counter(a=4, b=2, c=0, d=-2)
+      >>> d = Counter(a=1, b=2, c=3, d=4)
+      >>> c.subtract(d)
+      >>> c
+      Counter({'a': 3, 'b': 0, 'c': -3, 'd': -6})
+
+      Novo na versão 3.2.
+
+   total()
+
+      Calcula a soma das contagens.
+
+      >>> c = Counter(a=10, b=5, c=0)
+      >>> c.total()
+      15
+
+      Novo na versão 3.10.
+
+   Os métodos usuais de dicionário estão disponíveis para objetos
+   "Counter", exceto por dois que funcionam de forma diferente para
+   contadores.
+
+   fromkeys(iterable)
+
+      Este método de classe não está implementado para objetos
+      "Counter".
+
+   update([iterable-or-mapping])
+
+      Elementos são contados a partir de um iterável *iterable* ou
+      adicionados de outro mapeamento *mapping* (ou contador).
+      Funciona como "dict.update()", mas adiciona contagens em vez de
+      substituí-las. Além disso, é esperado que o *iterable* seja uma
+      sequência de elementos, e não uma sequência de pares "(key,
+      value)".
+
+Os contadores oferecem suporte a operadores de comparação rica para
+relacionamentos de igualdade, subconjunto e superconjunto: "==", "!=",
+"<", "<=", ">", ">=". Todos esses testes tratam os elementos ausentes
+como tendo contagens zero para que "Counter(a=1) == Counter(a=1, b=0)"
+retorne verdadeiro.
+
+Alterado na versão 3.10: Foram adicionadas operações de rica
+comparação.
+
+Alterado na versão 3.10: Em testes de igualdade, os elementos ausentes
+são tratados como tendo contagens zero. Anteriormente, "Counter(a=3)"
+e "Counter(a=3, b=0)" eram considerados distintos.
+
+Padrões comuns para trabalhar com objetos "Counter":
+
+   c.total()                       # total of all counts
+   c.clear()                       # reset all counts
+   list(c)                         # list unique elements
+   set(c)                          # convert to a set
+   dict(c)                         # convert to a regular dictionary
+   c.items()                       # convert to a list of (elem, cnt) pairs
+   Counter(dict(list_of_pairs))    # convert from a list of (elem, cnt) pairs
+   c.most_common()[:-n-1:-1]       # n least common elements
+   +c                              # remove zero and negative counts
+
+Diversas operações matemáticas são fornecidas combinando objetos do
+tipo "Counter" afim de se produzir multiconjuntos (Counters que
+possuem contagens maiores que 0). Adição e subtração combinam
+contadores adicionando ou subtraindo o contagem do elemento
+correspondente. Intersecção ou união retorna o mínimo e máximo da
+contagem correspondente. Igualdade e inclusão compara as contagens
+correspondentes. Cada operação aceita entradas com contagens
+assinadas, mas a saída vai excluir resultados com contagens de zero ou
+menos.
+
+   >>> c = Counter(a=3, b=1)
+   >>> d = Counter(a=1, b=2)
+   >>> c + d                       # add two counters together:  c[x] + d[x]
+   Counter({'a': 4, 'b': 3})
+   >>> c - d                       # subtract (keeping only positive counts)
+   Counter({'a': 2})
+   >>> c & d                       # intersection:  min(c[x], d[x])
+   Counter({'a': 1, 'b': 1})
+   >>> c | d                       # union:  max(c[x], d[x])
+   Counter({'a': 3, 'b': 2})
+   >>> c == d                      # equality:  c[x] == d[x]
+   False
+   >>> c <= d                      # inclusion:  c[x] <= d[x]
+   False
+
+A adição e subtração unárias são atalhos para adicionar um contador
+vazio ou subtrair de um contador vazio.
+
+>>> c = Counter(a=2, b=-4)
+>>> +c
+Counter({'a': 2})
+>>> -c
+Counter({'b': 4})
+
+Novo na versão 3.3: Adicionado suporte para operador unário mais,
+unário menos e operações *in-place* em multiconjuntos.
+
+Nota:
+
+  Os contadores foram projetados principalmente para funcionar com
+  números inteiros positivos para representar contagens contínuas; no
+  entanto, foi tomado cuidado para não impedir desnecessariamente os
+  casos de uso que precisassem de outros tipos ou valores negativos.
+  Para ajudar nesses casos de uso, esta seção documenta o intervalo
+  mínimo e as restrições de tipo.
+
+  * A própria classe "Counter" é uma subclasse de dicionário sem
+    restrições em suas chaves e valores. Os valores pretendem ser
+    números que representam contagens, mas você *pode* armazenar
+    qualquer coisa no campo de valor.
+
+  * O método "most_common()" requer apenas que os valores sejam
+    ordenáveis.
+
+  * Para operações in-place, como "c[key] += 1", o tipo de valor
+    precisa oferecer suporte a apenas adição e subtração. Portanto,
+    frações, números de ponto flutuante e decimais funcionariam e os
+    valores negativos são suportados. O mesmo também é verdadeiro para
+    "update()" e "subtract()" que permitem valores negativos e zero
+    para entradas e saídas.
+
+  * Os métodos de multiconjuntos são projetados apenas para casos de
+    uso com valores positivos. As entradas podem ser negativas ou
+    zero, mas apenas saídas com valores positivos são criadas. Não há
+    restrições de tipo, mas o tipo de valor precisa suportar adição,
+    subtração e comparação.
+
+  * O método "elements()" requer contagens de inteiros. Ele ignora
+    contagens zero e negativas.
+
+Ver também:
+
+  * Classe Bag do Smalltalk.
+
+  * Entrada da Wikipédia para Multiconjuntos.
+
+  * Tutorial com exemplos de multiconjuntos no C++.
+
+  * Para operações matemáticas em multiconjuntos e seus casos de uso,
+    consulte *Knuth, Donald. The Art of Computer Programming Volume
+    II, Seção 4.6.3, Exercício 19*.
+
+  * Para enumerar todos os multiconjuntos distintos de um determinado
+    tamanho em um determinado conjunto de elementos, consulte
+    "itertools.combinations_with_replacement()":
+
+       map(Counter, combinations_with_replacement('ABC', 2)) # --> AA AB AC BB BC CC
+
+
+Objetos "deque"
+===============
+
+class collections.deque([iterable[, maxlen]])
+
+   Retorna um novo objeto deque inicializado da esquerda para a
+   direita (usando "append()") com dados do iterável *iterable*. Se
+   *iterable* não for especificado, o novo deque estará vazio.
+
+   Deques are a generalization of stacks and queues (the name is
+   pronounced "deck" and is short for "double-ended queue").  Deques
+   support thread-safe, memory efficient appends and pops from either
+   side of the deque with approximately the same *O*(1) performance in
+   either direction.
+
+   Though "list" objects support similar operations, they are
+   optimized for fast fixed-length operations and incur *O*(*n*)
+   memory movement costs for "pop(0)" and "insert(0, v)" operations
+   which change both the size and position of the underlying data
+   representation.
+
+   Se *maxlen* não for especificado ou for "None", deques podem
+   crescer para um comprimento arbitrário. Caso contrário, o deque é
+   limitado ao comprimento máximo especificado. Quando um deque de
+   comprimento limitado está cheio, quando novos itens são
+   adicionados, um número correspondente de itens é descartado da
+   extremidade oposta. Deques de comprimento limitado fornecem
+   funcionalidade semelhante ao filtro "tail" no Unix. Eles também são
+   úteis para rastrear transações e outras pools de dados onde apenas
+   a atividade mais recente é de interesse.
+
+   Os objetos Deque oferecem suporte aos seguintes métodos:
+
+   append(x)
+
+      Adiciona *x* ao lado direito do deque.
+
+   appendleft(x)
+
+      Adiciona *x* ao lado esquerdo do deque
+
+   clear()
+
+      Remove todos os elementos do deque deixando-o com comprimento 0.
+
+   copy()
+
+      Cria uma cópia rasa do deque.
+
+      Novo na versão 3.5.
+
+   count(x)
+
+      Conta o número de elementos deque igual a *x*.
+
+      Novo na versão 3.2.
+
+   extend(iterable)
+
+      Estende o lado direito do deque anexando elementos do argumento
+      iterável.
+
+   extendleft(iterable)
+
+      Estende o lado esquerdo do deque anexando elementos de
+      *iterable*. Observe que a série de acréscimos à esquerda resulta
+      na reversão da ordem dos elementos no argumento iterável.
+
+   index(x[, start[, stop]])
+
+      Retorna a posição de *x* no deque (no ou após o índice *start* e
+      antes do índice *stop*). Retorna a primeira correspondência ou
+      levanta "ValueError" se não for encontrado.
+
+      Novo na versão 3.5.
+
+   insert(i, x)
+
+      Insere *x* no deque na posição *i*.
+
+      Se a inserção fizer com que um deque limitado cresça além de
+      *maxlen*, uma "IndexError" é levantada.
+
+      Novo na versão 3.5.
+
+   pop()
+
+      Remove e devolve um elemento do lado direito do deque. Se nenhum
+      elemento estiver presente, levanta um "IndexError".
+
+   popleft()
+
+      Remove e devolve um elemento do lado esquerdo do deque. Se
+      nenhum elemento estiver presente, levanta um "IndexError".
+
+   remove(value)
+
+      Remove a primeira ocorrência de *value*. Se não for encontrado,
+      levanta um "ValueError".
+
+   reverse()
+
+      Inverte os elementos do deque no local e, em seguida, retorna
+      "None".
+
+      Novo na versão 3.2.
+
+   rotate(n=1)
+
+      Gira o deque *n* passos para a direita. Se *n* for negativo,
+      gire para a esquerda.
+
+      Quando o deque não está vazio, girar um passo para a direita é
+      equivalente a "d.appendleft(d.pop())" e girar um passo para a
+      esquerda é equivalente a "d.append(d.popleft())".
+
+   Os objetos Deque também fornecem um atributo somente leitura:
+
+   maxlen
+
+      Tamanho máximo de um deque ou "None" se ilimitado.
+
+      Novo na versão 3.1.
+
+In addition to the above, deques support iteration, pickling,
+"len(d)", "reversed(d)", "copy.copy(d)", "copy.deepcopy(d)",
+membership testing with the "in" operator, and subscript references
+such as "d[0]" to access the first element.  Indexed access is *O*(1)
+at both ends but slows to *O*(*n*) in the middle.  For fast random
+access, use lists instead.
+
+A partir da versão 3.5, deques oferecem suporte a
+"__add__()",``__mul__()`` e "__imul__()".
+
+Exemplo:
+
+   >>> from collections import deque
+   >>> d = deque('ghi')                 # make a new deque with three items
+   >>> for elem in d:                   # iterate over the deque's elements
+   ...     print(elem.upper())
+   G
+   H
+   I
+
+   >>> d.append('j')                    # add a new entry to the right side
+   >>> d.appendleft('f')                # add a new entry to the left side
+   >>> d                                # show the representation of the deque
+   deque(['f', 'g', 'h', 'i', 'j'])
+
+   >>> d.pop()                          # return and remove the rightmost item
+   'j'
+   >>> d.popleft()                      # return and remove the leftmost item
+   'f'
+   >>> list(d)                          # list the contents of the deque
+   ['g', 'h', 'i']
+   >>> d[0]                             # peek at leftmost item
+   'g'
+   >>> d[-1]                            # peek at rightmost item
+   'i'
+
+   >>> list(reversed(d))                # list the contents of a deque in reverse
+   ['i', 'h', 'g']
+   >>> 'h' in d                         # search the deque
+   True
+   >>> d.extend('jkl')                  # add multiple elements at once
+   >>> d
+   deque(['g', 'h', 'i', 'j', 'k', 'l'])
+   >>> d.rotate(1)                      # right rotation
+   >>> d
+   deque(['l', 'g', 'h', 'i', 'j', 'k'])
+   >>> d.rotate(-1)                     # left rotation
+   >>> d
+   deque(['g', 'h', 'i', 'j', 'k', 'l'])
+
+   >>> deque(reversed(d))               # make a new deque in reverse order
+   deque(['l', 'k', 'j', 'i', 'h', 'g'])
+   >>> d.clear()                        # empty the deque
+   >>> d.pop()                          # cannot pop from an empty deque
+   Traceback (most recent call last):
+       File "<pyshell#6>", line 1, in -toplevel-
+           d.pop()
+   IndexError: pop from an empty deque
+
+   >>> d.extendleft('abc')              # extendleft() reverses the input order
+   >>> d
+   deque(['c', 'b', 'a'])
+
+
+Receitas de "deque"
+-------------------
+
+Esta seção mostra várias abordagens para trabalhar com deques.
+
+Deques de comprimento limitado fornecem funcionalidade semelhante ao
+filtro "tail" em Unix:
+
+   def tail(filename, n=10):
+       'Return the last n lines of a file'
+       with open(filename) as f:
+           return deque(f, n)
+
+Outra abordagem para usar deques é manter uma sequência de elementos
+adicionados recentemente, acrescentando à direita e clicando à
+esquerda:
+
+   def moving_average(iterable, n=3):
+       # moving_average([40, 30, 50, 46, 39, 44]) --> 40.0 42.0 45.0 43.0
+       # https://en.wikipedia.org/wiki/Moving_average
+       it = iter(iterable)
+       d = deque(itertools.islice(it, n-1))
+       d.appendleft(0)
+       s = sum(d)
+       for elem in it:
+           s += elem - d.popleft()
+           d.append(elem)
+           yield s / n
+
+Um escalonador round robin pode ser implementado com iteradores de
+entrada armazenados em um "deque". Os valores são produzidos a partir
+do iterador ativo na posição zero. Se esse iterador estiver esgotado,
+ele pode ser removido com "popleft()"; caso contrário, ele pode voltar
+ao fim com o método "rotate()":
+
+   def roundrobin(*iterables):
+       "roundrobin('ABC', 'D', 'EF') --> A D E B F C"
+       iterators = deque(map(iter, iterables))
+       while iterators:
+           try:
+               while True:
+                   yield next(iterators[0])
+                   iterators.rotate(-1)
+           except StopIteration:
+               # Remove an exhausted iterator.
+               iterators.popleft()
+
+O método "rotate()" fornece uma maneira de implementar o fatiamento e
+exclusão "deque". Por exemplo, uma implementação Python pura de "del
+d[n]" depende do método "rotate()" para posicionar os elementos a
+serem retirados:
+
+   def delete_nth(d, n):
+       d.rotate(-n)
+       d.popleft()
+       d.rotate(n)
+
+Para implementar o fatiamento de "deque", use uma abordagem semelhante
+aplicando "rotate()" para trazer um elemento alvo para o lado esquerdo
+do deque. Remova as entradas antigas com "popleft()", adicione novas
+entradas com "extend()", e, então, inverta a rotação. Com pequenas
+variações dessa abordagem, é fácil implementar manipulações de pilha
+de estilo Forth, como "dup", "drop", "swap", "over", "pick", "rot" e
+"roll".
+
+
+Objetos "defaultdict"
+=====================
+
+class collections.defaultdict(default_factory=None, /[, ...])
+
+   Retorna um novo objeto dicionário ou similar. "defaultdict" é uma
+   subclasse da classe embutida "dict". Ele substitui um método e
+   adiciona uma variável de instância gravável. A funcionalidade
+   restante é a mesma da classe "dict" e não está documentada aqui.
+
+   O primeiro argumento fornece o valor inicial para o atributo
+   "default_factory"; o padrão é "None". Todos os argumentos restantes
+   são tratados da mesma forma como se fossem passados ​​para o
+   construtor "dict", incluindo argumentos nomeados.
+
+   Os objetos "defaultdict" oferecem suporta ao seguinte método além
+   das operações padrão "dict":
+
+   __missing__(key)
+
+      Se o atributo "default_factory" for "None", isso levanta uma
+      exceção "KeyError" com *key* como argumento.
+
+      Se "default_factory" não for "None", ele é chamado sem
+      argumentos para fornecer um valor padrão para a chave *key*
+      fornecida, este valor é inserido no dicionário para *key* e
+      retornado.
+
+      Se chamar "default_factory" levanta uma exceção, esta exceção é
+      propagada inalterada.
+
+      This method is called by the "__getitem__()" method of the
+      "dict" class when the requested key is not found; whatever it
+      returns or raises is then returned or raised by "__getitem__()".
+
+      Note that "__missing__()" is *not* called for any operations
+      besides "__getitem__()". This means that "get()" will, like
+      normal dictionaries, return "None" as a default rather than
+      using "default_factory".
+
+   Objetos "defaultdict" permitem a seguinte variável instanciada:
+
+   default_factory
+
+      This attribute is used by the "__missing__()" method; it is
+      initialized from the first argument to the constructor, if
+      present, or to "None", if absent.
+
+   Alterado na versão 3.9: Added merge ("|") and update ("|=")
+   operators, specified in **PEP 584**.
+
+
+Exemplos de "defaultdict"
+-------------------------
+
+Usando "list" como "default_factory", se for fácil agrupar a sequencia
+dos pares chave-valores num dicionário de listas
+
+>>> s = [('yellow', 1), ('blue', 2), ('yellow', 3), ('blue', 4), ('red', 1)]
+>>> d = defaultdict(list)
+>>> for k, v in s:
+...     d[k].append(v)
+...
+>>> sorted(d.items())
+[('blue', [2, 4]), ('red', [1]), ('yellow', [1, 3])]
+
+When each key is encountered for the first time, it is not already in
+the mapping; so an entry is automatically created using the
+"default_factory" function which returns an empty "list".  The
+"list.append()" operation then attaches the value to the new list.
+When keys are encountered again, the look-up proceeds normally
+(returning the list for that key) and the "list.append()" operation
+adds another value to the list. This technique is simpler and faster
+than an equivalent technique using "dict.setdefault()":
+
+>>> d = {}
+>>> for k, v in s:
+...     d.setdefault(k, []).append(v)
+...
+>>> sorted(d.items())
+[('blue', [2, 4]), ('red', [1]), ('yellow', [1, 3])]
+
+Setting the "default_factory" to "int" makes the "defaultdict" useful
+for counting (like a bag or multiset in other languages):
+
+>>> s = 'mississippi'
+>>> d = defaultdict(int)
+>>> for k in s:
+...     d[k] += 1
+...
+>>> sorted(d.items())
+[('i', 4), ('m', 1), ('p', 2), ('s', 4)]
+
+When a letter is first encountered, it is missing from the mapping, so
+the "default_factory" function calls "int()" to supply a default count
+of zero.  The increment operation then builds up the count for each
+letter.
+
+The function "int()" which always returns zero is just a special case
+of constant functions.  A faster and more flexible way to create
+constant functions is to use a lambda function which can supply any
+constant value (not just zero):
+
+>>> def constant_factory(value):
+...     return lambda: value
+...
+>>> d = defaultdict(constant_factory('<missing>'))
+>>> d.update(name='John', action='ran')
+>>> '%(name)s %(action)s to %(object)s' % d
+'John ran to <missing>'
+
+Setting the "default_factory" to "set" makes the "defaultdict" useful
+for building a dictionary of sets:
+
+>>> s = [('red', 1), ('blue', 2), ('red', 3), ('blue', 4), ('red', 1), ('blue', 4)]
+>>> d = defaultdict(set)
+>>> for k, v in s:
+...     d[k].add(v)
+...
+>>> sorted(d.items())
+[('blue', {2, 4}), ('red', {1, 3})]
+
+
+"namedtuple()" Factory Function for Tuples with Named Fields
+============================================================
+
+Tuplas nomeadas determinam o significado de cada posição numa tupla e
+permitem um código mais legível e autodocumentado. Podem ser usadas
+sempre que tuplas regulares forem utilizadas, e adicionam a
+possibilidade de acessar campos pelo nome ao invés da posição do
+índice.
+
+collections.namedtuple(typename, field_names, *, rename=False, defaults=None, module=None)
+
+   Returns a new tuple subclass named *typename*.  The new subclass is
+   used to create tuple-like objects that have fields accessible by
+   attribute lookup as well as being indexable and iterable.
+   Instances of the subclass also have a helpful docstring (with
+   typename and field_names) and a helpful "__repr__()" method which
+   lists the tuple contents in a "name=value" format.
+
+   The *field_names* are a sequence of strings such as "['x', 'y']".
+   Alternatively, *field_names* can be a single string with each
+   fieldname separated by whitespace and/or commas, for example "'x
+   y'" or "'x, y'".
+
+   Any valid Python identifier may be used for a fieldname except for
+   names starting with an underscore.  Valid identifiers consist of
+   letters, digits, and underscores but do not start with a digit or
+   underscore and cannot be a "keyword" such as *class*, *for*,
+   *return*, *global*, *pass*, or *raise*.
+
+   If *rename* is true, invalid fieldnames are automatically replaced
+   with positional names.  For example, "['abc', 'def', 'ghi', 'abc']"
+   is converted to "['abc', '_1', 'ghi', '_3']", eliminating the
+   keyword "def" and the duplicate fieldname "abc".
+
+   *defaults* can be "None" or an *iterable* of default values. Since
+   fields with a default value must come after any fields without a
+   default, the *defaults* are applied to the rightmost parameters.
+   For example, if the fieldnames are "['x', 'y', 'z']" and the
+   defaults are "(1, 2)", then "x" will be a required argument, "y"
+   will default to "1", and "z" will default to "2".
+
+   If *module* is defined, the "__module__" attribute of the named
+   tuple is set to that value.
+
+   Named tuple instances do not have per-instance dictionaries, so
+   they are lightweight and require no more memory than regular
+   tuples.
+
+   To support pickling, the named tuple class should be assigned to a
+   variable that matches *typename*.
+
+   Alterado na versão 3.1: Adicionado suporte a *rename*.
+
+   Alterado na versão 3.6: The *verbose* and *rename* parameters
+   became keyword-only arguments.
+
+   Alterado na versão 3.6: Adicionado o parâmetro *module*.
+
+   Alterado na versão 3.7: Removido o parâmetro *verbose* e o atributo
+   "_source"
+
+   Alterado na versão 3.7: Adicionado o parâmetro *defaults* e o
+   atributo "_field_defaults".
+
+   >>> # Basic example
+   >>> Point = namedtuple('Point', ['x', 'y'])
+   >>> p = Point(11, y=22)     # instantiate with positional or keyword arguments
+   >>> p[0] + p[1]             # indexable like the plain tuple (11, 22)
+   33
+   >>> x, y = p                # unpack like a regular tuple
+   >>> x, y
+   (11, 22)
+   >>> p.x + p.y               # fields also accessible by name
+   33
+   >>> p                       # readable __repr__ with a name=value style
+   Point(x=11, y=22)
+
+Named tuples are especially useful for assigning field names to result
+tuples returned by the "csv" or "sqlite3" modules:
+
+   EmployeeRecord = namedtuple('EmployeeRecord', 'name, age, title, department, paygrade')
+
+   import csv
+   for emp in map(EmployeeRecord._make, csv.reader(open("employees.csv", "rb"))):
+       print(emp.name, emp.title)
+
+   import sqlite3
+   conn = sqlite3.connect('/companydata')
+   cursor = conn.cursor()
+   cursor.execute('SELECT name, age, title, department, paygrade FROM employees')
+   for emp in map(EmployeeRecord._make, cursor.fetchall()):
+       print(emp.name, emp.title)
+
+In addition to the methods inherited from tuples, named tuples support
+three additional methods and two attributes.  To prevent conflicts
+with field names, the method and attribute names start with an
+underscore.
+
+classmethod somenamedtuple._make(iterable)
+
+   Class method that makes a new instance from an existing sequence or
+   iterable.
+
+      >>> t = [11, 22]
+      >>> Point._make(t)
+      Point(x=11, y=22)
+
+somenamedtuple._asdict()
+
+   Retorna um novo "dict" que mapeia nomes de campo para seus
+   respectivos valores:
+
+      >>> p = Point(x=11, y=22)
+      >>> p._asdict()
+      {'x': 11, 'y': 22}
+
+   Alterado na versão 3.1: Returns an "OrderedDict" instead of a
+   regular "dict".
+
+   Alterado na versão 3.8: Returns a regular "dict" instead of an
+   "OrderedDict". As of Python 3.7, regular dicts are guaranteed to be
+   ordered.  If the extra features of "OrderedDict" are required, the
+   suggested remediation is to cast the result to the desired type:
+   "OrderedDict(nt._asdict())".
+
+somenamedtuple._replace(**kwargs)
+
+   Return a new instance of the named tuple replacing specified fields
+   with new values:
+
+      >>> p = Point(x=11, y=22)
+      >>> p._replace(x=33)
+      Point(x=33, y=22)
+
+      >>> for partnum, record in inventory.items():
+      ...     inventory[partnum] = record._replace(price=newprices[partnum], timestamp=time.now())
+
+somenamedtuple._fields
+
+   Tuple of strings listing the field names.  Useful for introspection
+   and for creating new named tuple types from existing named tuples.
+
+      >>> p._fields            # view the field names
+      ('x', 'y')
+
+      >>> Color = namedtuple('Color', 'red green blue')
+      >>> Pixel = namedtuple('Pixel', Point._fields + Color._fields)
+      >>> Pixel(11, 22, 128, 255, 0)
+      Pixel(x=11, y=22, red=128, green=255, blue=0)
+
+somenamedtuple._field_defaults
+
+   Dictionary mapping field names to default values.
+
+      >>> Account = namedtuple('Account', ['type', 'balance'], defaults=[0])
+      >>> Account._field_defaults
+      {'balance': 0}
+      >>> Account('premium')
+      Account(type='premium', balance=0)
+
+To retrieve a field whose name is stored in a string, use the
+"getattr()" function:
+
+>>> getattr(p, 'x')
+11
+
+To convert a dictionary to a named tuple, use the double-star-operator
+(as described in Desempacotando listas de argumentos):
+
+>>> d = {'x': 11, 'y': 22}
+>>> Point(**d)
+Point(x=11, y=22)
+
+Since a named tuple is a regular Python class, it is easy to add or
+change functionality with a subclass.  Here is how to add a calculated
+field and a fixed-width print format:
+
+   >>> class Point(namedtuple('Point', ['x', 'y'])):
+   ...     __slots__ = ()
+   ...     @property
+   ...     def hypot(self):
+   ...         return (self.x ** 2 + self.y ** 2) ** 0.5
+   ...     def __str__(self):
+   ...         return 'Point: x=%6.3f  y=%6.3f  hypot=%6.3f' % (self.x, self.y, self.hypot)
+
+   >>> for p in Point(3, 4), Point(14, 5/7):
+   ...     print(p)
+   Point: x= 3.000  y= 4.000  hypot= 5.000
+   Point: x=14.000  y= 0.714  hypot=14.018
+
+The subclass shown above sets "__slots__" to an empty tuple.  This
+helps keep memory requirements low by preventing the creation of
+instance dictionaries.
+
+Subclassing is not useful for adding new, stored fields.  Instead,
+simply create a new named tuple type from the "_fields" attribute:
+
+>>> Point3D = namedtuple('Point3D', Point._fields + ('z',))
+
+Docstrings can be customized by making direct assignments to the
+"__doc__" fields:
+
+>>> Book = namedtuple('Book', ['id', 'title', 'authors'])
+>>> Book.__doc__ += ': Hardcover book in active collection'
+>>> Book.id.__doc__ = '13-digit ISBN'
+>>> Book.title.__doc__ = 'Title of first printing'
+>>> Book.authors.__doc__ = 'List of authors sorted by last name'
+
+Alterado na versão 3.5: Property docstrings became writeable.
+
+Ver também:
+
+  * See "typing.NamedTuple" for a way to add type hints for named
+    tuples.  It also provides an elegant notation using the "class"
+    keyword:
+
+       class Component(NamedTuple):
+           part_number: int
+           weight: float
+           description: Optional[str] = None
+
+  * See "types.SimpleNamespace()" for a mutable namespace based on an
+    underlying dictionary instead of a tuple.
+
+  * The "dataclasses" module provides a decorator and functions for
+    automatically adding generated special methods to user-defined
+    classes.
+
+
+Objetos "OrderedDict"
+=====================
+
+Ordered dictionaries are just like regular dictionaries but have some
+extra capabilities relating to ordering operations.  They have become
+less important now that the built-in "dict" class gained the ability
+to remember insertion order (this new behavior became guaranteed in
+Python 3.7).
+
+Some differences from "dict" still remain:
+
+* The regular "dict" was designed to be very good at mapping
+  operations.  Tracking insertion order was secondary.
+
+* The "OrderedDict" was designed to be good at reordering operations.
+  Space efficiency, iteration speed, and the performance of update
+  operations were secondary.
+
+* The "OrderedDict" algorithm can handle frequent reordering
+  operations better than "dict".  As shown in the recipes below, this
+  makes it suitable for implementing various kinds of LRU caches.
+
+* The equality operation for "OrderedDict" checks for matching order.
+
+  A regular "dict" can emulate the order sensitive equality test with
+  "p == q and all(k1 == k2 for k1, k2 in zip(p, q))".
+
+* The "popitem()" method of "OrderedDict" has a different signature.
+  It accepts an optional argument to specify which item is popped.
+
+  A regular "dict" can emulate OrderedDict's "od.popitem(last=True)"
+  with "d.popitem()" which is guaranteed to pop the rightmost (last)
+  item.
+
+  A regular "dict" can emulate OrderedDict's "od.popitem(last=False)"
+  with "(k := next(iter(d)), d.pop(k))" which will return and remove
+  the leftmost (first) item if it exists.
+
+* "OrderedDict" has a "move_to_end()" method to efficiently reposition
+  an element to an endpoint.
+
+  A regular "dict" can emulate OrderedDict's "od.move_to_end(k,
+  last=True)" with "d[k] = d.pop(k)" which will move the key and its
+  associated value to the rightmost (last) position.
+
+  A regular "dict" does not have an efficient equivalent for
+  OrderedDict's "od.move_to_end(k, last=False)" which moves the key
+  and its associated value to the leftmost (first) position.
+
+* Until Python 3.8, "dict" lacked a "__reversed__()" method.
+
+class collections.OrderedDict([items])
+
+   Return an instance of a "dict" subclass that has methods
+   specialized for rearranging dictionary order.
+
+   Novo na versão 3.1.
+
+   popitem(last=True)
+
+      The "popitem()" method for ordered dictionaries returns and
+      removes a (key, value) pair.  The pairs are returned in LIFO
+      (last-in, first-out) order if *last* is true or FIFO (first-in,
+      first-out) order if false.
+
+   move_to_end(key, last=True)
+
+      Move an existing *key* to either end of an ordered dictionary.
+      The item is moved to the right end if *last* is true (the
+      default) or to the beginning if *last* is false.  Raises
+      "KeyError" if the *key* does not exist:
+
+         >>> d = OrderedDict.fromkeys('abcde')
+         >>> d.move_to_end('b')
+         >>> ''.join(d)
+         'acdeb'
+         >>> d.move_to_end('b', last=False)
+         >>> ''.join(d)
+         'bacde'
+
+      Novo na versão 3.2.
+
+Além dos métodos usuais de mapeamento, dicionários ordenados também
+oferecem suporte a iteração reversa usando a função "reversed()".
+
+Equality tests between "OrderedDict" objects are order-sensitive and
+are implemented as "list(od1.items())==list(od2.items())". Equality
+tests between "OrderedDict" objects and other "Mapping" objects are
+order-insensitive like regular dictionaries.  This allows
+"OrderedDict" objects to be substituted anywhere a regular dictionary
+is used.
+
+Alterado na versão 3.5: The items, keys, and values *views* of
+"OrderedDict" now support reverse iteration using "reversed()".
+
+Alterado na versão 3.6: With the acceptance of **PEP 468**, order is
+retained for keyword arguments passed to the "OrderedDict" constructor
+and its "update()" method.
+
+Alterado na versão 3.9: Added merge ("|") and update ("|=") operators,
+specified in **PEP 584**.
+
+
+"OrderedDict" Examples and Recipes
+----------------------------------
+
+It is straightforward to create an ordered dictionary variant that
+remembers the order the keys were *last* inserted. If a new entry
+overwrites an existing entry, the original insertion position is
+changed and moved to the end:
+
+   class LastUpdatedOrderedDict(OrderedDict):
+       'Store items in the order the keys were last added'
+
+       def __setitem__(self, key, value):
+           super().__setitem__(key, value)
+           self.move_to_end(key)
+
+An "OrderedDict" would also be useful for implementing variants of
+"functools.lru_cache()":
+
+   from collections import OrderedDict
+   from time import time
+
+   class TimeBoundedLRU:
+       "LRU Cache that invalidates and refreshes old entries."
+
+       def __init__(self, func, maxsize=128, maxage=30):
+           self.cache = OrderedDict()      # { args : (timestamp, result)}
+           self.func = func
+           self.maxsize = maxsize
+           self.maxage = maxage
+
+       def __call__(self, *args):
+           if args in self.cache:
+               self.cache.move_to_end(args)
+               timestamp, result = self.cache[args]
+               if time() - timestamp <= self.maxage:
+                   return result
+           result = self.func(*args)
+           self.cache[args] = time(), result
+           if len(self.cache) > self.maxsize:
+               self.cache.popitem(0)
+           return result
+
+   class MultiHitLRUCache:
+       """ LRU cache that defers caching a result until
+           it has been requested multiple times.
+
+           To avoid flushing the LRU cache with one-time requests,
+           we don't cache until a request has been made more than once.
+
+       """
+
+       def __init__(self, func, maxsize=128, maxrequests=4096, cache_after=1):
+           self.requests = OrderedDict()   # { uncached_key : request_count }
+           self.cache = OrderedDict()      # { cached_key : function_result }
+           self.func = func
+           self.maxrequests = maxrequests  # max number of uncached requests
+           self.maxsize = maxsize          # max number of stored return values
+           self.cache_after = cache_after
+
+       def __call__(self, *args):
+           if args in self.cache:
+               self.cache.move_to_end(args)
+               return self.cache[args]
+           result = self.func(*args)
+           self.requests[args] = self.requests.get(args, 0) + 1
+           if self.requests[args] <= self.cache_after:
+               self.requests.move_to_end(args)
+               if len(self.requests) > self.maxrequests:
+                   self.requests.popitem(0)
+           else:
+               self.requests.pop(args, None)
+               self.cache[args] = result
+               if len(self.cache) > self.maxsize:
+                   self.cache.popitem(0)
+           return result
+
+
+"UserDict" objects
+==================
+
+The class, "UserDict" acts as a wrapper around dictionary objects. The
+need for this class has been partially supplanted by the ability to
+subclass directly from "dict"; however, this class can be easier to
+work with because the underlying dictionary is accessible as an
+attribute.
+
+class collections.UserDict([initialdata])
+
+   Class that simulates a dictionary.  The instance's contents are
+   kept in a regular dictionary, which is accessible via the "data"
+   attribute of "UserDict" instances.  If *initialdata* is provided,
+   "data" is initialized with its contents; note that a reference to
+   *initialdata* will not be kept, allowing it to be used for other
+   purposes.
+
+   In addition to supporting the methods and operations of mappings,
+   "UserDict" instances provide the following attribute:
+
+   data
+
+      A real dictionary used to store the contents of the "UserDict"
+      class.
+
+
+"UserList" objects
+==================
+
+This class acts as a wrapper around list objects.  It is a useful base
+class for your own list-like classes which can inherit from them and
+override existing methods or add new ones.  In this way, one can add
+new behaviors to lists.
+
+The need for this class has been partially supplanted by the ability
+to subclass directly from "list"; however, this class can be easier to
+work with because the underlying list is accessible as an attribute.
+
+class collections.UserList([list])
+
+   Class that simulates a list.  The instance's contents are kept in a
+   regular list, which is accessible via the "data" attribute of
+   "UserList" instances.  The instance's contents are initially set to
+   a copy of *list*, defaulting to the empty list "[]".  *list* can be
+   any iterable, for example a real Python list or a "UserList"
+   object.
+
+   In addition to supporting the methods and operations of mutable
+   sequences, "UserList" instances provide the following attribute:
+
+   data
+
+      A real "list" object used to store the contents of the
+      "UserList" class.
+
+**Subclassing requirements:** Subclasses of "UserList" are expected to
+offer a constructor which can be called with either no arguments or
+one argument.  List operations which return a new sequence attempt to
+create an instance of the actual implementation class.  To do so, it
+assumes that the constructor can be called with a single parameter,
+which is a sequence object used as a data source.
+
+If a derived class does not wish to comply with this requirement, all
+of the special methods supported by this class will need to be
+overridden; please consult the sources for information about the
+methods which need to be provided in that case.
+
+
+"UserString" objects
+====================
+
+The class, "UserString" acts as a wrapper around string objects. The
+need for this class has been partially supplanted by the ability to
+subclass directly from "str"; however, this class can be easier to
+work with because the underlying string is accessible as an attribute.
+
+class collections.UserString(seq)
+
+   Class that simulates a string object.  The instance's content is
+   kept in a regular string object, which is accessible via the "data"
+   attribute of "UserString" instances.  The instance's contents are
+   initially set to a copy of *seq*.  The *seq* argument can be any
+   object which can be converted into a string using the built-in
+   "str()" function.
+
+   In addition to supporting the methods and operations of strings,
+   "UserString" instances provide the following attribute:
+
+   data
+
+      A real "str" object used to store the contents of the
+      "UserString" class.
+
+   Alterado na versão 3.5: New methods "__getnewargs__", "__rmod__",
+   "casefold", "format_map", "isprintable", and "maketrans".

@@ -1,0 +1,127 @@
+"atexit" --- Manipuladores de Saída
+***********************************
+
+======================================================================
+
+O módulo "atexit" define funções para registrar e cancelar o registro
+de funções de limpeza. As funções assim registradas são executadas
+automaticamente após a conclusão normal do interpretador. O módulo
+"atexit" executa essas funções na ordem *reversa* na qual foram
+registradas; se você inscrever "A", "B" e "C", no momento do término
+do interpretador, eles serão executados na ordem "C", "B", "A" .
+
+**Nota:** As funções registradas através deste módulo não são
+invocadas quando o programa é morto por um sinal não tratado pelo
+Python, quando um erro interno fatal do Python é detectado ou quando a
+função "os._exit()" é invocada.
+
+**Nota:** O efeito de registrar ou cancelar o registro de funções
+dentro de uma função de limpeza é indefinido.
+
+Alterado na versão 3.7: Quando usadas com os subinterpretadores de
+C-API, as funções registradas são locais para o interpretador em que
+foram registradas.
+
+atexit.register(func, *args, **kwargs)
+
+   Registre *func* como uma função a ser executada no término.
+   Qualquer o argumento opcional que deve ser passado para *func* for
+   passado como argumento para "register()". É possível registrar mais
+   ou menos a mesma função e argumentos.
+
+   Na terminação normal do programa (por exemplo, se "sys.exit()" for
+   chamado ou a execução do módulo principal for concluída), todas as
+   funções registradas serão chamadas por último, pela primeira ordem.
+   A suposição é que os módulos de nível inferior normalmente serão
+   importados antes dos módulos de nível superior e, portanto, devem
+   ser limpos posteriormente.
+
+   Se uma exceção é levantada durante a execução dos manipuladores de
+   saída, um traceback é impresso (a menos que "SystemExit" seja
+   levantada) e as informações de exceção sejam salvas. Depois de
+   todos os manipuladores de saída terem tido a chance de executar a
+   última exceção a ser levantada, é levantada novamente.
+
+   Esta função retorna *func*, o que torna possível usá-la como um
+   decorador.
+
+   Aviso:
+
+     Iniciar novas threads ou chamar "os.fork()" de uma função
+     registrada pode levar a uma condição de corrida entre os estados
+     de thread de liberação de thread principal do tempo de execução
+     do Python enquanto as rotinas internas "threading" ou o novo
+     processo tentam usar esse estado. Isso pode levar a travamentos
+     em vez de desligamento normal.
+
+   Alterado na versão 3.12: Tentativas de iniciar uma nova thread ou
+   "os.fork()" um novo processo em uma função registrada agora leva a
+   "RuntimeError".
+
+atexit.unregister(func)
+
+   Remove *func* da lista de funções a serem executadas no
+   desligamento do interpretador. "unregister()" silenciosamente não
+   faz nada se *func* não foi registrado anteriormente. Se *func* foi
+   registrado mais de uma vez, cada ocorrência dessa função na pilha
+   de chamada "atexit" será removida. Comparações de igualdade ("==")
+   são usadas internamente durante o cancelamento do registro,
+   portanto, as referências de função não precisam ter identidades
+   correspondentes.
+
+Ver também:
+
+  Módulo "readline"
+     Exemplo útil de "atexit" para ler e escrever arquivos de
+     histórico de "readline".
+
+
+Exemplo do "atexit"
+===================
+
+O exemplo simples a seguir demonstra como um módulo pode inicializar
+um contador de um arquivo quando ele é importado e salvar
+automaticamente o valor atualizado do contador quando o programa
+termina, sem depender que a aplicação faça uma chamada explícita nesse
+módulo na finalização.
+
+   try:
+       with open('counterfile') as infile:
+           _count = int(infile.read())
+   except FileNotFoundError:
+       _count = 0
+
+   def incrcounter(n):
+       global _count
+       _count = _count + n
+
+   def savecounter():
+       with open('counterfile', 'w') as outfile:
+           outfile.write('%d' % _count)
+
+   import atexit
+
+   atexit.register(savecounter)
+
+Os argumentos posicional e de palavra reservada também podem ser
+passados para "register()" para ser passada para a função registrada
+quando é chamada
+
+   def goodbye(name, adjective):
+       print('Goodbye %s, it was %s to meet you.' % (name, adjective))
+
+   import atexit
+
+   atexit.register(goodbye, 'Donny', 'nice')
+   # or:
+   atexit.register(goodbye, adjective='nice', name='Donny')
+
+Utilizado como um *decorador*:
+
+   import atexit
+
+   @atexit.register
+   def goodbye():
+       print('You are now leaving the Python sector.')
+
+Isso só funciona com funções que podem ser invocadas sem argumentos.

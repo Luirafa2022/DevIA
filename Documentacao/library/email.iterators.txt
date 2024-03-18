@@ -1,0 +1,68 @@
+"email.iterators": Iteradores
+*****************************
+
+**Código-fonte:** Lib/email/iterators.py
+
+======================================================================
+
+A iteração sobre uma árvore de objetos de mensagem é bastante fácil
+com o método "Message.walk". O módulo "email.iterators" fornece
+algumas iterações úteis de nível superior sobre as árvores de objetos
+de mensagens.
+
+email.iterators.body_line_iterator(msg, decode=False)
+
+   Isso itera sobre todas as cargas úteis em todas as subpartes de
+   *msg*, retornando as cargas úteis das strings de linhas por linha.
+   Ele pula todos os cabeçalhos da subparte e pula qualquer subparte
+   com uma carga útil que não seja uma string Python. Isso é um pouco
+   equivalente à leitura da representação de texto simples da mensagem
+   de um arquivo usando "readline()", pulando todos os cabeçalhos
+   intermediários.
+
+   *decode* opcional é passado por meio do "Message.get_payload".
+
+email.iterators.typed_subpart_iterator(msg, maintype='text', subtype=None)
+
+   Isso itera sobre todas as subpartes de *msg*, retornando apenas as
+   subpartes que correspondem ao tipo MIME especificado por *maintype*
+   e *subtype*.
+
+   Observe que *subtipo* é opcional; se omitido, a correspondência de
+   tipo MIME da subparte é feita apenas com o tipo principal.
+   *maintype* também é opcional; o padrão é *text*.
+
+   Assim, por padrão "typed_subpart_iterator()" retorna cada subparte
+   que possui um tipo MIME de *text/**.
+
+A seguinte função foi adicionada como uma ferramenta de depuração
+útil. *Não* deve ser considerado parte da interface pública suportada
+para o pacote.
+
+email.iterators._structure(msg, fp=None, level=0, include_default=False)
+
+   Imprime uma representação recuada dos tipos de conteúdo da
+   estrutura do objeto de mensagem. Por exemplo:
+
+      >>> msg = email.message_from_file(somefile)
+      >>> _structure(msg)
+      multipart/mixed
+          text/plain
+          text/plain
+          multipart/digest
+              message/rfc822
+                  text/plain
+              message/rfc822
+                  text/plain
+              message/rfc822
+                  text/plain
+              message/rfc822
+                  text/plain
+              message/rfc822
+                  text/plain
+          text/plain
+
+   O *fp* opcional é um objeto arquivo ou similar para o qual deve-se
+   imprimir a saída. Deve ser adequado para a função Python "print()".
+   *level* usado internamente. *include_default*, se verdadeiro,
+   também imprime o tipo padrão.

@@ -1,0 +1,209 @@
+"_thread"--- API de segmentação de baixo nível
+**********************************************
+
+======================================================================
+
+Este módulo fornece primitivos de baixo nível para trabalhar com
+vários encadeamentos (também chamados *processos leves* ou *tarefas*)
+--- vários encadeamentos de controle compartilhando seu espaço de
+dados global. Para sincronização, bloqueios simples (também chamados
+de *mutexes*, *exclusão mútua* ou *semáforos binários*) são
+fornecidos. O módulo "threading" fornece uma API de segmentação mais
+fácil de usar e de nível mais alto, construída sobre este módulo.
+
+Alterado na versão 3.7: Este módulo costumava ser opcional, agora está
+sempre disponível.
+
+Este módulo define as seguintes constantes e funções:
+
+exception _thread.error
+
+   Gerado em erros específicos de segmento.
+
+   Alterado na versão 3.3: Este é agora um sinônimo do componente
+   embutido "RuntimeError".
+
+_thread.LockType
+
+   Este é o tipo de objetos de bloqueio.
+
+_thread.start_new_thread(function, args[, kwargs])
+
+   Começa um novo tópico e retorna seu identificador. O tópico executa
+   a função *function* com a lista de argumentos *args* (que deve ser
+   uma tupla). O argumento opcional *kwargs* despecifica um dicionário
+   de argumentos palavras-chave
+
+   Quando a função retorna, o tópico fecha silenciosamente.
+
+   Quando a função termina com uma exceção não processada,
+   "sys.unraisablehook()" é chamada para lidar com a exceção. O
+   atributo *object* do argumento do hook é *function*. Por padrão, um
+   stack trace (situação da pilha de execução) é impresso e, em
+   seguida, o thread sai (mas outros threads continuam a ser
+   executados).
+
+   Quando a função gera uma exceção "SystemExit", ela é ignorada.
+
+   Levanta um evento de auditoria "_thread.start_new_thread" com
+   argumentos "function", "args", "kwargs".
+
+   Alterado na versão 3.8: "sys.unraisablehook()" agora é usada para
+   lidar com exceções não lidadas.
+
+_thread.interrupt_main(signum=signal.SIGINT, /)
+
+   Simule o efeito de um sinal chegando na thread principal. Uma
+   thread pode usar esta função para interromper a thread principal,
+   embora não haja garantia de que a interrupção ocorrerá
+   imediatamente.
+
+   If given, *signum* is the number of the signal to simulate. If
+   *signum* is not given, "signal.SIGINT" is simulated.
+
+   If the given signal isn't handled by Python (it was set to
+   "signal.SIG_DFL" or "signal.SIG_IGN"), this function does nothing.
+
+   Alterado na versão 3.10: O argumento *signum* é adicionado para
+   personalizar o sinal de número.
+
+   Nota:
+
+     Isso não emite o sinal correspondente, mas agenda uma chamada
+     para o tratador associado (se existir). Se você quer realmente
+     emitir o sinal, use "signal.raise_signal()".
+
+_thread.exit()
+
+   Levanta a exceção "SystemExit". Quando não for detectada, o thread
+   sairá silenciosamente.
+
+_thread.allocate_lock()
+
+   Retorna um novo objeto de bloqueio. Métodos de bloqueio são
+   descritos abaixo. O bloqueio é desativado inicialmente.
+
+_thread.get_ident()
+
+   Retorna o 'identificador de thread' do thread atual. Este é um
+   número inteiro diferente de zero. Seu valor não tem significado
+   direto; pretende-se que seja um cookie mágico para ser usado, por
+   exemplo, para indexar um dicionário de dados específicos do thread.
+   identificadores de thread podem ser reciclados quando um thread sai
+   e outro é criado.
+
+_thread.get_native_id()
+
+   Retorna a ID de thread integral nativa da thread atual atribuída
+   pelo kernel. Este é um número inteiro não negativo. Seu valor pode
+   ser usado para identificar exclusivamente essa thread específica em
+   todo o sistema (até que a thread termine, após o que o valor poderá
+   ser reciclado pelo sistema operacional).
+
+   Disponibilidade: Windows, FreeBSD, Linux, macOS, OpenBSD, NetBSD,
+   AIX, DragonFlyBSD.
+
+   Novo na versão 3.8.
+
+_thread.stack_size([size])
+
+   Retorna o tamanho da pilha de threads usado ao criar novos threads.
+   O argumento opcional *size* especifica o tamanho da pilha a ser
+   usado para threads criados posteriormente e deve ser 0 (usar
+   plataforma ou padrão configurado) ou um valor inteiro positivo de
+   pelo menos 32.768 (32 KiB). Se *size* não for especificado, 0 será
+   usado. Se a alteração do tamanho da pilha de threads não for
+   suportada, uma "RuntimeError" será levantada. Se o tamanho da pilha
+   especificado for inválido, uma "ValueError" será levantada e o
+   tamanho da pilha não será modificado. Atualmente, 0 KiB é o valor
+   mínimo de tamanho de pilha suportado para garantir espaço
+   suficiente para o próprio interpretador. Observe que algumas
+   plataformas podem ter restrições específicas sobre valores para o
+   tamanho da pilha, como exigir um tamanho mínimo de pilha > 32 KiB
+   ou exigir alocação em múltiplos do tamanho da página de memória do
+   sistema -- a documentação da plataforma deve ser consultada para
+   obter mais informações (4 páginas KiB são comuns; usar múltiplos de
+   4096 para o tamanho da pilha é a abordagem sugerida na ausência de
+   informações mais específicas).
+
+   Disponibilidade: Windows, pthreads.
+
+   Unix platforms with POSIX threads support.
+
+_thread.TIMEOUT_MAX
+
+   The maximum value allowed for the *timeout* parameter of
+   "Lock.acquire". Specifying a timeout greater than this value will
+   raise an "OverflowError".
+
+   Novo na versão 3.2.
+
+Os objetos de bloqueio têm os seguintes métodos:
+
+lock.acquire(blocking=True, timeout=-1)
+
+   Sem nenhum argumento opcional, esse método adquire o bloqueio
+   incondicionalmente, se necessário, aguardando até que seja liberado
+   por outro encadeamento (apenas um encadeamento por vez pode
+   adquirir um bloqueio --- esse é o motivo da sua existência).
+
+   If the *blocking* argument is present, the action depends on its
+   value: if it is False, the lock is only acquired if it can be
+   acquired immediately without waiting, while if it is True, the lock
+   is acquired unconditionally as above.
+
+   If the floating-point *timeout* argument is present and positive,
+   it specifies the maximum wait time in seconds before returning.  A
+   negative *timeout* argument specifies an unbounded wait.  You
+   cannot specify a *timeout* if *blocking* is False.
+
+   O valor de retorno é "True" se o bloqueio for adquirido com
+   sucesso, se não "False".
+
+   Alterado na versão 3.2: O parâmetro *timeout* é novo.
+
+   Alterado na versão 3.2: As aquisições de bloqueio agora podem ser
+   interrompidas por sinais no POSIX.
+
+lock.release()
+
+   Libera o bloqueio. O bloqueio deve ter sido adquirido
+   anteriormente, mas não necessariamente pela mesma thread.
+
+lock.locked()
+
+   Retorna o status do bloqueio: "True" se tiver sido adquirido por
+   alguma thread, "False" se não for o caso.
+
+Além desses métodos, os objetos de bloqueio também podem ser usados
+através da instrução "with", por exemplo:
+
+   import _thread
+
+   a_lock = _thread.allocate_lock()
+
+   with a_lock:
+       print("a_lock is locked while this executes")
+
+**Ressalvas:**
+
+* Threads interagem estranhamente com interrupções: a exceção
+  "KeyboardInterrupt" será recebida por uma thread arbitrário. (Quando
+  o módulo "signal" está disponível, as interrupções sempre vão para a
+  thread principal.)
+
+* Chamar "sys.exit()" ou levantar a exceção "SystemExit" é o
+  equivalente a chamar "_thread.exit()".
+
+* It is not possible to interrupt the "acquire()" method on a lock ---
+  the "KeyboardInterrupt" exception will happen after the lock has
+  been acquired.
+
+* Quando a thread principal se encerra, é definido pelo sistema se as
+  outras threads sobrevivem. Na maioria dos sistemas, elas são
+  eliminadas sem executar cláusulas "try" ... "finally" ou executar
+  destruidores de objetos.
+
+* Quando a thread principal é encerrada, ela não realiza nenhuma
+  limpeza usual (exceto que as cláusulas "try" ... "finally" são
+  honradas) e os arquivos de E/S padrão não são liberados.

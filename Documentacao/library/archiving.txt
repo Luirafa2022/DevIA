@@ -1,0 +1,93 @@
+Compressão de Dados e Arquivamento
+**********************************
+
+Os módulos descritos neste capítulo suportam a compressão de dados com
+os algoritmos zlib, gzip, bzip2 e lzma e a criação de arquivos ZIP e
+tar. Consulte também Operações de arquivamento fornecido pelo módulo
+"shutil".
+
+* "zlib" --- Compactação compatível com **gzip**
+
+* "gzip" --- Support for **gzip** files
+
+  * Exemplos de uso
+
+  * Interface de linha de comando
+
+    * Opções da linha de comando
+
+* "bz2" --- Suporte para compressão **bzip2**
+
+  * (Des)compressão de arquivos
+
+  * (Des)compressão incremental
+
+  * (De)compressão de uma só vez (one-shot)
+
+  * Exemplos de uso
+
+* "lzma" --- Compactação usando o algoritmo LZMA
+
+  * Lendo e escrevendo arquivos compactados
+
+  * Compactando e descompactando dados na memória
+
+  * Diversos
+
+  * Specifying custom filter chains
+
+  * Exemplos
+
+* "zipfile" --- Trabalha com arquivos ZIP
+
+  * Objetos ZipFile
+
+  * Objetos Path
+
+  * Objetos PyZipFile
+
+  * Objetos ZipInfo
+
+  * Interface de Linha de Comando
+
+    * Opções de linha de comando
+
+  * Armadilhas de descompressão
+
+    * Do próprio arquivo
+
+    * Limitações do sistema de arquivos
+
+    * Limitações de recursos
+
+    * Interrupção
+
+    * Comportamentos padrão da extração
+
+* "tarfile" --- Read and write tar archive files
+
+  * TarFile Objects
+
+  * TarInfo Objects
+
+  * Extraction filters
+
+    * Default named filters
+
+    * Filter errors
+
+    * Hints for further verification
+
+    * Supporting older Python versions
+
+    * Stateful extraction filter example
+
+  * Interface de Linha de Comando
+
+    * Opções de linha de comando
+
+  * Exemplos
+
+  * Supported tar formats
+
+  * Unicode issues

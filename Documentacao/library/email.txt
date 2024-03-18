@@ -1,0 +1,158 @@
+"email" --- Um e-mail e um pacote MIME manipulável
+**************************************************
+
+**Código-fonte:** Lib/email/__init__.py
+
+======================================================================
+
+O pacote "email" é uma biblioteca para gerenciar mensagens de e-mail.
+Ela foi especificamente *não* projetada para enviar mensagens de
+e-mail para SMTP (**RFC 2821**), NNTP ou outros servidores; essas são
+funções de módulos como "smtplib" e "nntplib". O pacote "email" tenta
+ser o mais compatível possível com RFC, suportando **RFC 5322** e
+**RFC 6532**, bem como os RFCs relacionados ao MIME como **RFC 2045**,
+**RFC 2046**, **RFC 2047**, **RFC 2183** e **RFC 2231**.
+
+No geral a estrutura do pacote de e-mail pode ser dividida em três
+componentes principais, mais um quarto componente que controla o
+comportamento dos outros componentes.
+
+O componente central do pacote é um "modelo de objeto" que representa
+mensagens de e-mail. Uma aplicação interage com o pacote
+principalmente através da interface do modelo de objeto definida no
+submódulo "message". A aplicação pode usar essa API para fazer
+perguntas sobre um e-mail existente, construir um novo e-mail ou
+adicionar ou remover subcomponentes de e-mail que usam a mesma
+interface de modelo de objeto. Ou seja, seguindo a natureza das
+mensagens de e-mail e seus subcomponentes MIME, o modelo de objeto de
+e-mail é uma estrutura em árvore de objetos que fornecem a API
+"EmailMessage".
+
+Os outros dois componentes principais do pacote são "parser" e
+"generator". O analisador sintático pega a versão serializada de uma
+mensagem de e-mail (um fluxo de bytes) e a converte em uma árvore de
+objetos "EmailMessage". O gerador pega um "EmailMessage" e o
+transforma novamente em um fluxo de bytes serializado. (O analisador
+sintático e o gerador também lidam com fluxos de caracteres de texto,
+mas esse uso é desencorajado, pois é muito fácil terminar com
+mensagens que não são válidas de uma maneira ou de outra.)
+
+O componente de controle é o módulo "policy". Cada "EmailMessage",
+cada "generator" e cada "parser" tem um objeto associado "policy" que
+controla seu comportamento. Normalmente, uma aplicação precisa
+especificar a política apenas quando uma "EmailMessage" é criada,
+instanciando diretamente uma "EmailMessage" para criar um novo e-mail
+ou analisando um fluxo de entrada usando um "parser". Mas a política
+pode ser alterada quando a mensagem é serializada usando um
+"generator". Isso permite, por exemplo, analisar uma mensagem de
+e-mail genérica do disco, mas serializá-la usando as configurações
+SMTP padrão ao enviá-la para um servidor de e-mail.
+
+O pacote de e-mail faz o possível para ocultar os detalhes das várias
+RFCs em vigor da aplicação. Conceitualmente, a aplicação deve tratar a
+mensagem de e-mail como uma árvore estruturada de texto unicode e
+anexos binários, sem ter que se preocupar com a forma como eles são
+representados quando serializados. Na prática, no entanto, muitas
+vezes é necessário estar ciente de pelo menos algumas das regras que
+regem as mensagens MIME e sua estrutura, especificamente os nomes e a
+natureza dos "tipos de conteúdo" MIME e como eles identificam
+documentos com várias partes. Na maioria das vezes, esse conhecimento
+só deve ser necessário para aplicações mais complexos e, mesmo assim,
+deve ser apenas a estrutura de alto nível em questão, e não os
+detalhes de como essas estruturas são representadas. Como os tipos de
+conteúdo MIME são amplamente utilizados no software moderno da
+Internet (não apenas no e-mail), este será um conceito familiar para
+muitos programadores.
+
+As seções a seguir descrevem a funcionalidade do pacote "email".
+Começamos com o modelo de objeto "message", que é a interface
+principal que uma aplicação usará, e seguimos com os componentes de
+"parser" e "generator". Em seguida, abordamos os controles "policy",
+que concluem o tratamento dos principais componentes da biblioteca.
+
+As próximas três seções cobrem as exceções que o pacote pode
+apresentar e os defeitos (não conformidade com as RFCs) que o "parser"
+pode detectar. A seguir, abordamos os subcomponentes "headerregistry"
+e os subcomponentes "contentmanager", que fornecem ferramentas para
+manipulação mais detalhada de cabeçalhos e cargas úteis,
+respectivamente. Ambos os componentes contêm recursos relevantes para
+consumir e produzir mensagens não triviais, mas também documentam suas
+APIs de extensibilidade, que serão de interesse para aplicações
+avançadas.
+
+A seguir, é apresentado um conjunto de exemplos de uso das partes
+fundamentais das APIs abordadas nas seções anteriores.
+
+O exposto acima representa a API moderna (compatível com unicode) do
+pacote de e-mail. As seções restantes, começando com a classe
+"Message", cobrem a API legada "compat32" que lida muito mais
+diretamente com os detalhes de como as mensagens de e-mail são
+representadas. A API "compat32" *não* oculta os detalhes dos RFCs da
+aplicação, mas para aplicações que precisam operar nesse nível, eles
+podem ser ferramentas úteis. Esta documentação também é relevante para
+aplicações que ainda estão usando a API "compat32" por motivos de
+compatibilidade com versões anteriores.
+
+Alterado na versão 3.6: Documentos reorganizados e reescritos para
+promover a nova API "EmailMessage"/"EmailPolicy".
+
+Conteúdos da documentação do pacote "email":
+
+* "email.message": Representing an email message
+
+* "email.parser": Parsing email messages
+
+  * API do FeedParser
+
+  * Parser API
+
+  * Additional notes
+
+* "email.generator": Generating MIME documents
+
+* "email.policy": Policy Objects
+
+* "email.errors": Classes de Exceção e Defeito.
+
+* "email.headerregistry": Objetos de cabeçalho personalizados
+
+* "email.contentmanager": Managing MIME Content
+
+  * Content Manager Instances
+
+* "email": Exemplos
+
+API legada
+
+* "email.message.Message": Representing an email message using the
+  "compat32" API
+
+* "email.mime": Criando e-mail e objetos MIME fo zero
+
+* "email.header": Internationalized headers
+
+* "email.charset": Representing character sets
+
+* "email.encoders": Encoders
+
+* "email.utils": Utilitários diversos
+
+* "email.iterators": Iteradores
+
+Ver também:
+
+  Módulo "smtplib"
+     Cliente SMTP (Simple Mail Transport Protocol)
+
+  Módulo "poplib"
+     Cliente POP (Post Office Protocol)
+
+  Módulo "imaplib"
+     Cliente IMAP (Internet Message Access Protocol)
+
+  Módulo "nntplib"
+     Cliente NNTP (Network News Transport Protocol)
+
+  Módulo "mailbox"
+     Ferramentas para criar, ler, e gerenciar coleções de mensagem em
+     disco usando vários formatos padrão.

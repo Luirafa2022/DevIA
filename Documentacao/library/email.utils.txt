@@ -1,0 +1,213 @@
+"email.utils": Utilitários diversos
+***********************************
+
+**Código-fonte:** Lib/email/utils.py
+
+======================================================================
+
+Existem alguns utilitários úteis fornecidos no "email.utils" module:
+
+email.utils.localtime(dt=None)
+
+   Retorna a hora local como um objeto datetime consciente. Se chamado
+   sem argumentos, retorna a hora atual. Caso contrário, o argumento
+   *dt* deve ser uma instância "datetime" e é convertido para o fuso
+   horário local de acordo com o banco de dados de fuso horário do
+   sistema. Se *dt* for ingênuo (ou seja, "dt.tzinfo" for "None"),
+   será assumido que está no horário local. O parâmetro *isdst* é
+   ignorado.
+
+   Novo na versão 3.3.
+
+   Descontinuado desde a versão 3.12, será removido na versão 3.14: O
+   parâmetro *isdst*.
+
+email.utils.make_msgid(idstring=None, domain=None)
+
+   Retorna uma string adequada para um cabeçalho *Message-ID*
+   compatível com **RFC 2822**. O *idstring* opcional, se fornecido, é
+   uma string usada para fortalecer a exclusividade do ID da mensagem.
+   O *domain* Opcional, se dado, fornece a porção do msgid após o '@'.
+   O padrão é o nome do host local. Normalmente, não é necessário
+   substituir esse padrão, mas pode ser útil em alguns casos, como um
+   sistema distribuído de construção que usa um nome de domínio
+   consistente em vários hosts.
+
+   Alterado na versão 3.2: Adicionada a palavra-chave *domain*.
+
+As funções restantes fazem parte da API de e-mail herdada
+("Compat32"). Não há necessidade de usá-las diretamente com a nova
+API, pois a análise e a formatação fornecidas são feitas
+automaticamente pelo mecanismo de análise de cabeçalhos da nova API.
+
+email.utils.quote(str)
+
+   Devolve uma nova string com barras invertidas em *str* substituídas
+   por duas barras invertidas e aspas duplas substituídas por aspas
+   duplas invertidas.
+
+email.utils.unquote(str)
+
+   Retorna uma nova string que é uma versão sem aspas de *str*. Se
+   *str* terminar e começar com aspas duplas, elas serão removidas. Da
+   mesma forma, se *str* termina e começa com colchetes angulares,
+   eles são removidos.
+
+email.utils.parseaddr(address)
+
+   Analisa o endereço -- que deve ser o valor de algum campo contendo
+   endereço, como *To* ou *Cc* -- em suas partes constituinte
+   *realname* e *email address*. Retorna uma tupla daquela informação,
+   a menos que a análise falhe, caso em que uma tupla de 2 de "('',
+   '')" é retornada.
+
+email.utils.formataddr(pair, charset='utf-8')
+
+   O inverso de "parseaddr()", isto leva uma tupla de 2 do forma
+   "(realname, email_address)" e retorna o valor de string adequado
+   para um cabeçalho *To* ou *Cc* . Se o primeiro elemento de *pair*
+   for falso, o segundo elemento será retornado sem modificações.
+
+   O *charset* opcional é o conjunto de caracteres que será usado na
+   codificação **RFC 2047** do "realname" se o "realname" contiver
+   caracteres não-ASCII. Pode ser uma instância de "str" ou a
+   "Charset". O padrão é "utf-8".
+
+   Alterado na versão 3.3: Adicionada a opção *charset*.
+
+email.utils.getaddresses(fieldvalues)
+
+   Este método retorna uma lista de tuplas 2 do formulário retornado
+   por "parseaddr()". *fieldvalues* é uma sequência de valores do
+   campo de cabeçalho que pode ser retornada por "Message.get_all".
+   Aqui está um exemplo simples que recebe todos os destinatários de
+   uma mensagem:
+
+      from email.utils import getaddresses
+
+      tos = msg.get_all('to', [])
+      ccs = msg.get_all('cc', [])
+      resent_tos = msg.get_all('resent-to', [])
+      resent_ccs = msg.get_all('resent-cc', [])
+      all_recipients = getaddresses(tos + ccs + resent_tos + resent_ccs)
+
+email.utils.parsedate(date)
+
+   Tenta analisar uma data de acordo com as regras em **RFC 2822**. no
+   entanto, alguns mailers não seguem esse formato conforme
+   especificado, portanto "parsedate()" tenta adivinhar corretamente
+   em tais casos. *date* é uma string contendo uma data **RFC 2822**,
+   como ""Mon, 20 Nov 1995 19:12:08 -0500"". Se conseguir analisar a
+   data, "parsedate()" retorna uma 9-tupla que pode ser passada
+   diretamente para "time.mktime()"; caso contrário, "None" será
+   retornado. Observe que os índices 6, 7 e 8 da tupla de resultados
+   não são utilizáveis.
+
+email.utils.parsedate_tz(date)
+
+   Executa a mesma função que "parsedate()", mas retorna "None" ou uma
+   tupla de 10; os primeiros 9 elementos formam uma tupla que pode ser
+   passada diretamente para "time.mktime()", e o décimo é o
+   deslocamento do fuso horário da data do UTC (que é o termo oficial
+   para o horário de Greenwich) [1]. Se a string de entrada não tem
+   fuso horário, o último elemento da tupla retornado é "0", que
+   representa UTC. Observe que os índices 6, 7 e 8 da tupla de
+   resultado não podem ser usados.
+
+email.utils.parsedate_to_datetime(date)
+
+   O inverso de "format_datetime()". Desempenha a mesma função que
+   "parsedate()", mas em caso de sucesso retorna um "datetime"; caso
+   contrário, "ValueError" é levantada se *date* contiver um valor
+   inválido, como uma hora maior que 23 ou uma diferença de fuso
+   horário não entre -24 e 24 horas. Se a data de entrada tem um fuso
+   horário de "-0000", o "datetime" será um "datetime" ingênuo, e se a
+   data estiver em conformidade com os RFCs representará um horário em
+   UTC, mas sem indicação do fuso horário de origem real da mensagem
+   de onde vem a data. Se a data de entrada tiver qualquer outro
+   deslocamento de fuso horário válido, o "datetime" será um
+   "datetime" consciente com o correspondente a "timezone" "tzinfo".
+
+   Novo na versão 3.3.
+
+email.utils.mktime_tz(tuple)
+
+   Transforma uma tupla de 10 conforme retornado por "parsedate_tz()"
+   em um timestamp UTC (segundos desde a Era Unix). Se o item de fuso
+   horário na tupla for "None", considera a hora local.
+
+email.utils.formatdate(timeval=None, localtime=False, usegmt=False)
+
+   Retorna uma string de data conforme **RFC 2822**. Por exemplo:
+
+      Fri, 09 Nov 2001 01:08:47 -0000
+
+   O *timeval* opcional, se fornecido, é um valor de tempo de ponto
+   flutuante, conforme aceito por "time.gmtime()" e
+   "time.localtime()", caso contrário, o tempo atual é usado.
+
+   Há um sinalizador opcional *localtime*, que, quando é "True",
+   interpreta *timeval* e retorna uma data relativa ao fuso horário
+   local em vez do UTC, levando em consideração o horário de verão. O
+   padrão é "False", o que significa que o UTC é usado.
+
+   O *usegmt* opcional é um sinalizador que quando "True", produz uma
+   string de data com o fuso horário como uma string ascii "GMT", ao
+   invés de um numérico "-0000". Isso é necessário para alguns
+   protocolos (como HTTP). Isso se aplica apenas quando *localtime*
+   for "False". O padrão é "False".
+
+email.utils.format_datetime(dt, usegmt=False)
+
+   Como "formatdate", mas a entrada é uma instância de "datetime". Se
+   for uma data e hora ingênua, será considerado "UTC sem informações
+   sobre o fuso horário de origem" e o convencional "-0000" será usado
+   para o fuso horário. Se for um "datetime" ciente, então o
+   deslocamento de fuso horário numérico é usado. Se for um fuso
+   horário ciente com deslocamento zero, então *usegmt* pode ser
+   definido como "True", caso em que a string "GMT" é usada em vez do
+   deslocamento numérico do fuso horário. Isso fornece uma maneira de
+   gerar cabeçalhos de data HTTP em conformidade com os padrões.
+
+   Novo na versão 3.3.
+
+email.utils.decode_rfc2231(s)
+
+   Decodifica a string *s* de acordo com **RFC 2231**.
+
+email.utils.encode_rfc2231(s, charset=None, language=None)
+
+   Codifica a string *s* de acordo com **RFC 2231**. *charset* e
+   *language* opcionais, se fornecido, são o nome do conjunto de
+   caracteres e o nome do idioma a ser usado. Se nenhum deles for
+   fornecido, *s* é retornado como está. Se *charset* for fornecido,
+   mas *language* não, a string será codificada usando a string vazia
+   para *language*.
+
+email.utils.collapse_rfc2231_value(value, errors='replace', fallback_charset='us-ascii')
+
+   Quando um parâmetro de cabeçalho é codificado no formato **RFC
+   2231**, "Message.get_param" pode retornar uma tupla de 3 contendo o
+   conjunto de caracteres, idioma e valor. "collapse_rfc2231_value()"
+   transforma isso em uma string Unicode. *errors* opcionais são
+   passados para o argumento *errors* do método "encode()" de "str"; o
+   padrão é "'replace'". *fallback_charset* opcional especifica o
+   conjunto de caracteres a ser usado se aquele no cabeçalho **RFC
+   2231** não for conhecido pelo Python; o padrão é "'us-ascii'".
+
+   Por conveniência, se *value* passado para
+   "collapse_rfc2231_value()" não for uma tupla, deve ser uma string e
+   é retornado sem aspas.
+
+email.utils.decode_params(params)
+
+   Decodifica a lista de parâmetros de acordo com **RFC 2231**.
+   *params* é uma sequência de 2 tuplas contendo elementos do
+   formulário "(content-type, string-value)".
+
+-[ Notas de rodapé ]-
+
+[1] Observa que o sinal do deslocamento de fuso horário é o oposto do
+    sinal da variável "time.timezone" para o mesmo fuso horário; a
+    última variável segue o padrão POSIX enquanto este módulo segue
+    **RFC 2822**.

@@ -1,0 +1,78 @@
+"cgitb" --- Gerenciador de traceback (situação da pilha de execução) para roteiros de CGI
+*****************************************************************************************
+
+**Código-fonte:** Lib/cgitb.py
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "cgitb" foi descontinuado (veja **PEP 594** para mais
+detalhes).
+
+======================================================================
+
+O módulo "cgitb" fornece um tratador de exceção especial para scripts
+Python. (Seu nome é um pouco enganador. Ele foi originalmente
+projetado para exibir informações abrangentes de rastreamento em HTML
+para scripts CGI. Posteriormente, foi generalizado também para exibir
+essas informações em texto sem formatação.) Após esse módulo ser
+ativado, se ocorrer uma exceção não detectada, um relatório detalhado
+e formatado será exibido. O relatório inclui um traceback mostrando
+trechos do código-fonte para cada nível, bem como os valores dos
+argumentos e variáveis locais das funções atualmente em execução, para
+ajudá-lo a depurar o problema. Opcionalmente, você pode salvar essas
+informações em um arquivo em vez de enviá-las para o navegador.
+
+Para habilitar esse recurso, basta adicioná-lo ao topo do seu script
+CGI:
+
+   import cgitb
+   cgitb.enable()
+
+As opções da função "enable()" controlam se o relatório é exibido no
+navegador e se o relatório é registrado em um arquivo para análise
+posterior.
+
+cgitb.enable(display=1, logdir=None, context=5, format='html')
+
+   Esta função faz com que o módulo "cgitb" assumir o tratamento
+   padrão do interpretador para exceções definindo o valor de
+   "sys.excepthook".
+
+   O argumento opcional *display* é padronizado como "1" e pode ser
+   definido como "0" para suprimir o envio do traceback ao navegador.
+   Se o argumento *logdir* estiver presente, os relatórios de
+   traceback serão gravados nos arquivos. O valor de *logdir* deve ser
+   um diretório em que esses arquivos serão colocados. O argumento
+   opcional *context* é o número de linhas de contexto a serem
+   exibidas em torno da linha atual do código-fonte no traceback; o
+   padrão é "5". Se o argumento opcional *format* for ""html"", a
+   saída será formatada como HTML. Qualquer outro valor força a saída
+   de texto sem formatação. O valor padrão é ""html"".
+
+cgitb.text(info, context=5)
+
+   Esta função lida com a exceção descrita por *info* (uma tupla com 3
+   tuplas contendo o resultado de "sys.exc_info()"), formatando seu
+   retorno como texto e retornando o resultado como uma string. O
+   argumento opcional *context* é o número de linhas de contexto a
+   serem exibidas em torno da linha atual do código-fonte no
+   traceback; o padrão é "5".
+
+cgitb.html(info, context=5)
+
+   Esta função lida com a exceção descrita por *info* (uma tupla com 3
+   tuplas contendo o resultado de "sys.exc_info()"), formatando seu
+   retorno como HTML e retornando o resultado como uma string. O
+   argumento opcional *context* é o número de linhas de contexto a
+   serem exibidas em torno da linha atual do código-fonte no
+   traceback; o padrão é "5".
+
+cgitb.handler(info=None)
+
+   Essa função trata uma exceção usando as configurações padrão (ou
+   seja, mostra um relatório no navegador, mas não faz logon em um
+   arquivo). Isso pode ser usado quando você capturou uma exceção e
+   deseja denunciá-la usando "cgitb". O argumento opcional *info* deve
+   ser uma tupla de três, contendo um tipo de exceção, um valor de
+   exceção e um objeto de traceback exatamente como a tupla retornada
+   por "sys.exc_info()". Se o argumento *info* não for fornecido, a
+   exceção atual será obtida em "sys.exc_info()".

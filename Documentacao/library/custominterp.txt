@@ -1,0 +1,19 @@
+Interpretadores Python Personalizados
+*************************************
+
+Os módulos descritos neste capítulo permitem a escrita de interfaces
+semelhantes ao interpretador interativo da Python. Se você quer um
+interpretador de Python que suporte algum recurso especial, além do
+idioma de Python, você deve olhar para o módulo "code". (O módulo
+"codeop" é de nível inferior, usado para suportar compilação de um
+pedaço possivelmente incompleto do código Python).
+
+A lista completa de módulos descritos neste capítulo é:
+
+* "code" --- Classes Bases do Interpretador
+
+  * Objetos de Interpretador Interativo
+
+  * Objetos de Console Interativos
+
+* "codeop" --- Compila código Python

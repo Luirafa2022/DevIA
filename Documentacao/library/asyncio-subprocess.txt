@@ -1,0 +1,353 @@
+Subprocessos
+************
+
+**Código-fonte:** Lib/asyncio/subprocess.py,
+Lib/asyncio/base_subprocess.py
+
+======================================================================
+
+Esta seção descreve APIs async/await asyncio de alto nível para criar
+e gerenciar subprocessos.
+
+Aqui está um exemplo de como asyncio pode executar um comando shell e
+obter o seu resultado:
+
+   import asyncio
+
+   async def run(cmd):
+       proc = await asyncio.create_subprocess_shell(
+           cmd,
+           stdout=asyncio.subprocess.PIPE,
+           stderr=asyncio.subprocess.PIPE)
+
+       stdout, stderr = await proc.communicate()
+
+       print(f'[{cmd!r} exited with {proc.returncode}]')
+       if stdout:
+           print(f'[stdout]\n{stdout.decode()}')
+       if stderr:
+           print(f'[stderr]\n{stderr.decode()}')
+
+   asyncio.run(run('ls /zzz'))
+
+irá exibir:
+
+   ['ls /zzz' exited with 1]
+   [stderr]
+   ls: /zzz: No such file or directory
+
+Devido ao fato que todas as funções de subprocessos asyncio são
+assíncronas e asyncio fornece muitas ferramentas para trabalhar com
+tais funções, é fácil executar e monitorar múltiplos subprocessos em
+paralelo. É na verdade trivial modificar o exemplo acima para executar
+diversos comandos simultaneamente:
+
+   async def main():
+       await asyncio.gather(
+           run('ls /zzz'),
+           run('sleep 1; echo "hello"'))
+
+   asyncio.run(main())
+
+Veja também a subseção Exemplos.
+
+
+Criando subprocessos
+====================
+
+coroutine asyncio.create_subprocess_exec(program, *args, stdin=None, stdout=None, stderr=None, limit=None, **kwds)
+
+   Cria um subprocesso.
+
+   O argumento *limit* define o limite do buffer para os wrappers
+   "StreamReader" para "Process.stdout" e "Process.stderr" (se
+   "subprocess.PIPE" for passado para os argumentos *stdout* e
+   *stderr*).
+
+   Retorna uma instância de "Process".
+
+   Veja a documentação de "loop.subprocess_exec()" para outros
+   parâmetros.
+
+   Alterado na versão 3.10: Removido o parâmetro *loop*.
+
+coroutine asyncio.create_subprocess_shell(cmd, stdin=None, stdout=None, stderr=None, limit=None, **kwds)
+
+   Executa o comando *cmd* no shell.
+
+   O argumento *limit* define o limite do buffer para os wrappers
+   "StreamReader" para "Process.stdout" e "Process.stderr" (se
+   "subprocess.PIPE" for passado para os argumentos *stdout* e
+   *stderr*).
+
+   Retorna uma instância de "Process".
+
+   Veja a documentação de "loop.subprocess_shell()" para outros
+   parâmetros.
+
+   Importante:
+
+     É responsabilidade da aplicação garantir que todos os espaços em
+     branco e caracteres especiais tenham aspas apropriadamente para
+     evitar vulnerabilidades de injeção de shell. A função
+     "shlex.quote()" pode ser usada para escapar espaços em branco e
+     caracteres especiais de shell apropriadamente em strings que
+     serão usadas para construir comandos shell.
+
+   Alterado na versão 3.10: Removido o parâmetro *loop*.
+
+Nota:
+
+  Subprocessos estão disponíveis para Windows se uma
+  "ProactorEventLoop" for usada. Veja Suporte para subprocesso para
+  Windows para detalhes.
+
+Ver também:
+
+  asyncio também tem as seguintes APIs *de baixo nível* para trabalhar
+  com subprocessos: "loop.subprocess_exec()",
+  "loop.subprocess_shell()", "loop.connect_read_pipe()",
+  "loop.connect_write_pipe()", assim como os Transportes de
+  Subprocesso e Protocolos de Subprocesso.
+
+
+Constantes
+==========
+
+asyncio.subprocess.PIPE
+
+   Pode ser passado para os parâmetros *stdin*, *stdout* ou *stderr*.
+
+   Se *PIPE* for passado para o argumento *stdin*, o atributo
+   "Process.stdin" irá apontar para uma instância "StreamWriter".
+
+   Se *PIPE* for passado para os argumentos *stdout* ou *stderr*, os
+   atributos "Process.stdout" e "Process.stderr" irão apontar para
+   instâncias "StreamReader".
+
+asyncio.subprocess.STDOUT
+
+   Valor especial que pode ser usado como o argumento *stderr* e
+   indica que a saída de erro padrão deve ser redirecionada para a
+   saída padrão.
+
+asyncio.subprocess.DEVNULL
+
+   Valor especial que pode ser usado como argumento *stdin*, *stdout*
+   ou *stderr* para funções de criação de processos. Ele indica que o
+   arquivo especial "os.devnull" será usado para o fluxo de
+   subprocesso correspondente.
+
+
+Interagindo com subprocessos
+============================
+
+Ambas as funções "create_subprocess_exec()" e
+"create_subprocess_shell()" retornam instâncias da classe *Process*.
+*Process* é um wrapper de alto nível que permite a comunicação com
+subprocessos e observar eles serem completados.
+
+class asyncio.subprocess.Process
+
+   Um objeto que envolve processos do sistema operacional criados
+   pelas funções "create_subprocess_exec()" e
+   "create_subprocess_shell()".
+
+   Esta classe é projetada para ter uma API similar a classe
+   "subprocess.Popen", mas existem algumas diferenças notáveis:
+
+   * ao contrário de Popen, instâncias de Process não têm um
+     equivalente ao método "poll()";
+
+   * os métodos "communicate()" e "wait()" não têm um parâmetro
+     *timeout*: utilize a função "wait_for()";
+
+   * o método "Process.wait()" é assíncrono, enquanto que o método
+     "subprocess.Popen.wait()" é implementado como um laço bloqueante
+     para indicar que está ocupado;
+
+   * o parâmetro *universal_newlines* não é suportado.
+
+   Esta classe não é segura para thread.
+
+   Veja também a seção Subprocesso e Threads.
+
+   coroutine wait()
+
+      Aguarda o processo filho encerrar.
+
+      Define e retorna o atributo "returncode".
+
+      Nota:
+
+        Este método pode entrar em deadlock ao usar "stdout=PIPE" ou
+        "stderr=PIPE" e o processo filho gera tantas saídas que ele
+        bloqueia a espera pelo encadeamento de buffer do sistema
+        operacional para aceitar mais dados. Use o método
+        "communicate()" ao usar encadeamentos para evitar essa
+        condição.
+
+   coroutine communicate(input=None)
+
+      Interage com processo:
+
+      1. envia dados para *stdin* (se *input* for diferente de
+         "None");
+
+      2. fecha *stdin*;
+
+      3. lê dados a partir de *stdout* e *stderr*, até que EOF (fim do
+         arquivo) seja atingido;
+
+      4. aguarda o processo encerrar.
+
+      O argumento opcional *input* é a informação (objeto "bytes") que
+      será enviada para o processo filho.
+
+      Retorna uma tupla "(stdout_data, stderr_data)".
+
+      Se qualquer exceção "BrokenPipeError" ou "ConnectionResetError"
+      for levantada ao escrever *input* em *stdin*, a exceção é
+      ignorada. Esta condição ocorre quando o processo encerra antes
+      de todos os dados serem escritos em *stdin*.
+
+      Se for desejado enviar dados para o *stdin* do processo, o mesmo
+      precisa ser criado com "stdin=PIPE". De forma similar, para
+      obter qualquer coisa além de "None" na tupla resultante, o
+      processo precisa ser criado com os argumentos "stdout=PIPE" e/ou
+      "stderr=PIPE".
+
+      Perceba que, os dados lidos são armazenados em um buffer na
+      memória, então não use este método se o tamanho dos dados é
+      grande ou ilimitado.
+
+      Alterado na versão 3.12: *stdin* é fechado quando *input=None* é
+      também.
+
+   send_signal(signal)
+
+      Envia o sinal *signal* para o processo filho.
+
+      Nota:
+
+        On Windows, "SIGTERM" is an alias for "terminate()".
+        "CTRL_C_EVENT" and "CTRL_BREAK_EVENT" can be sent to processes
+        started with a *creationflags* parameter which includes
+        "CREATE_NEW_PROCESS_GROUP".
+
+   terminate()
+
+      Interrompe o processo filho.
+
+      On POSIX systems this method sends "SIGTERM" to the child
+      process.
+
+      On Windows the Win32 API function "TerminateProcess()" is called
+      to stop the child process.
+
+   kill()
+
+      Mata o processo filho.
+
+      Em sistemas POSIX este método envia "SIGKILL" para o processo
+      filho.
+
+      No Windows, este método é um atalho para "terminate()".
+
+   stdin
+
+      Fluxo de entrada padrão ("StreamWriter") ou "None" se o processo
+      foi criado com "stdin=None".
+
+   stdout
+
+      Fluxo de saída padrão ("StreamReader") ou "None" se o processo
+      foi criado com "stdout=None".
+
+   stderr
+
+      Erro de fluxo padrão ("StreamReader") ou "None" se o processo
+      foi criado com "stderr=None".
+
+   Aviso:
+
+     Use o método "communicate()" ao invés de "process.stdin.write()",
+     "await process.stdout.read()" ou "await process.stderr.read()".
+     Isso evita deadlocks devido a fluxos pausando a leitura ou
+     escrita, e bloqueando o processo filho.
+
+   pid
+
+      Número de identificação do processo (PID).
+
+      Perceba que para processos criados pela função
+      "create_subprocess_shell()", este atributo é o PID do console
+      gerado.
+
+   returncode
+
+      Retorna o código do processo quando o mesmo terminar.
+
+      Um valor "None" indica que o processo ainda não terminou.
+
+      Um valor negativo "-N" indica que o filho foi terminado pelo
+      sinal "N" (POSIX apenas).
+
+
+Subprocesso e Threads
+---------------------
+
+Laço de eventos padrão do asyncio suporta a execução de subprocessos a
+partir de diferentes threads por padrão.
+
+No Windows, subprocessos são fornecidos pela classe
+"ProactorEventLoop" apenas (por padrão), a classe "SelectorEventLoop"
+não tem suporte a subprocesso.
+
+Em sistemas UNIX, *monitores de filhos* são usados para aguardar o
+encerramento de subprocesso, veja Monitores de processos para mais
+informações.
+
+Alterado na versão 3.8: UNIX mudou para usar "ThreadedChildWatcher"
+para gerar subprocessos a partir de diferentes threads sem qualquer
+limitação.Gerar um subprocesso com um monitor *inativo* para o filho
+atual, levanta "RuntimeError".
+
+Perceba que implementações alternativas do laço de eventos podem ter
+limitações próprias; por favor, verifique a sua documentação.
+
+Ver também: A seção Concorrência e multithreading em asyncio.
+
+
+Exemplos
+--------
+
+Um exemplo de uso da classe "Process" para controlar um subprocesso e
+a classe "StreamReader" para ler a partir da sua saída padrão.
+
+O subprocesso é criado pela função "create_subprocess_exec()":
+
+   import asyncio
+   import sys
+
+   async def get_date():
+       code = 'import datetime; print(datetime.datetime.now())'
+
+       # Create the subprocess; redirect the standard output
+       # into a pipe.
+       proc = await asyncio.create_subprocess_exec(
+           sys.executable, '-c', code,
+           stdout=asyncio.subprocess.PIPE)
+
+       # Read one line of output.
+       data = await proc.stdout.readline()
+       line = data.decode('ascii').rstrip()
+
+       # Wait for the subprocess exit.
+       await proc.wait()
+       return line
+
+   date = asyncio.run(get_date())
+   print(f"Current date: {date}")
+
+Veja também o mesmo exemplo escrito usando APIs de baixo nível.

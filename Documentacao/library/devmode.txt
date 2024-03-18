@@ -1,0 +1,223 @@
+Modo de Desenvolvimento do Python
+*********************************
+
+Novo na versão 3.7.
+
+O Modo de Desenvolvimento do Python introduz verificações de tempo de
+execução adicionais que são muito custosas para serem ativadas por
+padrão. Não deve ser mais detalhado que o padrão se o código estiver
+correto; novos avisos são emitidos somente quando um problema é
+detectado.
+
+Ele pode ser ativado usando a opção de linha de comando "-X dev" ou
+configurando a variável de ambiente "PYTHONDEVMODE" como "1".
+
+Veja também a compilação de depuração do Python.
+
+
+Efeitos do Modo de Desenvolvimento do Python
+============================================
+
+A ativação do Modo de Desenvolvimento do Python é semelhante ao
+comando a seguir, mas com efeitos adicionais descritos abaixo:
+
+   PYTHONMALLOC=debug PYTHONASYNCIODEBUG=1 python -W default -X faulthandler
+
+Efeitos do Modo de Desenvolvimento do Python:
+
+* Adiciona o filtro de avisos "default". Os seguintes avisos são
+  exibidos:
+
+  * "DeprecationWarning"
+
+  * "ImportWarning"
+
+  * "PendingDeprecationWarning"
+
+  * "ResourceWarning"
+
+  Normalmente, os avisos acima são filtrados pelos filtros de avisos
+  padrão.
+
+  Ele se comporta como se a opção de linha de comando "-W default"
+  fosse usada.
+
+  Use a opção de linha de comando "-W error" ou defina a variável de
+  ambiente "PYTHONWARNINGS" com "error" para tratar avisos como erros.
+
+* Instala ganchos de depuração nos alocadores de memória para
+  verificar por:
+
+  * Estouro negativo de buffer
+
+  * Estouro de buffer
+
+  * Violação de API de alocador de memória
+
+  * Uso inseguro da GIL
+
+  Consulte a função C "PyMem_SetupDebugHooks()".
+
+  Se comporta como se a variável de ambiente "PYTHONMALLOC" estivesse
+  definida com "debug".
+
+  Para habilitar o Modo de Desenvolvimento do Python sem instalar
+  ganchos de depuração nos alocadores de memória, defina a variável de
+  ambiente "PYTHONMALLOC" como "default".
+
+* Chama "faulthandler.enable()" na inicialização do Python para
+  instalar manipuladores para os sinais "SIGSEGV", "SIGFPE",
+  "SIGABRT", "SIGBUS" e "SIGILL" para despejar o traceback (situação
+  da pilha de execução) do Python no caso de travamento.
+
+  Ele se comporta como se a opção de linha de comando "-X
+  faulthandler" fosse usada ou se a variável de ambiente
+  "PYTHONFAULTHANDLER" estivesse definida como "1".
+
+* Ativa o modo de depuração de asyncio. Por exemplo, "asyncio"
+  verifica as corrotinas que não foram aguardadas (*await*) e as
+  registra.
+
+  Ele se comporta como se a variável de ambiente "PYTHONASYNCIODEBUG"
+  estivesse definida como "1".
+
+* Verifica os argumentos *encoding* e *errors* para operações de
+  codificação e decodificação de strings. Exemplos: "open()",
+  "str.encode()" e "bytes.decode()".
+
+  Por padrão, para obter o melhor desempenho, o argumento *errors* é
+  verificado apenas no primeiro erro de codificação/decodificação, e o
+  argumento *encoding* às vezes é ignorado para strings vazias.
+
+* O destrutor de "io.IOBase" registra exceções "close()".
+
+* Define o atributo "dev_mode" de "sys.flags" como "True".
+
+O Modo de Desenvolvimento do Python não ativa o módulo "tracemalloc"
+por padrão porque o custo adicional (para desempenho e memória) seria
+muito grande. A ativação do módulo "tracemalloc" fornece informações
+adicionais sobre a origem de alguns erros. Por exemplo,
+"ResourceWarning" registra o retorno ao local onde o recurso foi
+alocado, e um erro de estouro de buffer registra o retorno ao local
+onde o bloco de memória foi alocado.
+
+O Modo de Desenvolvimento do Python não impede que a opção de linha de
+comando "-O" remova as instruções "assert" nem configure "__debug__"
+como "False".
+
+O Modo de Desenvolvimento do Python só pode ser ativado na
+inicialização do Python. Seu valor pode ser lido de
+"sys.flags.dev_mode".
+
+Alterado na versão 3.8: O destrutor de "io.IOBase" agora registra
+exceções "close()".
+
+Alterado na versão 3.9: Os argumentos *encoding* e *errors* agora são
+verificados para operações de codificação e decodificação de strings.
+
+
+Exemplo de ResourceWarning
+==========================
+
+Exemplo de um script que conta o número de linhas do arquivo texto
+especificado na linha de comando:
+
+   import sys
+
+   def main():
+       fp = open(sys.argv[1])
+       nlines = len(fp.readlines())
+       print(nlines)
+       # The file is closed implicitly
+
+   if __name__ == "__main__":
+       main()
+
+O script não fecha o arquivo explicitamente. Por padrão, o Python não
+emite nenhum aviso. Exemplo usando README.txt, que possui 269 linhas:
+
+   $ python script.py README.txt
+   269
+
+A ativação do Modo de Desenvolvimento do Python exibe um aviso
+"ResourceWarning":
+
+   $ python -X dev script.py README.txt
+   269
+   script.py:10: ResourceWarning: unclosed file <_io.TextIOWrapper name='README.rst' mode='r' encoding='UTF-8'>
+     main()
+   ResourceWarning: Enable tracemalloc to get the object allocation traceback
+
+Além disso, ativar "tracemalloc" mostra a linha em que o arquivo foi
+aberto:
+
+   $ python -X dev -X tracemalloc=5 script.py README.rst
+   269
+   script.py:10: ResourceWarning: unclosed file <_io.TextIOWrapper name='README.rst' mode='r' encoding='UTF-8'>
+     main()
+   Object allocated at (most recent call last):
+     File "script.py", lineno 10
+       main()
+     File "script.py", lineno 4
+       fp = open(sys.argv[1])
+
+A correção é fechar explicitamente o arquivo. Exemplo usando um
+gerenciador de contexto:
+
+   def main():
+       # Close the file explicitly when exiting the with block
+       with open(sys.argv[1]) as fp:
+           nlines = len(fp.readlines())
+       print(nlines)
+
+Não fechar um recurso explicitamente pode deixá-lo aberto por muito
+mais tempo do que o esperado; isso pode causar problemas graves ao
+sair do Python. É ruim no CPython, mas é ainda pior no PyPy. Fechar
+recursos explicitamente torna uma aplicação mais determinística e mais
+confiável.
+
+
+Exemplo de erro de descritor de arquivo inválido
+================================================
+
+Script exibindo sua própria primeira linha:
+
+   import os
+
+   def main():
+       fp = open(__file__)
+       firstline = fp.readline()
+       print(firstline.rstrip())
+       os.close(fp.fileno())
+       # The file is closed implicitly
+
+   main()
+
+Por padrão, o Python não emite qualquer aviso:
+
+   $ python script.py
+   import os
+
+O Modo de Desenvolvimento do Python mostra uma "ResourceWarning" e
+registra um erro "Bad file descriptor" ao finalizar o objeto arquivo:
+
+   $ python -X dev script.py
+   import os
+   script.py:10: ResourceWarning: unclosed file <_io.TextIOWrapper name='script.py' mode='r' encoding='UTF-8'>
+     main()
+   ResourceWarning: Enable tracemalloc to get the object allocation traceback
+   Exception ignored in: <_io.TextIOWrapper name='script.py' mode='r' encoding='UTF-8'>
+   Traceback (most recent call last):
+     File "script.py", line 10, in <module>
+       main()
+   OSError: [Errno 9] Bad file descriptor
+
+"os.close(fp.fileno())" fecha o descritor de arquivo. Quando o
+finalizador de objeto arquivo tenta fechar o descritor de arquivo
+novamente, ele falha com o erro "Bad file descriptor". Um descritor de
+arquivo deve ser fechado apenas uma vez. Na pior das hipóteses,
+fechá-lo duas vezes pode causar um acidente (consulte bpo-18748 para
+um exemplo).
+
+A correção é remover a linha "os.close(fp.fileno())" ou abrir o
+arquivo com "closefd=False".

@@ -1,0 +1,387 @@
+Serviços Genéricos do Sistema Operacional
+*****************************************
+
+Os módulos descritos neste capítulo fornecem interfaces aos recursos
+do sistema operacional e que estão disponíveis em (quase) todos os
+sistemas operacionais, como arquivos e um relógio. As interfaces
+geralmente são modeladas após as interfaces Unix ou C, mas elas também
+estão disponíveis na maioria dos outros sistemas. Aqui temos uma visão
+geral:
+
+* "os" --- Diversas interfaces de sistema operacional
+
+  * Nomes de arquivos, argumentos de linha de comando e variáveis de
+    ambiente
+
+  * Modo UTF-8 do Python
+
+  * Parâmetros de processo
+
+  * Criação de objetos arquivos
+
+  * Operações dos descritores de arquivos
+
+    * Consultando o tamanho de um terminal
+
+    * Herança de descritores de arquivos
+
+  * Arquivos e diretórios
+
+    * Atributos estendidos do Linux
+
+  * Gerenciamento de processo
+
+  * Interface do agendador
+
+  * Diversas informações de sistema
+
+  * Números aleatórios
+
+* "io" --- Ferramentas principais para trabalhar com fluxos
+
+  * Visão Geral
+
+    * Text I/O
+
+    * Binary I/O
+
+    * Raw I/O
+
+  * Text Encoding
+
+    * Opt-in EncodingWarning
+
+  * High-level Module Interface
+
+  * hierarquia de classe
+
+    * I/O Base Classes
+
+    * Raw File I/O
+
+    * Buffered Streams
+
+    * Text I/O
+
+  * Performance
+
+    * Binary I/O
+
+    * Text I/O
+
+    * Multi-threading
+
+    * Reentrancy
+
+* "time" --- Acesso ao horário e conversões
+
+  * Funções
+
+  * Constantes de ID de Relógio
+
+  * Constantes de Fuso Horário
+
+* "argparse" --- Analisador sintático para opções de linha de comando,
+  argumentos e subcomandos
+
+  * Core Functionality
+
+  * Quick Links for add_argument()
+
+  * Exemplo
+
+    * Criando um analisador sintático
+
+    * Adicionando argumentos
+
+    * Análise de argumentos
+
+  * Objetos ArgumentParser
+
+    * prog
+
+    * usage
+
+    * description
+
+    * epilog
+
+    * parents
+
+    * formatter_class
+
+    * prefix_chars
+
+    * fromfile_prefix_chars
+
+    * argument_default
+
+    * allow_abbrev
+
+    * conflict_handler
+
+    * add_help
+
+    * exit_on_error
+
+  * O método add_argument()
+
+    * name ou flags
+
+    * action
+
+    * nargs
+
+    * const
+
+    * default
+
+    * tipo
+
+    * choices
+
+    * required
+
+    * help
+
+    * metavar
+
+    * dest
+
+    * Action classes
+
+  * The parse_args() method
+
+    * Option value syntax
+
+    * Argumentos inválidos
+
+    * Argumentos contendo "-"
+
+    * Argument abbreviations (prefix matching)
+
+    * Além do "sys.argv"
+
+    * O objeto Namespace
+
+  * Other utilities
+
+    * Sub-comandos
+
+    * Objetos FileType
+
+    * Grupos de Argumentos
+
+    * Exclusão Mútua
+
+    * Parser defaults
+
+    * Imprimindo a ajuda
+
+    * Análise parcial
+
+    * Customizing file parsing
+
+    * Métodos existentes
+
+    * Intermixed parsing
+
+  * Upgrading optparse code
+
+  * Exceções
+
+* "getopt" --- Analisador sintático no estilo C para opções de linha
+  de comando
+
+* "logging" --- Recurso de utilização do Logging para Python
+
+  * Objetos Logger
+
+  * Logging Levels
+
+  * Manipulação de Objetos
+
+  * Formatter Objects
+
+  * Filter Objects
+
+  * LogRecord Objects
+
+  * Atributos LogRecord
+
+  * LoggerAdapter Objects
+
+  * Thread Safety
+
+  * Funções de Nível de Módulo
+
+  * Module-Level Attributes
+
+  * Integration with the warnings module
+
+* "logging.config" --- Logging configuration
+
+  * Configuration functions
+
+  * Considerações de segurança
+
+  * Configuration dictionary schema
+
+    * Dictionary Schema Details
+
+    * Incremental Configuration
+
+    * Object connections
+
+    * User-defined objects
+
+    * Handler configuration order
+
+    * Access to external objects
+
+    * Access to internal objects
+
+    * Import resolution and custom importers
+
+    * Configuring QueueHandler and QueueListener
+
+  * Formato do arquivo de configuração
+
+* "logging.handlers" --- Tratadores de registro
+
+  * StreamHandler
+
+  * FileHandler
+
+  * NullHandler
+
+  * WatchedFileHandler
+
+  * BaseRotatingHandler
+
+  * RotatingFileHandler
+
+  * TimedRotatingFileHandler
+
+  * SocketHandler
+
+  * DatagramHandler
+
+  * SysLogHandler
+
+  * NTEventLogHandler
+
+  * SMTPHandler
+
+  * MemoryHandler
+
+  * HTTPHandler
+
+  * QueueHandler
+
+  * QueueListener
+
+* "getpass" --- Entrada de senha portátil
+
+* "curses" --- Gerenciador de terminal para visualizadores de células
+  de caracteres.
+
+  * Funções
+
+  * Window Objects
+
+  * Constantes
+
+* "curses.textpad" --- Text input widget for curses programs
+
+  * Textbox objects
+
+* "curses.ascii" --- Utilities for ASCII characters
+
+* "curses.panel" --- A panel stack extension for curses
+
+  * Funções
+
+  * Objetos Panel
+
+* "platform" ---  Access to underlying platform's identifying data
+
+  * Cross Platform
+
+  * Java Platform
+
+  * Windows Platform
+
+  * macOS Platform
+
+  * Plataformas Unix
+
+  * Linux Platforms
+
+* "errno" --- Standard errno system symbols
+
+* "ctypes" --- Uma biblioteca de funções externas para Python
+
+  * Tutorial ctypes
+
+    * Loading dynamic link libraries
+
+    * Accessing functions from loaded dlls
+
+    * Calling functions
+
+    * Fundamental data types
+
+    * Invocação de Funções, continuação
+
+    * Calling variadic functions
+
+    * Calling functions with your own custom data types
+
+    * Specifying the required argument types (function prototypes)
+
+    * Tipos de Retorno
+
+    * Passing pointers (or: passing parameters by reference)
+
+    * Structures and unions
+
+    * Structure/union alignment and byte order
+
+    * Bit fields in structures and unions
+
+    * Arrays
+
+    * Ponteiros
+
+    * Conversão de Tipos
+
+    * Tipos Incompletos
+
+    * Funções Callbacks
+
+    * Accessing values exported from dlls
+
+    * Surprises
+
+    * Variable-sized data types
+
+  * Referência ctypes
+
+    * Finding shared libraries
+
+    * Loading shared libraries
+
+    * Foreign functions
+
+    * Function prototypes
+
+    * Funções utilitárias
+
+    * Data types
+
+    * Fundamental data types
+
+    * Structured data types
+
+    * Arrays and pointers

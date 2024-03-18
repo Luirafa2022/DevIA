@@ -1,0 +1,214 @@
+"aifc" --- Lê e escreve arquivos AIFF e AIFC
+********************************************
+
+**Código-fonte:** Lib/aifc.py
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "aifc" foi desccontinuado (veja **PEP 594** para mais
+detalhes).
+
+======================================================================
+
+Este módulo fornece suporte para leitura e gravação de arquivos AIFF e
+AIFF-C. AIFF significa Audio Interchange File Format, um formato para
+armazenar amostras de áudio digital em um arquivo. AIFF-C é uma versão
+mais recente do formato que inclui a capacidade de compactar os dados
+de áudio.
+
+Arquivos de áudio têm vários parâmetros que descrevem os dados de
+áudio. A taxa de amostragem ou taxa de quadros é o número de vezes por
+segundo em que o som é amostrado. O número de canais indica se o áudio
+é mono, estéreo ou quadro. Cada quadro consiste em uma amostra por
+canal. O tamanho da amostra é o tamanho em bytes de cada amostra.
+Assim, um quadro consiste em "nchannels * samplesize" bytes e um
+segundo de áudio consiste em "nchannels * samplesize * framerate"
+bytes.
+
+Por exemplo, o áudio com qualidade de CD tem um tamanho de amostra de
+dois bytes (16 bits), usa dois canais (estéreo) e tem uma taxa de
+quadros de 44.100 quadros/segundo. Isto dá um tamanho de quadro de 4
+bytes (2*2), e o valor de um segundo ocupa 2*2*44100 bytes (176.400
+bytes).
+
+O módulo "aifc" define a seguinte função:
+
+aifc.open(file, mode=None)
+
+   Abre um arquivo AIFF ou AIFF-C e retorna uma instância de objeto
+   com os métodos descritos abaixo. O argumento *file* é uma string
+   nomeando um arquivo ou um *objeto arquivo*. *mode* deve ser "'r'"
+   ou "'rb'" quando o arquivo deve ser aberto para leitura, ou "'w'"
+   ou "'wb'" quando o arquivo deve ser aberto para escrita. Se
+   omitido, "file.mode" é usado se existir, caso contrário "'rb'" é
+   usado. Quando usado para escrita, o objeto arquivo deve ser
+   pesquisável, a menos que você saiba com antecedência quantas
+   amostras você irá escrever no total e usar "writeframesraw()" e
+   "setnframes()". A função "open()" pode ser usada em um bloco de
+   instrução "with". Quando o bloco "with" é concluído, o método
+   "close()" é chamado.
+
+   Alterado na versão 3.4: Suporte para a instrução "with" foi
+   adicionado.
+
+Objetos retornados por "open()" quando um arquivo é aberto para
+leitura têm os seguintes métodos:
+
+aifc.getnchannels()
+
+   Retorna o número de canais de áudio (1 para mono, 2 para estéreo).
+
+aifc.getsampwidth()
+
+   Retorna o tamanho em bytes de amostras individuais.
+
+aifc.getframerate()
+
+   Retorna a taxa de amostra (número de quadros de áudio por segundo).
+
+aifc.getnframes()
+
+   Retorna o número de quadros de áudio no arquivo.
+
+aifc.getcomptype()
+
+   Retorna um array de bytes de tamanho 4 descrevendo o tipo de
+   compressão usada no arquivo de áudio. Para arquivos AIFF, o valor
+   retornado é "b'NONE'".
+
+aifc.getcompname()
+
+   Retorna um array de bytes convertível para uma descrição legível
+   por humanos do tipo de compactação usado no arquivo de áudio. Para
+   arquivos AIFF, o valor retornado é "b'not compressed'".
+
+aifc.getparams()
+
+   Retorna uma "namedtuple()" "(nchannels, sampwidth, framerate,
+   nframes, comptype, compname)", equivalente à saída dos métodos
+   "get*()".
+
+aifc.getmarkers()
+
+   Retorna uma lista de marcadores no arquivo de áudio. Um marcador
+   consiste em uma tupla de três elementos. O primeiro é o ID da marca
+   (um inteiro), o segundo é a posição da marca nos quadros desde o
+   início dos dados (um inteiro), o terceiro é o nome da marca (uma
+   string).
+
+aifc.getmark(id)
+
+   Retorna a tupla como descrito em "getmarkers()" para a marca com o
+   *id* fornecido.
+
+aifc.readframes(nframes)
+
+   Lê e retorna os próximos *nframes* quadros do arquivo de áudio. Os
+   dados retornados são uma string contendo para cada quadro as
+   amostras descompactadas de todos os canais.
+
+aifc.rewind()
+
+   Reinicia o ponteiro de leitura. O próximo "readframes()" começará
+   do início.
+
+aifc.setpos(pos)
+
+   Procura o número do quadro especificado.
+
+aifc.tell()
+
+   Retorna o número do quadro atual.
+
+aifc.close()
+
+   Fecha o arquivo AIFF. Depois de chamar esse método, o objeto não
+   pode mais ser usado.
+
+Objetos retornados por "open()" quando um arquivo é aberto para
+escrita possuem todos os métodos acima, exceto "readframes()" e
+"setpos()". Além disso, os seguintes métodos existem. Os métodos
+"get*()" só podem ser chamados após os métodos "set*()"
+correspondentes terem sido chamados. Antes do primeiro "writeframes()"
+ou "writeframesraw()", todos os parâmetros, exceto o número de
+quadros, devem ser preenchidos.
+
+aifc.aiff()
+
+   Cria um arquivo AIFF. O padrão é que um arquivo AIFF-C seja criado,
+   a menos que o nome do arquivo termine em "'.aiff'", caso em que o
+   padrão é um arquivo AIFF.
+
+aifc.aifc()
+
+   Cria um arquivo AIFF-C. O padrão é que um arquivo AIFF-C seja
+   criado, a menos que o nome do arquivo termine em "'.aiff'", caso em
+   que o padrão é um arquivo AIFF.
+
+aifc.setnchannels(nchannels)
+
+   Especifica o número de canais no arquivo de áudio.
+
+aifc.setsampwidth(width)
+
+   Especifica o tamanho em bytes de amostras de áudio.
+
+aifc.setframerate(rate)
+
+   Especifica a frequência de amostragem em quadros por segundo.
+
+aifc.setnframes(nframes)
+
+   Especifica o número de quadros que devem ser escritos no arquivo de
+   áudio. Se este parâmetro não estiver configurado ou estiver
+   incorretamente configurado, o arquivo precisará ter suporte a
+   procura.
+
+aifc.setcomptype(type, name)
+
+   Especifica o tipo de compactação. Se não for especificado, os dados
+   de áudio não serão compactados. Em arquivos AIFF, a compactação não
+   é possível. O parâmetro de nome deve ser uma descrição legível por
+   humanos do tipo de compressão como uma array de bytes, o parâmetro
+   de tipo deve ser uma array de bytes de tamanho 4. Atualmente, há
+   suporte aos seguintes tipos de compactação: "b'NONE'", "b'ULAW'",
+   "b'ALAW'", "b'G722'".
+
+aifc.setparams(nchannels, sampwidth, framerate, comptype, compname)
+
+   Define todos os parâmetros acima de uma só vez. O argumento é uma
+   tupla que consiste em vários parâmetros. Isto significa que é
+   possível usar o resultado de uma chamada de "getparams()" como
+   argumento para "setparams()".
+
+aifc.setmark(id, pos, name)
+
+   Adiciona uma marca com o ID fornecido (maior que 0) e o nome dado
+   na posição determinada. Este método pode ser chamado a qualquer
+   momento antes de "close()".
+
+aifc.tell()
+
+   Retorna a posição atual de escrita no arquivo de saída. Útil em
+   combinação com "setmark()".
+
+aifc.writeframes(data)
+
+   Escreve dados no arquivo de saída. Este método só pode ser chamado
+   após os parâmetros do arquivo de áudio terem sido definidos.
+
+   Alterado na versão 3.4: Todo *objeto byte ou similar* agora é
+   aceito.
+
+aifc.writeframesraw(data)
+
+   Semelhante a "writeframes()", exceto que o cabeçalho do arquivo de
+   áudio não é atualizado.
+
+   Alterado na versão 3.4: Todo *objeto byte ou similar* agora é
+   aceito.
+
+aifc.close()
+
+   Fecha o arquivo AIFF. O cabeçalho do arquivo é atualizado para
+   refletir o tamanho real dos dados de áudio. Depois de chamar esse
+   método, o objeto não pode mais ser usado.

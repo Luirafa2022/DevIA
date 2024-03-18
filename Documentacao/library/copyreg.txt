@@ -1,0 +1,57 @@
+"copyreg" --- Registra funções de suporte "pickle"
+**************************************************
+
+**Código-fonte:** Lib/copyreg.py
+
+======================================================================
+
+O módulo "copyreg" oferece uma maneira de definir as funções usadas
+durante a remoção de objetos específicos. Os módulos "pickle" e "copy"
+usam essas funções ao selecionar/copiar esses objetos. O módulo
+fornece informações de configuração sobre construtores de objetos que
+não são classes. Esses construtores podem ser funções de fábrica ou
+instâncias de classes.
+
+copyreg.constructor(object)
+
+   Declara *object* para ser um construtor válido. Se *object* não for
+   chamável (e, portanto, não for válido como um construtor), levanta
+   "TypeError".
+
+copyreg.pickle(type, function, constructor_ob=None)
+
+   Declara que a *function* deve ser usada como uma função de
+   "redução" para objetos do tipo *type*. *function* deve retornar uma
+   string ou uma tupla contendo entre dois e seis elementos. Veja
+   "dispatch_table" para mais detalhes sobre a interface da
+   *function*.
+
+   O parâmetro *constructor_ob* é um recurso herdado e agora é
+   ignorado, mas se passado deve ser UM chamável.
+
+   Note que o atributo "dispatch_table" de um objeto pickler ou
+   subclasse de "pickle.Pickler" também podem ser usados para declarar
+   funções de redução.
+
+
+Exemplo
+=======
+
+O exemplo abaixo gostaria de mostrar como registrar uma função de
+pickle e como ela será usada:
+
+>>> import copyreg, copy, pickle
+>>> class C:
+...     def __init__(self, a):
+...         self.a = a
+...
+>>> def pickle_c(c):
+...     print("pickling a C instance...")
+...     return C, (c.a,)
+...
+>>> copyreg.pickle(C, pickle_c)
+>>> c = C(1)
+>>> d = copy.copy(c)  
+pickling a C instance...
+>>> p = pickle.dumps(c)  
+pickling a C instance...

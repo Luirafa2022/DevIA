@@ -1,0 +1,394 @@
+Índice de APIs de baixo nível
+*****************************
+
+Esta página lista todas as APIs de baixo nível do asyncio.
+
+
+Obtendo o laço de eventos
+=========================
+
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.get_running_loop()"                       | A função **preferida** para obter o laço de        |
+|                                                    | eventos em execução.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.get_event_loop()"                         | Get an event loop instance (running or current via |
+|                                                    | the current policy).                               |
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.set_event_loop()"                         | Define o laço de eventos como atual através da     |
+|                                                    | política atual.                                    |
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.new_event_loop()"                         | Cria um novo laço de eventos.                      |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Usando asyncio.get_running_loop().
+
+
+Métodos do laço de eventos
+==========================
+
+See also the main documentation section about the Métodos do laço de
+eventos.
+
+-[ Ciclo de vida ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.run_until_complete()"                        | Executa um Future/Task/aguardável até que esteja   |
+|                                                    | completo.                                          |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.run_forever()"                               | Executa o laço de eventos para sempre.             |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.stop()"                                      | Para o laço de eventos.                            |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.close()"                                     | Fecha o laço de eventos.                           |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.is_running()"                                | Retorna "True" se o laço de eventos estiver        |
+|                                                    | rodando.                                           |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.is_closed()"                                 | Retorna "True" se o laço de eventos estiver        |
+|                                                    | fechado.                                           |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.shutdown_asyncgens()"                | Fecha geradores assíncronos.                       |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Depuração ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.set_debug()"                                 | Habilita ou desabilita o modo de debug.            |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.get_debug()"                                 | Obtém o modo de debug atual.                       |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Agendando funções de retorno (callbacks) ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.call_soon()"                                 | Invoca uma função de retorno brevemente.           |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.call_soon_threadsafe()"                      | Uma variante segura para thread de                 |
+|                                                    | "loop.call_soon()".                                |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.call_later()"                                | Invoca uma função de retorno *após* o tempo        |
+|                                                    | especificado.                                      |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.call_at()"                                   | Invoca uma função de retorno *no* instante         |
+|                                                    | especificado.                                      |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Grupo de Thread/Processo ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.run_in_executor()"                   | Executa uma função vinculada à CPU ou outra que    |
+|                                                    | seja bloqueante em um executor                     |
+|                                                    | "concurrent.futures".                              |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.set_default_executor()"                      | Define o executor padrão para                      |
+|                                                    | "loop.run_in_executor()".                          |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Tasks e Futures ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.create_future()"                             | Cria um objeto "Future".                           |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.create_task()"                               | Agenda corrotina como uma "Task".                  |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.set_task_factory()"                          | Define uma factory usada por "loop.create_task()"  |
+|                                                    | para criar "Tasks".                                |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.get_task_factory()"                          | Obtém o factory "loop.create_task()" usado para    |
+|                                                    | criar "Tasks".                                     |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ DNS ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.getaddrinfo()"                       | Versão assíncrona de "socket.getaddrinfo()".       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.getnameinfo()"                       | Versão assíncrona de "socket.getnameinfo()".       |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Rede e IPC ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.create_connection()"                 | Abre uma conexão TCP.                              |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.create_server()"                     | Cria um servidor TCP.                              |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.create_unix_connection()"            | Abre uma conexão soquete Unix.                     |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.create_unix_server()"                | Cria um servidor soquete Unix.                     |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.connect_accepted_socket()"           | Envolve um "socket" em um par "(transport,         |
+|                                                    | protocol)".                                        |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.create_datagram_endpoint()"          | Abre uma conexão por datagrama (UDP).              |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sendfile()"                          | Envia um arquivo por meio de um transporte.        |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.start_tls()"                         | Atualiza uma conexão existente para TLS.           |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.connect_read_pipe()"                 | Envolve a leitura final de um encadeamento em um   |
+|                                                    | par "(transport, protocol)".                       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.connect_write_pipe()"                | Envolve a escrita final de um encadeamento em um   |
+|                                                    | par "(transport, protocol)".                       |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Soquetes ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_recv()"                         | Recebe dados do "socket".                          |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_recv_into()"                    | Recebe dados do "socket" em um buffer.             |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_recvfrom()"                     | Receive a datagram from the "socket".              |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_recvfrom_into()"                | Receive a datagram from the "socket" into a        |
+|                                                    | buffer.                                            |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_sendall()"                      | Envia dados para o "socket".                       |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_sendto()"                       | Send a datagram via the "socket" to the given      |
+|                                                    | address.                                           |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_connect()"                      | Conecta ao "socket".                               |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_accept()"                       | Aceita uma conexão do "socket".                    |
++----------------------------------------------------+----------------------------------------------------+
+| "await" "loop.sock_sendfile()"                     | Envia um arquivo usando o "socket".                |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.add_reader()"                                | Começa a observar um descritor de arquivo,         |
+|                                                    | aguardando por disponibilidade de leitura.         |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.remove_reader()"                             | Interrompe o monitoramento de um descritor de      |
+|                                                    | arquivo, que aguarda disponibilidade de leitura.   |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.add_writer()"                                | Começa a observar um descritor de arquivo,         |
+|                                                    | aguardando por disponibilidade para escrita.       |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.remove_writer()"                             | Interrompe o monitoramento de um descritor de      |
+|                                                    | arquivo, que aguarda disponibilidade para escrita. |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Sinais Unix ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.add_signal_handler()"                        | Adiciona um tratador para um "signal".             |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.remove_signal_handler()"                     | Remove um tratador para um "signal".               |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Subprocessos ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.subprocess_exec()"                           | Inicia um subprocesso.                             |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.subprocess_shell()"                          | Inicia um subprocesso a partir de um comando       |
+|                                                    | shell.                                             |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Tratamento de erros ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "loop.call_exception_handler()"                    | Chama o tratamento de exceção.                     |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.set_exception_handler()"                     | Define um novo tratador de exceção.                |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.get_exception_handler()"                     | Obtém o tratador de exceção atual.                 |
++----------------------------------------------------+----------------------------------------------------+
+| "loop.default_exception_handler()"                 | A implementação padrão do tratador de exceção.     |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Exemplos ]-
+
+* Using asyncio.new_event_loop() and loop.run_forever().
+
+* Usando loop.call_later().
+
+* Usando "loop.create_connection()" para implementar um cliente-eco.
+
+* Usando "loop.create_connection()" para conectar a um soquete.
+
+* Usando add_reader() para monitorar um descritor de arquivo para
+  eventos de leitura.
+
+* Usando loop.add_signal_handler().
+
+* Usando loop.subprocess_exec().
+
+
+Transportes
+===========
+
+Todos os transportes implementam os seguintes métodos:
+
++----------------------------------------------------+----------------------------------------------------+
+| "transport.close()"                                | Fecha o transporte.                                |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.is_closing()"                           | Retorna "True" se o transporte estiver fechando ou |
+|                                                    | estiver fechado.                                   |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_extra_info()"                       | Solicita informação a respeito do transporte.      |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.set_protocol()"                         | Define um novo protocolo.                          |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_protocol()"                         | Retorna o protocolo atual.                         |
++----------------------------------------------------+----------------------------------------------------+
+
+Transportes que podem receber dados (TCP e conexões Unix,
+encadeamentos, etc). Retornado a partir de métodos como
+"loop.create_connection()", "loop.create_unix_connection()",
+"loop.connect_read_pipe()", etc:
+
+-[ Realiza leitura de Transportes ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "transport.is_reading()"                           | Retorna "True" se o transporte estiver recebendo.  |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.pause_reading()"                        | Pausa o recebimento.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.resume_reading()"                       | Continua o recebimento.                            |
++----------------------------------------------------+----------------------------------------------------+
+
+Transportes que podem enviar dados (TCP e conexões Unix,
+encadeamentos, etc). Retornado a partir de métodos como
+"loop.create_connection()", "loop.create_unix_connection()",
+"loop.connect_write_pipe()", etc:
+
+-[ Realiza escrita de Transportes ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "transport.write()"                                | Escreve dados para o transporte.                   |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.writelines()"                           | Escreve buffers para o transporte.                 |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.can_write_eof()"                        | Retorna "True" se o transporte suporta o envio de  |
+|                                                    | EOF.                                               |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.write_eof()"                            | Fecha e envia EOF após descarregar dados que       |
+|                                                    | estavam no buffer.                                 |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.abort()"                                | Fecha o transporte imediatamente.                  |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_write_buffer_size()"                | Return the current size of the output buffer.      |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_write_buffer_limits()"              | Retorna marcas d'agua alta e baixa para controle   |
+|                                                    | do fluxo de escrita.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.set_write_buffer_limits()"              | Define novas marcas d'agua alta e baixa para       |
+|                                                    | controle do fluxo de escrita.                      |
++----------------------------------------------------+----------------------------------------------------+
+
+Transporte retornado por "loop.create_datagram_endpoint()":
+
+-[ Transportes de datagrama ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "transport.sendto()"                               | Envia dados para o par remoto.                     |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.abort()"                                | Fecha o transporte imediatamente.                  |
++----------------------------------------------------+----------------------------------------------------+
+
+Abstração de transporte de baixo nível sobre subprocessos. Retornado
+por "loop.subprocess_exec()" e "loop.subprocess_shell()":
+
+-[ Transportes de Subprocesso ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_pid()"                              | Retorna o process id do subprocesso.               |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_pipe_transport()"                   | Retorna o transporte para o encadeamento de        |
+|                                                    | comunicação requisitada (*stdin*, *stdout*, ou     |
+|                                                    | *stderr*).                                         |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.get_returncode()"                       | Retorna o código de retorno do subprocesso.        |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.kill()"                                 | Mata o subprocesso.                                |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.send_signal()"                          | Envia um sinal para o subprocesso.                 |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.terminate()"                            | Interrompe o  subprocesso.                         |
++----------------------------------------------------+----------------------------------------------------+
+| "transport.close()"                                | Mata o subprocesso e fecha todos os encadeamentos. |
++----------------------------------------------------+----------------------------------------------------+
+
+
+Protocolos
+==========
+
+Classes de protocolos podem implementar os seguintes **métodos de
+função de retorno**:
+
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "connection_made()"                     | Chamado quando uma conexão é estabelecida.         |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "connection_lost()"                     | Chamado quanto a conexão é perdida ou fechada.     |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "pause_writing()"                       | Chamado quando o buffer de transporte ultrapassa a |
+|                                                    | marca de nível alto d'agua.                        |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "resume_writing()"                      | Chamado quando o buffer de transporte drena abaixo |
+|                                                    | da marca de nível baixo d'agua.                    |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Protocolos de Streaming (TCP, Soquetes Unix, Encadeamentos) ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "data_received()"                       | Chamado quando algum dado é recebido.              |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "eof_received()"                        | Chamado quando um EOF é recebido.                  |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Protocolos de Streaming Bufferizados ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "get_buffer()"                          | Chamada para alocar um novo buffer para            |
+|                                                    | recebimento.                                       |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "buffer_updated()"                      | Chamado quando o buffer foi atualizado com os      |
+|                                                    | dados recebidos.                                   |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "eof_received()"                        | Chamado quando um EOF é recebido.                  |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Protocolos de Datagramas ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "datagram_received()"                   | Chamado quando um datagrama é recebido.            |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "error_received()"                      | Chamado quando uma operação de envio ou            |
+|                                                    | recebimento anterior levanta um "OSError".         |
++----------------------------------------------------+----------------------------------------------------+
+
+-[ Protocolos de Subprocesso ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "pipe_data_received()"                  | Chamado quando o processo filho escreve dados no   |
+|                                                    | seu encadeamento *stdout* ou *stderr*.             |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "pipe_connection_lost()"                | Chamado quando um dos encadeamentos comunicando    |
+|                                                    | com o processo filho é fechado.                    |
++----------------------------------------------------+----------------------------------------------------+
+| "callback" "process_exited()"                      | Called when the child process has exited. It can   |
+|                                                    | be called before "pipe_data_received()" and        |
+|                                                    | "pipe_connection_lost()" methods.                  |
++----------------------------------------------------+----------------------------------------------------+
+
+
+Políticas de laço de eventos
+============================
+
+Política é um mecanismo de baixo nível para alterar o comportamento de
+funções, similar a "asyncio.get_event_loop()". Veja também a seção
+principal de políticas para mais detalhes.
+
+-[ Acessando Políticas ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.get_event_loop_policy()"                  | Retorna a política de todo o processo atual.       |
++----------------------------------------------------+----------------------------------------------------+
+| "asyncio.set_event_loop_policy()"                  | Define uma nova política para todo o processo.     |
++----------------------------------------------------+----------------------------------------------------+
+| "AbstractEventLoopPolicy"                          | Classe base para objetos de política.              |
++----------------------------------------------------+----------------------------------------------------+

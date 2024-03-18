@@ -1,0 +1,190 @@
+Tipos de Dados
+**************
+
+Os módulos descritos neste capítulo fornecem uma variedade de tipos de
+dados especializados, como datas e horas, vetores de tipo fixo, filas
+de heap, filas de extremidade dupla e enumerações.
+
+O Python também fornece alguns tipos de dados embutidos, em especial
+"dict", "list", "set" e "frozenset" e "tuple". A classe "str" é usada
+para armazenar strings Unicode, e as classes "bytes" e "bytearray" são
+usadas para armazenar dados binários.
+
+Os seguintes módulos estão documentados neste capítulo:
+
+* "datetime" --- Tipos básicos de data e hora
+
+  * Objetos Conscientes e Ingênuos
+
+  * Constantes
+
+  * Tipos disponíveis
+
+    * Propriedades Comuns
+
+    * Determinando se um Objeto é Consciente ou Ingênuo
+
+  * Objetos "timedelta"
+
+    * Exemplos de uso: "timedelta"
+
+  * Objetos "date"
+
+    * Exemplos de uso: "date"
+
+  * Objetos "datetime"
+
+    * Exemplos de uso: "datetime"
+
+  * Objetos "time"
+
+    * Exemplos de uso: "time"
+
+  * Objetos "tzinfo"
+
+  * Objetos "timezone"
+
+  * "strftime()" and "strptime()" Behavior
+
+    * "strftime()" and "strptime()" Format Codes
+
+    * Detalhes técnicos
+
+* "zoneinfo" --- Suporte a fuso horário da IANA
+
+  * Usando "ZoneInfo"
+
+  * Data sources
+
+    * Configuring the data sources
+
+      * Compile-time configuration
+
+      * Configuração do ambiente
+
+      * Runtime configuration
+
+  * The "ZoneInfo" class
+
+    * String representations
+
+    * Pickle serialization
+
+  * Funções
+
+  * Globals
+
+  * Exceptions and warnings
+
+* "calendar" --- General calendar-related functions
+
+  * Uso da linha de comando
+
+* "collections" --- Tipos de dados de contêineres
+
+  * Objetos "ChainMap"
+
+    * Exemplos e Receitas de "ChainMap"
+
+  * Objetos "Counter"
+
+  * Objetos "deque"
+
+    * Receitas de "deque"
+
+  * Objetos "defaultdict"
+
+    * Exemplos de "defaultdict"
+
+  * "namedtuple()" Factory Function for Tuples with Named Fields
+
+  * Objetos "OrderedDict"
+
+    * "OrderedDict" Examples and Recipes
+
+  * "UserDict" objects
+
+  * "UserList" objects
+
+  * "UserString" objects
+
+* "collections.abc" --- Classes Base Abstratas para Contêineres
+
+  * Classes Base Abstratas de Coleções
+
+  * Collections Abstract Base Classes -- Detailed Descriptions
+
+  * Exemplos e receitas
+
+* "heapq" --- Heap queue algorithm
+
+  * Exemplos básicos
+
+  * Priority Queue Implementation Notes
+
+  * Teoria
+
+* "bisect" --- Algoritmo de bisseção de vetor
+
+  * Observações sobre desempenho
+
+  * Pesquisando em listas ordenadas
+
+  * Exemplos
+
+* "array"--- Vetores eficientes de valores numéricos
+
+* "weakref" --- Weak references
+
+  * Objetos de referência fraca
+
+  * Exemplo
+
+  * Objetos finalizadores
+
+  * Comparing finalizers with "__del__()" methods
+
+* "types" --- Criação de tipos dinâmicos e nomes para tipos embutidos
+
+  * Criação de tipos dinâmicos
+
+  * Tipos padrão do interpretador
+
+  * Classes e funções de utilidades adicionais
+
+  * Funções de utilidade de corrotina
+
+* "copy" --- Operações de cópia profunda e cópia rasa
+
+* "pprint" --- Impressão Bonita de Dados
+
+  * Funções
+
+  * PrettyPrinter Objects
+
+  * Exemplo
+
+* "reprlib" --- Implementação alternativa à "repr()"
+
+  * Objetos Repr
+
+  * Subclassing Repr Objects
+
+* "enum" --- Suporte a enumerações
+
+  * Conteúdo do módulo
+
+  * Tipos de Dados
+
+    * Nomes "__dunder__" suportados
+
+    * Nomes "_sunder_" suportados
+
+  * Utilities and Decorators
+
+  * Notas
+
+* "graphlib" --- Funcionalidade para operar com estruturas do tipo
+  grafo
+
+  * Exceções

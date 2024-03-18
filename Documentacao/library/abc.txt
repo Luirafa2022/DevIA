@@ -1,0 +1,351 @@
+"abc" --- Classes Base Abstratas
+********************************
+
+**Código-fonte:** Lib/abc.py
+
+======================================================================
+
+Este módulo fornece a infraestrutura para definir *classes base
+abstratas* (CBAs. Sigla em inglês ABC, de abstract base class) em
+Python, como delineado em **PEP 3119**; veja o PEP para entender o
+porquê isto foi adicionado ao Python. (Veja também **PEP 3141** e o
+módulo "numbers" sobre uma hierarquia de tipo para números baseado nas
+CBAs.)
+
+The "collections" module has some concrete classes that derive from
+ABCs; these can, of course, be further derived. In addition, the
+"collections.abc" submodule has some ABCs that can be used to test
+whether a class or instance provides a particular interface, for
+example, if it is *hashable* or if it is a *mapping*.
+
+Este módulo fornece a metaclasse "ABCMeta" para definir CBAs e uma
+classe auxiliar "ABC" para alternativamente definir CBAs através de
+herança:
+
+class abc.ABC
+
+   A helper class that has "ABCMeta" as its metaclass.  With this
+   class, an abstract base class can be created by simply deriving
+   from "ABC" avoiding sometimes confusing metaclass usage, for
+   example:
+
+      from abc import ABC
+
+      class MyABC(ABC):
+          pass
+
+   Note that the type of "ABC" is still "ABCMeta", therefore
+   inheriting from "ABC" requires the usual precautions regarding
+   metaclass usage, as multiple inheritance may lead to metaclass
+   conflicts. One may also define an abstract base class by passing
+   the metaclass keyword and using "ABCMeta" directly, for example:
+
+      from abc import ABCMeta
+
+      class MyABC(metaclass=ABCMeta):
+          pass
+
+   Novo na versão 3.4.
+
+class abc.ABCMeta
+
+   Metaclasse para definir Classe Base Abstrata (CBAs).
+
+   Use esta metaclasse para criar uma CBA. Uma CBA pode ser
+   diretamente subclasseada, e então agir como uma classe misturada.
+   Você também pode registrar classes concretas não relacionadas (até
+   mesmo classes embutidas) e CBAs não relacionadas como "subclasses
+   virtuais" -- estas e suas descendentes serão consideradas
+   subclasses da CBA de registro pela função embutida "issubclass()",
+   mas a CBA de registro não irá aparecer na ORM (Ordem de Resolução
+   do Método) e nem as implementações do método definidas pela CBA de
+   registro será chamável (nem mesmo via "super()"). [1]
+
+   Classes created with a metaclass of "ABCMeta" have the following
+   method:
+
+   register(subclass)
+
+      Registrar *subclasse* como uma "subclasse virtual" desta CBA.
+      Por exemplo:
+
+         from abc import ABC
+
+         class MyABC(ABC):
+             pass
+
+         MyABC.register(tuple)
+
+         assert issubclass(tuple, MyABC)
+         assert isinstance((), MyABC)
+
+      Alterado na versão 3.3: Retorna a subclasse registrada, para
+      permitir o uso como um decorador de classe.
+
+      Alterado na versão 3.4: To detect calls to "register()", you can
+      use the "get_cache_token()" function.
+
+   Você também pode sobrepor este método em uma classe base abstrata:
+
+   __subclasshook__(subclass)
+
+      (Deve obrigatoriamente ser definido como um método de classe.)
+
+      Check whether *subclass* is considered a subclass of this ABC.
+      This means that you can customize the behavior of "issubclass()"
+      further without the need to call "register()" on every class you
+      want to consider a subclass of the ABC.  (This class method is
+      called from the "__subclasscheck__()" method of the ABC.)
+
+      This method should return "True", "False" or "NotImplemented".
+      If it returns "True", the *subclass* is considered a subclass of
+      this ABC. If it returns "False", the *subclass* is not
+      considered a subclass of this ABC, even if it would normally be
+      one.  If it returns "NotImplemented", the subclass check is
+      continued with the usual mechanism.
+
+   Para uma demonstração destes conceitos, veja este exemplo de
+   definição CBA:
+
+      class Foo:
+          def __getitem__(self, index):
+              ...
+          def __len__(self):
+              ...
+          def get_iterator(self):
+              return iter(self)
+
+      class MyIterable(ABC):
+
+          @abstractmethod
+          def __iter__(self):
+              while False:
+                  yield None
+
+          def get_iterator(self):
+              return self.__iter__()
+
+          @classmethod
+          def __subclasshook__(cls, C):
+              if cls is MyIterable:
+                  if any("__iter__" in B.__dict__ for B in C.__mro__):
+                      return True
+              return NotImplemented
+
+      MyIterable.register(Foo)
+
+   The ABC "MyIterable" defines the standard iterable method,
+   "__iter__()", as an abstract method.  The implementation given here
+   can still be called from subclasses.  The "get_iterator()" method
+   is also part of the "MyIterable" abstract base class, but it does
+   not have to be overridden in non-abstract derived classes.
+
+   O método de classe "__subclasshook__()" definido aqui diz que
+   qualquer classe que tenha um método "__iter__()" em seu "__dict__"
+   (ou no de uma de suas classes base, acessados via lista "__mro__")
+   é considerada uma "MyIterable" também.
+
+   Finally, the last line makes "Foo" a virtual subclass of
+   "MyIterable", even though it does not define an "__iter__()" method
+   (it uses the old-style iterable protocol, defined in terms of
+   "__len__()" and "__getitem__()").  Note that this will not make
+   "get_iterator" available as a method of "Foo", so it is provided
+   separately.
+
+The "abc" module also provides the following decorator:
+
+@abc.abstractmethod
+
+   Um decorador indicando métodos abstratos.
+
+   Using this decorator requires that the class's metaclass is
+   "ABCMeta" or is derived from it.  A class that has a metaclass
+   derived from "ABCMeta" cannot be instantiated unless all of its
+   abstract methods and properties are overridden.  The abstract
+   methods can be called using any of the normal 'super' call
+   mechanisms.  "abstractmethod()" may be used to declare abstract
+   methods for properties and descriptors.
+
+   Dynamically adding abstract methods to a class, or attempting to
+   modify the abstraction status of a method or class once it is
+   created, are only supported using the "update_abstractmethods()"
+   function.  The "abstractmethod()" only affects subclasses derived
+   using regular inheritance; "virtual subclasses" registered with the
+   ABC's "register()" method are not affected.
+
+   When "abstractmethod()" is applied in combination with other method
+   descriptors, it should be applied as the innermost decorator, as
+   shown in the following usage examples:
+
+      class C(ABC):
+          @abstractmethod
+          def my_abstract_method(self, arg1):
+              ...
+          @classmethod
+          @abstractmethod
+          def my_abstract_classmethod(cls, arg2):
+              ...
+          @staticmethod
+          @abstractmethod
+          def my_abstract_staticmethod(arg3):
+              ...
+
+          @property
+          @abstractmethod
+          def my_abstract_property(self):
+              ...
+          @my_abstract_property.setter
+          @abstractmethod
+          def my_abstract_property(self, val):
+              ...
+
+          @abstractmethod
+          def _get_x(self):
+              ...
+          @abstractmethod
+          def _set_x(self, val):
+              ...
+          x = property(_get_x, _set_x)
+
+   In order to correctly interoperate with the abstract base class
+   machinery, the descriptor must identify itself as abstract using
+   "__isabstractmethod__". In general, this attribute should be "True"
+   if any of the methods used to compose the descriptor are abstract.
+   For example, Python's built-in "property" does the equivalent of:
+
+      class Descriptor:
+          ...
+          @property
+          def __isabstractmethod__(self):
+              return any(getattr(f, '__isabstractmethod__', False) for
+                         f in (self._fget, self._fset, self._fdel))
+
+   Nota:
+
+     Diferente de métodos abstratos Java, esses métodos abstratos
+     podem ter uma implementação. Esta implementação pode ser chamada
+     via mecanismo da "super()" da classe que a substitui. Isto pode
+     ser útil como um ponto final para uma super chamada em um
+     framework que usa herança múltipla cooperativa.
+
+The "abc" module also supports the following legacy decorators:
+
+@abc.abstractclassmethod
+
+   Novo na versão 3.2.
+
+   Obsoleto desde a versão 3.3: Agora é possível usar "classmethod"
+   com "abstractmethod()", tornando redundante este decorador.
+
+   Uma subclasse da "classmethod()" embutida, indicando um método de
+   classe abstrato. Caso contrário, é similar à "abstractmethod()".
+
+   Este caso especial está descontinuado, pois o decorador da
+   "classmethod()" está agora corretamente identificado como abstrato
+   quando aplicado a um método abstrato:
+
+      class C(ABC):
+          @classmethod
+          @abstractmethod
+          def my_abstract_classmethod(cls, arg):
+              ...
+
+@abc.abstractstaticmethod
+
+   Novo na versão 3.2.
+
+   Obsoleto desde a versão 3.3: Agora é possível usar "staticmethod"
+   com "abstractmethod()", tornando redundante este decorador.
+
+   Uma subclasse da "staticmethod()" embutida, indicando um método
+   estático abstrato. Caso contrário, ela é similar à
+   "abstractmethod()".
+
+   Este caso especial está descontinuado, pois o decorador da
+   "staticmethod()" está agora corretamente identificado como abstrato
+   quando aplicado a um método abstrato:
+
+      class C(ABC):
+          @staticmethod
+          @abstractmethod
+          def my_abstract_staticmethod(arg):
+              ...
+
+@abc.abstractproperty
+
+   Obsoleto desde a versão 3.3: Agora é possível usar "property",
+   "property.getter()", "property.setter()" e "property.deleter()" com
+   "abstractmethod()", tornando redundante este decorador.
+
+   Uma subclasse da "property()" embutida, indicando uma propriedade
+   abstrata.
+
+   Este caso especial está descontinuado, pois o decorador da
+   "property()" está agora corretamente identificado como abstrato
+   quando aplicado a um método abstrato:
+
+      class C(ABC):
+          @property
+          @abstractmethod
+          def my_abstract_property(self):
+              ...
+
+   O exemplo acima define uma propriedade somente leitura; você também
+   pode definir uma propriedade abstrata de leitura e escrita marcando
+   apropriadamente um ou mais dos métodos subjacentes como abstratos:
+
+      class C(ABC):
+          @property
+          def x(self):
+              ...
+
+          @x.setter
+          @abstractmethod
+          def x(self, val):
+              ...
+
+   Se apenas alguns componentes são abstratos, apenas estes
+   componentes precisam ser atualizados para criar uma propriedade
+   concreta em uma subclasse:
+
+      class D(C):
+          @C.x.setter
+          def x(self, val):
+              ...
+
+The "abc" module also provides the following functions:
+
+abc.get_cache_token()
+
+   Retorna o token de cache da classe base abstrata atual.
+
+   O token é um objeto opaco (que suporta teste de igualdade)
+   identificando a versão atual do cache da classe base abstrata para
+   subclasses virtuais. O token muda a cada chamada ao
+   "ABCMeta.register()" em qualquer CBA.
+
+   Novo na versão 3.4.
+
+abc.update_abstractmethods(cls)
+
+   Uma função para recalcular o status de abstração de uma classe
+   abstrata. Esta função deve ser chamada se os métodos abstratos de
+   uma classe foram implementados ou alterados após sua criação.
+   Normalmente, essa função deve ser chamada de dentro de um decorador
+   de classe.
+
+   Retorna *cls*, para permitir o uso como decorador de classe.
+
+   Se *cls* não for uma instância de "ABCMeta", não faz nada.
+
+   Nota:
+
+     Esta função presume que as superclasses de *cls* já estão
+     atualizadas. Ele não atualiza nenhuma subclasse.
+
+   Novo na versão 3.10.
+
+-[ Notas de rodapé ]-
+
+[1] Programadores C++ devem notar que o conceito da classe base
+    virtual do Python não é o mesmo que o de C++.

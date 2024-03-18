@@ -1,0 +1,316 @@
+Ferramentas de Desenvolvimento
+******************************
+
+Os módulos descritos neste capítulo ajudam você a escrever softwares.
+Por exemplo, o módulo "pydoc" recebe um módulo e gera documentação com
+base no conteúdo do módulo. Os módulos "doctest" e "unittest" contêm
+frameworks para escrever testes unitários que automaticamente
+exercitam código e verificam se a saída esperada é produzida. **2to3**
+pode traduzir o código-fonte do Python 2.x para um código válido do
+Python 3.x.
+
+A lista de módulos descritos neste capítulo é:
+
+* "typing" --- Suporte para dicas de tipo
+
+  * PEPs Relevantes
+
+  * Apelidos de tipo
+
+  * NewType
+
+  * Anotações de objetos chamáveis
+
+  * Genéricos
+
+  * Anotando tuplas
+
+  * O tipo de objetos de classe
+
+  * Tipos genéricos definidos pelo usuário
+
+  * O tipo "Any"
+
+  * Subtipagem nominal vs estrutural
+
+  * Conteúdo do módulo
+
+    * Tipos primitivos especiais
+
+      * Tipos especiais
+
+      * Formas especiais
+
+      * Criando tipos genéricos e apelidos de tipo
+
+      * Outras diretivas especiais
+
+    * Protocolos
+
+    * ABCs para trabalhar com IO
+
+    * Funções e decoradores
+
+    * Introspection helpers
+
+    * Constante
+
+    * Deprecated aliases
+
+      * Aliases to built-in types
+
+      * Aliases to types in "collections"
+
+      * Aliases to other concrete types
+
+      * Aliases to container ABCs in "collections.abc"
+
+      * Aliases to asynchronous ABCs in "collections.abc"
+
+      * Aliases to other ABCs in "collections.abc"
+
+      * Aliases to "contextlib" ABCs
+
+  * Cronograma de Descontinuação dos Principais Recursos
+
+* "pydoc" --- Gerador de documentação e sistema de ajuda online
+
+* Modo de Desenvolvimento do Python
+
+  * Efeitos do Modo de Desenvolvimento do Python
+
+  * Exemplo de ResourceWarning
+
+  * Exemplo de erro de descritor de arquivo inválido
+
+* "doctest" --- Teste exemplos interativos de Python
+
+  * Uso simples: verificando exemplos em Docstrings
+
+  * Utilização comum: Verificando exemplos em um arquivo de texto
+
+  * Como funciona
+
+    * Which Docstrings Are Examined?
+
+    * How are Docstring Examples Recognized?
+
+    * What's the Execution Context?
+
+    * What About Exceptions?
+
+    * Flags opcionais
+
+    * Directives
+
+    * Avisos
+
+  * Basic API
+
+  * API do Unittest
+
+  * Advanced API
+
+    * DocTest Objects
+
+    * Example Objects
+
+    * DocTestFinder objects
+
+    * DocTestParser objects
+
+    * DocTestRunner objects
+
+    * OutputChecker objects
+
+  * Depuração
+
+  * Soapbox
+
+* "unittest" --- Framework de Testes Unitários
+
+  * Exemplo Básico
+
+  * Interface de Linha de Comando
+
+    * Opções de linha de comando
+
+  * Test Discovery
+
+  * Organizando código teste
+
+  * Reutilizando códigos de teste antigos
+
+  * Ignorando testes e falhas esperadas
+
+  * Distinguindo iterações de teste utilizando subtestes
+
+  * Classes e funções
+
+    * Casos de teste
+
+    * Grouping tests
+
+    * Carregando e executando testes
+
+      * load_tests Protocol
+
+  * Classes e Módulos de Definição de Contexto
+
+    * setUpClass and tearDownClass
+
+    * setUpModule and tearDownModule
+
+  * Tratamento de sinal
+
+* "unittest.mock" --- biblioteca de objeto mock
+
+  * Guia Rápido
+
+  * A classe Mock
+
+    * Fazendo chamadas
+
+    * Deletando Atributos
+
+    * Nomes de Mock e o atributo *name*
+
+    * Anexando Mocks como Atributos
+
+  * Os criadores de patches
+
+    * patch
+
+    * patch.object
+
+    * patch.dict
+
+    * patch.multiple
+
+    * métodos do patch: *start* e *stop*
+
+    * patch de embutidos
+
+    * TEST_PREFIX
+
+    * Aninhando Decoradores Patch
+
+    * Onde fazer patch
+
+    * Patching Descriptors and Proxy Objects
+
+  * MagicMock and magic method support
+
+    * Simulando Métodos Mágicos
+
+    * Magic Mock
+
+  * Ajudantes
+
+    * sentinel
+
+    * DEFAULT
+
+    * chamada
+
+    * create_autospec
+
+    * ANY
+
+    * FILTER_DIR
+
+    * mock_open
+
+    * Especificação automática
+
+    * Vedando mocks
+
+* "unittest.mock" --- primeiros passos
+
+  * Usando Mock
+
+    * Métodos de aplicação de patches em Mock
+
+    * Mock for Method Calls on an Object
+
+    * Mocking Classes
+
+    * Nomeando os mocks
+
+    * Tracking all Calls
+
+    * Setting Return Values and Attributes
+
+    * Raising exceptions with mocks
+
+    * Side effect functions and iterables
+
+    * Mocking asynchronous iterators
+
+    * Mocking asynchronous context manager
+
+    * Creating a Mock from an Existing Object
+
+    * Using side_effect to return per file content
+
+  * Patch Decorators
+
+  * Further Examples
+
+    * Mocking chained calls
+
+    * Partial mocking
+
+    * Mocking a Generator Method
+
+    * Applying the same patch to every test method
+
+    * Mocking Unbound Methods
+
+    * Checking multiple calls with mock
+
+    * Coping with mutable arguments
+
+    * Nesting Patches
+
+    * Mocking a dictionary with MagicMock
+
+    * Mock subclasses and their attributes
+
+    * Mocking imports with patch.dict
+
+    * Tracking order of calls and less verbose call assertions
+
+    * More complex argument matching
+
+* 2to3 --- Tradução Automatizada de Código Python 2 para 3
+
+  * Usando o 2to3
+
+  * Fixadores
+
+  * "lib2to3" --- biblioteca do 2to3
+
+* "test" --- Pacote de Testes de Regressão do Python
+
+  * Escrever testes unitários para o pacote "test"
+
+  * Executando testes usando a interface de linha de comando
+
+* "test.support" --- Utilitários para o conjunto de teste do Python
+
+* "test.support.socket_helper" --- Utilities for socket tests
+
+* "test.support.script_helper" --- Utilities for the Python execution
+  tests
+
+* "test.support.bytecode_helper" --- Ferramentas de suporte para
+  testar a geração correta de bytecode
+
+* "test.support.threading_helper" --- Utilities for threading tests
+
+* "test.support.os_helper" --- Utilities for os tests
+
+* "test.support.import_helper" --- Utilities for import tests
+
+* "test.support.warnings_helper" --- Utilities for warnings tests

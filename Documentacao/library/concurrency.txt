@@ -1,0 +1,181 @@
+Execução Concorrente
+********************
+
+Os módulos descritos neste capítulo fornecem suporte a execução
+simultânea de código. A escolha apropriada da ferramenta dependerá da
+tarefa a ser executada (CPU bound ou IO bound) e do estilo de
+desenvolvimento preferencial (multitarefa cooperativa orientada a
+eventos versus multitarefa preemptiva). Eis uma visão geral:
+
+* "threading" --- Paralelismo baseado em Thread
+
+  * Thread-Local Data
+
+  * Thread Objects
+
+  * Lock Objects
+
+  * Objetos RLock
+
+  * Condition Objects
+
+  * Semaphore Objects
+
+    * Exemplo "Semaphore"
+
+  * Event Objects
+
+  * Objetos Timer
+
+  * Barrier Objects
+
+  * Using locks, conditions, and semaphores in the "with" statement
+
+* "multiprocessing" --- Paralelismo baseado em processo
+
+  * Introdução
+
+    * A classe "Process"
+
+    * Contextos e métodos de inicialização
+
+    * Trocando objetos entre processos
+
+    * Sincronização entre processos
+
+    * Compartilhando estado entre processos
+
+    * Using a pool of workers
+
+  * Referência
+
+    * "Process" and exceptions
+
+    * Pipes and Queues
+
+    * Diversos
+
+    * Connection Objects
+
+    * Synchronization primitives
+
+    * Shared "ctypes" Objects
+
+      * The "multiprocessing.sharedctypes" module
+
+    * Gerenciadores
+
+      * Customized managers
+
+      * Using a remote manager
+
+    * Proxy Objects
+
+      * Cleanup
+
+    * Process Pools
+
+    * Listeners and Clients
+
+      * Formatos de Endereços
+
+    * Authentication keys
+
+    * Gerando logs
+
+    * The "multiprocessing.dummy" module
+
+  * Programming guidelines
+
+    * All start methods
+
+    * The *spawn* and *forkserver* start methods
+
+  * Exemplos
+
+* "multiprocessing.shared_memory" --- Memória compartilhada para
+  acesso direto entre processos
+
+* O pacote "concurrent"
+
+* "concurrent.futures" --- Iniciando tarefas em paralelo
+
+  * Executor Objects
+
+  * ThreadPoolExecutor
+
+    * Exemplo de ThreadPoolExecutor
+
+  * "`ProcessPoolExecutor`"
+
+    * ProcessPoolExecutor Example
+
+  * Future Objects
+
+  * Module Functions
+
+  * Exception classes
+
+* "subprocess" --- Gerenciamento de subprocessos
+
+  * Usando o módulo "subprocess"
+
+    * Argumentos usados frequentemente
+
+    * Construtor Popen
+
+    * Exceções
+
+  * Considerações de Segurança
+
+  * Objetos Popen
+
+  * Windows Popen Helpers
+
+    * Constantes do Windows
+
+  * API de alto nível mais antiga
+
+  * Replacing Older Functions with the "subprocess" Module
+
+    * Replacing **/bin/sh** shell command substitution
+
+    * Replacing shell pipeline
+
+    * Substituindo "os.system()"
+
+    * Replacing the "os.spawn" family
+
+    * Replacing "os.popen()", "os.popen2()", "os.popen3()"
+
+    * Replacing functions from the "popen2" module
+
+  * Legacy Shell Invocation Functions
+
+  * Notas
+
+    * Converter uma sequência de argumentos em uma string no Windows
+
+    * Disabling use of "vfork()" or "posix_spawn()"
+
+* "sched" --- Event scheduler
+
+  * Objetos Scheduler
+
+* "queue" --- A synchronized queue class
+
+  * Objetos Queue
+
+  * Objetos SimpleQueue
+
+* "contextvars" --- Variáveis de contexto
+
+  * Variáveis de contexto
+
+  * Gerenciamento de contexto manual
+
+  * Suporte a asyncio
+
+A seguir, os módulos de suporte para alguns dos serviços acima:
+
+* "_thread"--- API de segmentação de baixo nível

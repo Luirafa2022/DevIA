@@ -1,0 +1,6 @@
+O pacote "concurrent"
+*********************
+
+Atualmente, há apenas um módulo neste pacote:
+
+* "concurrent.futures" -- Iniciando tarefas em paralelo

@@ -1,0 +1,98 @@
+Extensão
+********
+
+A direção principal para a extensão "asyncio" é escrever classes
+personalizadas de *event loop*. Asyncio tem auxiliares que podem ser
+usados para simplificar esta tarefa.
+
+Nota:
+
+  Terceiros devem reutilizar o código assíncrono existente com
+  cuidado, uma versão nova do Python pode quebrar a compatibilidade
+  com versões anteriores da parte *interna* da API.
+
+
+Escrevendo um loop de evento personalizado
+==========================================
+
+"asyncio.AbstractEventLoop" declara muitos métodos. Implementar todos
+eles do zero é um trabalho tedioso.
+
+Um laço de repetição pode receber, através de herança, vários métodos
+de implementação da classe "asyncio.BaseEventLoop".
+
+Por sua vez, o sucessor deve implementar um conjunto de métodos
+*privados* declarados, porém não implementados, em
+"asyncio.BaseEventLoop".
+
+Por exemplo, "loop.create_connection()``verifica os argumentos,
+resolve alguns endereços DNS, e chama a função
+``loop._make_socket_transport()" que deve ser implementada por ser uma
+classe herdada. O
+método``_make_socket_transport()`` não está documentado e é
+considerado parte de uma API *interna*.
+
+
+Construtores privados Future e Task
+===================================
+
+As classes "asyncio.Future" e "asyncio.Task" nunca deverão ser criadas
+diretamente, por favor, substitua pelas factories correspondentes:
+"loop.create_future()" e "loop.create_task()" ou
+"asyncio.create_task()".
+
+Porém *event-loops* de terceiros podem *reusar* as implementações
+nativas de Future e Task em detrimento de obter um código complexo e
+mais otimizado.
+
+Com este propósito, os seguintes construtores *privados* serão
+listados a seguir:
+
+Future.__init__(*, loop=None)
+
+   Criar uma uma instância Future nativa.
+
+   *loop* é uma instância opcional do event-loop.
+
+Task.__init__(coro, *, loop=None, name=None, context=None)
+
+   Create a built-in task instance.
+
+   *loop* is an optional event loop instance. The rest of arguments
+   are described in "loop.create_task()" description.
+
+   Alterado na versão 3.11: *context* argument is added.
+
+
+Task lifetime support
+=====================
+
+A third party task implementation should call the following functions
+to keep a task visible by "asyncio.all_tasks()" and
+"asyncio.current_task()":
+
+asyncio._register_task(task)
+
+   Register a new *task* as managed by *asyncio*.
+
+   Call the function from a task constructor.
+
+asyncio._unregister_task(task)
+
+   Unregister a *task* from *asyncio* internal structures.
+
+   The function should be called when a task is about to finish.
+
+asyncio._enter_task(loop, task)
+
+   Switch the current task to the *task* argument.
+
+   Call the function just before executing a portion of embedded
+   *coroutine* ("coroutine.send()" or "coroutine.throw()").
+
+asyncio._leave_task(loop, task)
+
+   Switch the current task back from *task* to "None".
+
+   Call the function just after "coroutine.send()" or
+   "coroutine.throw()" execution.
