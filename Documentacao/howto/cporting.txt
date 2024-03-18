@@ -1,0 +1,18 @@
+Portando módulos de extensão para o Python 3
+********************************************
+
+Recomendamos os seguintes recursos para portar módulos de extensão
+para o Python 3:
+
+* O capítulo Migrating C extensions de *Supporting Python 3: An in-
+  depth guide*, um livro sobre a migração do Python 2 para o Python 3
+  em geral, orienta o leitor na portabilidade de um módulo de
+  extensão.
+
+* O Porting guide do projeto *py3c* fornece sugestões opinativas com
+  código de suporte.
+
+* As bibliotecas Cython e CFFI oferecem abstrações sobre a API C do
+  Python. As extensões geralmente precisam ser reescritas para usar
+  uma delas, mas a biblioteca lida com diferenças entre várias versões
+  e implementações do Python.

@@ -1,0 +1,221 @@
+Boas Práticas de Anotação
+*************************
+
+autor:
+   Larry Hastings
+
+
+Resumo
+^^^^^^
+
+Este documento foi projetado para encapsular as melhores práticas para
+trabalhar com anotações. Se você escrever um código Python que examina
+"__annotations__" nos objetos Python, nós o encorajamos a seguir as
+diretrizes descritas abaixo.
+
+Este documento está dividido em quatro seções: melhores práticas para
+acessar as anotações de um objeto no Python  na versão 3.10 e versões
+mais recente, melhores práticas para acessar as anotações de um objeto
+no Python na versão 3.9 e versões mais antiga, outras melhores
+práticas para "__annotations__" para qualquer versão do Python e
+peculiaridades do "__annotations__".
+
+Note que este documento é específico sobre trabalhar com
+"__annotations__", não usa para anotações. Se você está procurando por
+informações sobre como usar "type hints" no seu código, por favor veja
+o módulo "typing"
+
+
+Acessando O Dicionário De Anotações De Um Objeto No Python 3.10 E Nas Versões Mais Recente.
+===========================================================================================
+
+O Python 3.10 adicionou uma nova função para a biblioteca padrão:
+"inspect.get_annotations()". No Python 3.10 e nas versões mais
+recentes, chamando esta função é a melhor pratica para acessar o
+dicionário de anotações de qualquer objeto que suporta anotações. Esta
+função pode até "destextualizar" anotações textualizadas para você.
+
+Se por alguma razão "inspect.get_annotations()" não for viável para o
+seu caso de uso, você pode acessar o membro de dados "__annotations__"
+manualmente. As melhores práticas para isto também mudaram no Python
+3.10: A partir do Python 3.10, "o.__annotations__" é garantido de
+*sempre* funcionar em funções, classes e módulos Python. Se você tem
+certeza que o objeto que você está examinando é um desses três
+*exatos* objetos, pode simplesmente usar "o.__annotations__" para
+chegar no dicionário de anotações do objeto.
+
+Contudo, outros tipos de chamáveis -- por exemplo, chamáveis criados
+por "functools.partial()" -- podem não ter um atributo
+"__annotations__" definido. Ao acessar o "__annotations__" de um
+objeto possivelmente desconhecido, as melhores práticas nas versões de
+Python 3.10 e mais novas é chamar "getattr()" com três argumentos, por
+exemplo "getattr(o, '__annotations__', None)".
+
+Antes de Python 3.10, acessar "__annotations__" numa classe que não
+define anotações mas que possui uma classe pai com anotações retorna o
+"__annotations__" da classe pai. A partir do Python 3.10, a anotação
+da classe filha será um dicionário vazio.
+
+
+Acessando O Dicionário De Anotações De Um Objeto No Python 3.9 E Nas Versões Mais Antigas.
+==========================================================================================
+
+Em Python 3.9 e versões mais antigas, acessar o dicionário de
+anotações de um objeto é muito mais complicado que em versões mais
+novas. O problema é uma falha de design em versões mais antigas do
+Python, especificamente a respeito de anotações de classe.
+
+Best practice for accessing the annotations dict of other objects--
+functions, other callables, and modules--is the same as best practice
+for 3.10, assuming you aren't calling "inspect.get_annotations()": you
+should use three-argument "getattr()" to access the object's
+"__annotations__" attribute.
+
+Unfortunately, this isn't best practice for classes.  The problem is
+that, since "__annotations__" is optional on classes, and because
+classes can inherit attributes from their base classes, accessing the
+"__annotations__" attribute of a class may inadvertently return the
+annotations dict of a *base class.* As an example:
+
+   class Base:
+       a: int = 3
+       b: str = 'abc'
+
+   class Derived(Base):
+       pass
+
+   print(Derived.__annotations__)
+
+This will print the annotations dict from "Base", not "Derived".
+
+Your code will have to have a separate code path if the object you're
+examining is a class ("isinstance(o, type)"). In that case, best
+practice relies on an implementation detail of Python 3.9 and before:
+if a class has annotations defined, they are stored in the class's
+"__dict__" dictionary.  Since the class may or may not have
+annotations defined, best practice is to call the "get" method on the
+class dict.
+
+To put it all together, here is some sample code that safely accesses
+the "__annotations__" attribute on an arbitrary object in Python 3.9
+and before:
+
+   if isinstance(o, type):
+       ann = o.__dict__.get('__annotations__', None)
+   else:
+       ann = getattr(o, '__annotations__', None)
+
+After running this code, "ann" should be either a dictionary or
+"None".  You're encouraged to double-check the type of "ann" using
+"isinstance()" before further examination.
+
+Note that some exotic or malformed type objects may not have a
+"__dict__" attribute, so for extra safety you may also wish to use
+"getattr()" to access "__dict__".
+
+
+Manually Un-Stringizing Stringized Annotations
+==============================================
+
+In situations where some annotations may be "stringized", and you wish
+to evaluate those strings to produce the Python values they represent,
+it really is best to call "inspect.get_annotations()" to do this work
+for you.
+
+If you're using Python 3.9 or older, or if for some reason you can't
+use "inspect.get_annotations()", you'll need to duplicate its logic.
+You're encouraged to examine the implementation of
+"inspect.get_annotations()" in the current Python version and follow a
+similar approach.
+
+In a nutshell, if you wish to evaluate a stringized annotation on an
+arbitrary object "o":
+
+* If "o" is a module, use "o.__dict__" as the "globals" when calling
+  "eval()".
+
+* If "o" is a class, use "sys.modules[o.__module__].__dict__" as the
+  "globals", and "dict(vars(o))" as the "locals", when calling
+  "eval()".
+
+* If "o" is a wrapped callable using "functools.update_wrapper()",
+  "functools.wraps()", or "functools.partial()", iteratively unwrap it
+  by accessing either "o.__wrapped__" or "o.func" as appropriate,
+  until you have found the root unwrapped function.
+
+* If "o" is a callable (but not a class), use "o.__globals__" as the
+  globals when calling "eval()".
+
+However, not all string values used as annotations can be successfully
+turned into Python values by "eval()". String values could
+theoretically contain any valid string, and in practice there are
+valid use cases for type hints that require annotating with string
+values that specifically *can't* be evaluated.  For example:
+
+* **PEP 604** union types using "|", before support for this was added
+  to Python 3.10.
+
+* Definitions that aren't needed at runtime, only imported when
+  "typing.TYPE_CHECKING" is true.
+
+If "eval()" attempts to evaluate such values, it will fail and raise
+an exception.  So, when designing a library API that works with
+annotations, it's recommended to only attempt to evaluate string
+values when explicitly requested to by the caller.
+
+
+Melhores Prática Para "__annotations__" Em Qualquer Versão Python
+=================================================================
+
+* You should avoid assigning to the "__annotations__" member of
+  objects directly.  Let Python manage setting "__annotations__".
+
+* If you do assign directly to the "__annotations__" member of an
+  object, you should always set it to a "dict" object.
+
+* If you directly access the "__annotations__" member of an object,
+  you should ensure that it's a dictionary before attempting to
+  examine its contents.
+
+* Você deve evitar modificar "__annotations__" dicts.
+
+* You should avoid deleting the "__annotations__" attribute of an
+  object.
+
+
+"__annotations__" Quirks
+========================
+
+In all versions of Python 3, function objects lazy-create an
+annotations dict if no annotations are defined on that object.  You
+can delete the "__annotations__" attribute using "del
+fn.__annotations__", but if you then access "fn.__annotations__" the
+object will create a new empty dict that it will store and return as
+its annotations.  Deleting the annotations on a function before it has
+lazily created its annotations dict will throw an "AttributeError";
+using "del fn.__annotations__" twice in a row is guaranteed to always
+throw an "AttributeError".
+
+Everything in the above paragraph also applies to class and module
+objects in Python 3.10 and newer.
+
+In all versions of Python 3, you can set "__annotations__" on a
+function object to "None".  However, subsequently accessing the
+annotations on that object using "fn.__annotations__" will lazy-create
+an empty dictionary as per the first paragraph of this section.  This
+is *not* true of modules and classes, in any Python version; those
+objects permit setting "__annotations__" to any Python value, and will
+retain whatever value is set.
+
+If Python stringizes your annotations for you (using "from __future__
+import annotations"), and you specify a string as an annotation, the
+string will itself be quoted.  In effect the annotation is quoted
+*twice.*  For example:
+
+   from __future__ import annotations
+   def foo(a: "str"): pass
+
+   print(foo.__annotations__)
+
+This prints "{'a': "'str'"}".  This shouldn't really be considered a
+"quirk"; it's mentioned here simply because it might be surprising.
