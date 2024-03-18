@@ -1,0 +1,118 @@
+Frameworks de programa
+**********************
+
+Os módulos descritos neste capítulo são frameworks que ditarão em
+grande parte a estrutura do seu programa. Atualmente, os módulos
+descritos aqui são todos orientados para escrever interfaces de linha
+de comando.
+
+A lista completa de módulos descritos neste capítulo é:
+
+* "turtle" --- Gráficos Tartaruga
+
+  * Introdução
+
+  * Tutorial
+
+    * Iniciando um ambiente de desenvolvimento da tartaruga
+
+    * Desenho básico
+
+      * Controle da Caneta
+
+      * A posição da tartaruga
+
+    * Criação de padrões algorítmicos
+
+  * Como fazer...
+
+    * Comece o mais rápido possível
+
+    * Use o "identificador" do módulo "turtle"
+
+    * Usar o módulo gráfico de tartaruga dentro de um script (código
+      específico)
+
+    * Use o módulo gráficos da tartaruga orientado a objetos
+
+  * Referência Gráficos de Tartaruga
+
+    * Métodos de Turtle
+
+    * Métodos de TurtleScreen/Screen
+
+  * Métodos de RawTurtle/Turtle e funções correspondentes
+
+    * Movimentos de Turtle
+
+    * Fala o estado de Turtle
+
+    * Configurações de medida
+
+    * Controle da Caneta
+
+      * Estado do Desenho
+
+      * Controle da Cor
+
+      * Preenchimento
+
+      * Mais sobre o Controle do Desenho
+
+    * Estado da tartaruga
+
+      * Visibilidade
+
+      * Aparência
+
+    * Eventos Utilizados
+
+    * Métodos Especiais da Tartaruga
+
+    * Formas compostas
+
+  * Methods of TurtleScreen/Screen and corresponding functions
+
+    * Controle da Janela
+
+    * Controle da animação
+
+    * Usando os eventos de tela
+
+    * Métodos de entrada
+
+    * Configurações e métodos especiais
+
+    * Methods specific to Screen, not inherited from TurtleScreen
+
+  * Classes Públicas
+
+  * Explanação
+
+  * Ajuda e Configuração
+
+    * Como usar a Ajuda
+
+    * Translation of docstrings into different languages
+
+    * How to configure Screen and Turtles
+
+  * "turtledemo" --- Scripts de Demonstração
+
+  * Modificações desde a versão do Python 2.6
+
+  * Modificações desde a versão do Python 3.0
+
+* "cmd" --- Suporte para interpretadores de comando orientado a linhas
+
+  * Objetos Cmd
+
+  * Exemplo do Cmd
+
+* "shlex" --- Análise léxica simples
+
+  * shlex Objects
+
+  * Regras de análise
+
+  * Improved Compatibility with Shells

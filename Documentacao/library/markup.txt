@@ -1,0 +1,168 @@
+Ferramentas de Processamento de Markup Estruturado
+**************************************************
+
+O Python suporta uma variedade de módulos para trabalhar com vários
+formatos de marcação de dados estruturados. Isso inclui módulos para
+trabalhar com o Standard Generalized Markup Language (SGML) e o
+Hypertext Markup Language (HTML) e várias interfaces para trabalhar
+com o XML (Extensible Markup Language).
+
+* "html" --- Suporte HTML(HyperText Markup Language)
+
+* "html.parser" --- Simple HTML and XHTML parser
+
+  * Example HTML Parser Application
+
+  * "HTMLParser" Methods
+
+  * Exemplos
+
+* "html.entities" --- Definições de entidades gerais de HTML
+
+* Módulos de Processamento de XML
+
+  * Vulnerabilidades em XML
+
+  * O Pacote "defusedxml"
+
+* API XML ElementTree
+
+  * Tutorial
+
+    * Árvore e elementos XML
+
+    * Analisando XML
+
+    * Pull API for non-blocking parsing
+
+    * Finding interesting elements
+
+    * Modifying an XML File
+
+    * Building XML documents
+
+    * Parsing XML with Namespaces
+
+  * XPath support
+
+    * Exemplo
+
+    * Supported XPath syntax
+
+  * Referência
+
+    * Funções
+
+  * XInclude support
+
+    * Exemplo
+
+  * Referência
+
+    * Funções
+
+    * Element Objects
+
+    * ElementTree Objects
+
+    * QName Objects
+
+    * TreeBuilder Objects
+
+    * Objetos XMLParser
+
+    * XMLPullParser Objects
+
+    * Exceções
+
+* "xml.dom" --- The Document Object Model API
+
+  * Conteúdo do módulo
+
+  * Objects in the DOM
+
+    * DOMImplementation Objects
+
+    * Objetos Node
+
+    * Objetos NodeList
+
+    * DocumentType Objects
+
+    * Document Objects
+
+    * Element Objects
+
+    * Attr Objects
+
+    * NamedNodeMap Objects
+
+    * Comment Objects
+
+    * Text and CDATASection Objects
+
+    * Objetos ProcessingInstruction
+
+    * Exceções
+
+  * Conformance
+
+    * Type Mapping
+
+    * Accessor Methods
+
+* "xml.dom.minidom" --- Minimal DOM implementation
+
+  * Objetos DOM
+
+  * DOM Example
+
+  * minidom e o padrão DOM
+
+* "xml.dom.pulldom" --- Support for building partial DOM trees
+
+  * Objetos DOMEventStream
+
+* "xml.sax" --- Support for SAX2 parsers
+
+  * SAXException Objects
+
+* "xml.sax.handler" --- Classes base para manipuladores de SAX
+
+  * ContentHandler Objects
+
+  * DTDHandler Objects
+
+  * EntityResolver Objects
+
+  * ErrorHandler Objects
+
+  * LexicalHandler Objects
+
+* "xml.sax.saxutils" --- SAX Utilities
+
+* "xml.sax.xmlreader" --- Interface for XML parsers
+
+  * XMLReader Objects
+
+  * IncrementalParser Objects
+
+  * Locator Objects
+
+  * InputSource Objects
+
+  * The "Attributes" Interface
+
+  * The "AttributesNS" Interface
+
+* "xml.parsers.expat" --- Fast XML parsing using Expat
+
+  * Objetos XMLParser
+
+  * Exceções ExpatError
+
+  * Exemplo
+
+  * Content Model Descriptions
+
+  * Expat error constants

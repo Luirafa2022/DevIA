@@ -1,0 +1,26 @@
+Comunicação em Rede e Interprocesso
+***********************************
+
+Os módulos descritos neste capítulo fornecem mecanismos para a
+comunicação em rede e entre processos.
+
+Alguns módulos funcionam apenas para dois processos que estão na mesma
+máquina como, por exemplo, "signal" e "mmap". Outros módulos possuem
+suporte a protocolos de rede que dois ou mais processos podem usar
+para se comunicar entre máquinas.
+
+A lista de módulos descritos neste capítulo é:
+
+* "asyncio" --- E/S assíncrona
+
+* "socket" --- Interface de rede de baixo nível
+
+* "ssl" --- TLS/SSL wrapper for socket objects
+
+* "select" --- Waiting for I/O completion
+
+* "selectors" --- High-level I/O multiplexing
+
+* "signal" --- Set handlers for asynchronous events
+
+* "mmap" --- Suporte a arquivos mapeados na memória

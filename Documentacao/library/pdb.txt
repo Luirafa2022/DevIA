@@ -1,0 +1,651 @@
+"pdb" --- O Depurador do Python
+*******************************
+
+**Código-fonte:** Lib/pdb.py
+
+======================================================================
+
+O módulo "pdb" define um depurador de código-fonte interativo para
+programas Python. Ele possui suporte a definição de pontos de
+interrupção (condicionais) e passo único no nível da linha de origem,
+inspeção de quadros de pilha, listagem de código-fonte e avaliação de
+código Python arbitrário no contexto de qualquer quadro de pilha. Ele
+também tem suporte a depuração *post-mortem* e pode ser chamado sob
+controle do programa.
+
+O depurador é extensível -- na verdade, ele é definido como a classe
+"Pdb". Atualmente, isso não está documentado, mas é facilmente
+compreendido pela leitura do código-fonte. A interface de extensão usa
+os módulos "bdb" e "cmd".
+
+Ver também:
+
+  Módulo "faulthandler"
+     Usado para despejar tracebacks (situação da pilha de execução) do
+     Python explicitamente, em uma falha, após um tempo limite ou em
+     um sinal do usuário.
+
+  Módulo "traceback"
+     Interface padrão para extrair, formatar e imprimir rastreamentos
+     de pilha de programas Python.
+
+O uso típico para invadir o depurador é inserir:
+
+   import pdb; pdb.set_trace()
+
+ou
+
+   breakpoint()
+
+no local que você deseja interromper o depurador e, em seguida,
+execute o programa. Você pode percorrer o código seguindo esta
+instrução e continuar executando sem o depurador usando o comando
+"continue".
+
+Alterado na versão 3.7: A função embutida "breakpoint()", quando
+chamada com valores padrão, pode ser usada em vez de "import pdb;
+pdb.set_trace()".
+
+   def double(x):
+      breakpoint()
+      return x * 2
+   val = 3
+   print(f"{val} * 2 is {double(val)}")
+
+O prompt do depurador é "(Pdb)", que é o indicador de que você está no
+modo de depuração:
+
+   > ...(3)double()
+   -> return x * 2
+   (Pdb) p x
+   3
+   (Pdb) continue
+   3 * 2 is 6
+
+Alterado na versão 3.3: O preenchimento por tabulação através do
+módulo "readline" está disponível para comandos e argumentos de
+comando, por exemplo os nomes globais e locais atuais são oferecidos
+como argumentos do comando "p".
+
+Você também pode invocar "pdb" na linha de comando para depurar outros
+scripts. Por exemplo:
+
+   python -m pdb myscript.py
+
+Quando invocado como um módulo, o pdb entra automaticamente na
+depuração *post-mortem* se o programa que está sendo depurado for
+encerrado de forma anormal. Após a depuração *post-mortem* (ou após a
+saída normal do programa), o pdb reiniciará o programa. A
+reinicialização automática preserva o estado do pdb (p.ex., pontos de
+interrupção) e, na maioria dos casos, é mais útil do que encerrar o
+depurador na saída do programa.
+
+Alterado na versão 3.2: Added the "-c" option to execute commands as
+if given in a ".pdbrc" file; see Comandos de depuração.
+
+Alterado na versão 3.7: Added the "-m" option to execute modules
+similar to the way "python -m" does. As with a script, the debugger
+will pause execution just before the first line of the module.
+
+O uso típico para executar uma instrução sob o controle do depurador
+é:
+
+   >>> import pdb
+   >>> def f(x):
+   ...     print(1 / x)
+   >>> pdb.run("f(2)")
+   > <string>(1)<module>()
+   (Pdb) continue
+   0.5
+   >>>
+
+O uso típico para inspecionar um programa com falha é:
+
+   >>> import pdb
+   >>> def f(x):
+   ...     print(1 / x)
+   ...
+   >>> f(0)
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+     File "<stdin>", line 2, in f
+   ZeroDivisionError: division by zero
+   >>> pdb.pm()
+   > <stdin>(2)f()
+   (Pdb) p x
+   0
+   (Pdb)
+
+O módulo define as seguintes funções; cada uma entra no depurador de
+uma maneira ligeiramente diferente:
+
+pdb.run(statement, globals=None, locals=None)
+
+   Executa a instrução *statement* (fornecida como uma string ou um
+   objeto código) sob controle do depurador. O prompt do depurador
+   aparece antes de qualquer código ser executado; você pode definir
+   pontos de interrupção e digitar "continue" ou pode percorrer a
+   instrução usando "step" ou "next" (todos esses comandos são
+   explicados abaixo). Os argumentos opcionais *globals* e *locals*
+   especificam o ambiente em que o código é executado; por padrão, o
+   dicionário do módulo "__main__" é usado. (Veja a explicação das
+   funções embutidas "exec()" ou "eval()".)
+
+pdb.runeval(expression, globals=None, locals=None)
+
+   Avalia a expressão *expression* (fornecida como uma string ou um
+   objeto código) sob controle do depurador. Quando "runeval()"
+   retorna, ele retorna o valor de *expression*. Caso contrário, esta
+   função é semelhante a "run()".
+
+pdb.runcall(function, *args, **kwds)
+
+   Chama a função *function* (um objeto função ou método, não uma
+   string) com os argumentos fornecidos. Quando "runcall()" retorna,
+   ele retorna qualquer que seja a chamada de função retornada. O
+   prompt do depurador aparece assim que a função é inserida.
+
+pdb.set_trace(*, header=None)
+
+   Entra no depurador no quadro da pilha de chamada. Isso é útil para
+   codificar um ponto de interrupção em um determinado ponto de um
+   programa, mesmo que o código não esteja sendo depurado de outra
+   forma (por exemplo, quando uma asserção falha). Se fornecido,
+   *header* é impresso no console imediatamente antes do início da
+   depuração.
+
+   Alterado na versão 3.7: O argumento somente-nomeado *header*.
+
+pdb.post_mortem(traceback=None)
+
+   Entra na depuração *post-mortem* do objeto *traceback* fornecido.
+   Se não for fornecido um *traceback*, será usada a exceção que está
+   sendo manipulada no momento (uma exceção deve ser manipulada para
+   que o padrão seja usado).
+
+pdb.pm()
+
+   Entra na depuração *post-mortem* do traceback encontrado em
+   "sys.last_traceback".
+
+As funções "run*" e a "set_trace()" são aliases, ou apelidos, para
+instanciar a classe "Pdb" e chamar o método com o mesmo nome. Se você
+deseja acessar outros recursos, faça você mesmo:
+
+class pdb.Pdb(completekey='tab', stdin=None, stdout=None, skip=None, nosigint=False, readrc=True)
+
+   "Pdb" é a classe do depurador.
+
+   Os argumentos *completekey*, *stdin* e *stdout* são passados para a
+   classe subjacente "cmd.Cmd"; veja a descrição lá.
+
+   O argumento *skip*, se fornecido, deve ser um iterável de padrões
+   de nome de módulo no estilo glob. O depurador não entrará nos
+   quadros que se originam em um módulo que corresponde a um desses
+   padrões. [1]
+
+   Por padrão, o Pdb define um manipulador para o sinal SIGINT (que é
+   enviado quando o usuário pressiona "Ctrl-C" no console) quando você
+   dá um comando "continue". Isso permite que você entre no depurador
+   novamente pressionando "Ctrl-C". Se você deseja que o Pdb não toque
+   no manipulador SIGINT, defina *nosigint* como true.
+
+   O argumento *readrc* é padronizado como true e controla se o Pdb
+   carregará arquivos .pdbrc do sistema de arquivos.
+
+   Exemplo de chamada para habilitar rastreamento com *skip*:
+
+      import pdb; pdb.Pdb(skip=['django.*']).set_trace()
+
+   Levanta um evento de auditoria "pdb.Pdb" com nenhum argumento.
+
+   Alterado na versão 3.1: Added the *skip* parameter.
+
+   Alterado na versão 3.2: Added the *nosigint* parameter. Previously,
+   a SIGINT handler was never set by Pdb.
+
+   Alterado na versão 3.6: O argumento *readrc*.
+
+   run(statement, globals=None, locals=None)
+   runeval(expression, globals=None, locals=None)
+   runcall(function, *args, **kwds)
+   set_trace()
+
+      Consulte a documentação para as funções explicadas acima.
+
+
+Comandos de depuração
+=====================
+
+Os comandos reconhecidos pelo depurador estão listados abaixo. A
+maioria dos comandos pode ser abreviada para uma ou duas letras,
+conforme indicado; por exemplo, "h(elp)" significa que "h" ou "help"
+podem ser usados para inserir o comando de ajuda (mas não "he" ou
+"hel", nem "H" ou "Help" ou "HELP"). Os argumentos para os comandos
+devem ser separados por espaços em branco (espaços ou tabulações). Os
+argumentos opcionais estão entre colchetes ("[]") na sintaxe do
+comando; os colchetes não devem ser digitados. As alternativas na
+sintaxe de comando são separadas por uma barra vertical ("|").
+
+Digitar uma linha em branco repete o último comando digitado. Exceção:
+se o último comando foi um comando "list", as próximas 11 linhas serão
+listadas.
+
+Os comandos que o depurador não reconhece são presumidos como
+instruções Python e são executados no contexto do programa que está
+sendo depurado. As instruções Python também podem ser prefixadas com
+um ponto de exclamação ("!"). Essa é uma maneira poderosa de
+inspecionar o programa que está sendo depurado; é até possível alterar
+uma variável ou chamar uma função. Quando ocorre uma exceção em uma
+instrução, o nome da exceção é impresso, mas o estado do depurador não
+é alterado.
+
+O depurador possui suporte a aliases. Os aliases podem ter parâmetros
+que permitem um certo nível de adaptabilidade ao contexto em exame.
+
+Vários comandos podem ser inseridos em uma única linha, separados por
+";;". (Um único ";" não é usado, pois é o separador para vários
+comandos em uma linha que é passada para o analisador Python.) Nenhuma
+inteligência é aplicada para separar os comandos; a entrada é dividida
+no primeiro par ";;", mesmo que esteja no meio de uma string entre
+aspas. Uma solução alternativa para strings com caractere de ponto e
+vírgula duplo é usar a concatenação de string implícita "';'';'" ou
+"";"";"".
+
+To set a temporary global variable, use a *convenience variable*. A
+*convenience variable* is a variable whose name starts with "$".  For
+example, "$foo = 1" sets a global variable "$foo" which you can use in
+the debugger session.  The *convenience variables* are cleared when
+the program resumes execution so it's less likely to interfere with
+your program compared to using normal variables like "foo = 1".
+
+There are three preset *convenience variables*:
+
+* "$_frame": the current frame you are debugging
+
+* "$_retval": the return value if the frame is returning
+
+* "$_exception": the exception if the frame is raising an exception
+
+Novo na versão 3.12.
+
+Se um arquivo ".pdbrc" existe no diretório inicial do usuário ou no
+diretório atual, ele é lido com a codificação "'utf-8'" e executado
+como se tivesse sido digitado no prompt do depurador. Isso é
+particularmente útil para aliases. Se ambos os arquivos existirem,
+aquele no diretório inicial será lido primeiro e os aliases definidos
+poderão ser substituídos pelo arquivo local.
+
+Alterado na versão 3.2: ".pdbrc" agora pode conter comandos que
+continuam a depuração, como "continue" ou "next". Anteriormente, esses
+comandos não tinham efeito.
+
+Alterado na versão 3.11: ".pdbrc" agora é lido com a codificação
+"'utf-8'". Anteriormente, ele era lido com a codificação da localidade
+do sistema.
+
+h(elp) [command]
+
+   Sem argumento, imprime a lista de comandos disponíveis. Com um
+   *command* como argumento, imprime ajuda sobre esse comando. "help
+   pdb" exibe a documentação completa (a docstring do módulo "pdb").
+   Como o argumento *command* deve ser um identificador, "help exec"
+   deve ser inserido para obter ajuda sobre o comando "!".
+
+w(here)
+
+   Exibe um stack trace (situação da pilha de execução), com o quadro
+   mais recente na parte inferior. Uma seta (">") indica o quadro
+   atual, que determina o contexto da maioria dos comandos.
+
+d(own) [count]
+
+   Move os níveis do quadro atual *count* (padrão 1) para baixo no
+   stack trace (para um quadro mais recente).
+
+u(p) [count]
+
+   Move os níveis do quadro atual na *count* (padrão 1) para cima no
+   stack trace (para um quadro mais antigo).
+
+b(reak) [([filename:]lineno | function) [, condition]]
+
+   Com um argumento *lineno*, define uma interrupção no arquivo atual.
+   Com um argumento *function*, defina uma quebra na primeira
+   instrução executável dentro dessa função. O número da linha pode
+   ser prefixado com um nome de arquivo e dois pontos, para
+   especificar um ponto de interrupção em outro arquivo (provavelmente
+   um que ainda não foi carregado). O arquivo é pesquisado em
+   "sys.path". Observe que cada ponto de interrupção recebe um número
+   ao qual todos os outros comandos de ponto de interrupção se
+   referem.
+
+   Se um segundo argumento estiver presente, é uma expressão que deve
+   ser avaliada como verdadeira antes que o ponto de interrupção seja
+   respeitado.
+
+   Sem argumento, lista todas as quebras, inclusive para cada ponto de
+   interrupção, o número de vezes que o ponto de interrupção foi
+   atingido, a contagem atual de ignorados e a condição associada, se
+   houver.
+
+tbreak [([filename:]lineno | function) [, condition]]
+
+   Ponto de interrupção temporário, que é removido automaticamente
+   quando é atingido pela primeira vez. Os argumentos são os mesmos
+   que para "break".
+
+cl(ear) [filename:lineno | bpnumber ...]
+
+   Com um argumento *filename:lineno*, limpa todos os pontos de
+   interrupção nessa linha. Com uma lista separada por espaços de
+   números de ponto de interrupção, limpa esses pontos de interrupção.
+   Sem argumento, limpa todas as quebras (mas primeiro pede a
+   confirmação).
+
+disable bpnumber [bpnumber ...]
+
+   Desativa os pontos de interrupção fornecidos como uma lista
+   separada por espaços de números de pontos de interrupção.
+   Desabilitar um ponto de interrupção significa que ele não pode
+   interromper a execução do programa, mas, ao contrário de limpar um
+   ponto de interrupção, ele permanece na lista de pontos de
+   interrupção e pode ser (re)ativado.
+
+enable bpnumber [bpnumber ...]
+
+   Ativa o ponto de interrupção especificado.
+
+ignore bpnumber [count]
+
+   Define a contagem de ignorados para o número do ponto de
+   interrupção especificado. Se *count* for omitida, a contagem de
+   ignorados será definida como 0. Um ponto de interrupção se torna
+   ativo quando a contagem de ignorados é zero. Quando diferente de
+   zero, a contagem é decrementada cada vez que o ponto de interrupção
+   é atingido e o ponto de interrupção não é desativado e qualquer
+   condição associada é avaliada como verdadeira.
+
+condition bpnumber [condition]
+
+   Define uma nova *condition* para o ponto de interrupção, uma
+   expressão que deve ser avaliada como verdadeira antes que o ponto
+   de interrupção seja respeitado. Se *condition* for omitida,
+   qualquer condição existente será removida; isto é, o ponto de
+   interrupção é tornado incondicional.
+
+commands [bpnumber]
+
+   Especifica uma lista de comandos para o número do ponto de
+   interrupção *bpnumber*. Os próprios comandos aparecem nas seguintes
+   linhas. Digite em uma linha contendo apenas "end" para finalizar os
+   comandos. Um exemplo:
+
+      (Pdb) commands 1
+      (com) p some_variable
+      (com) end
+      (Pdb)
+
+   Para remover todos os comandos de um ponto de interrupção, digite
+   "commands" e siga-o imediatamente com "end"; isto é, não dê
+   comandos.
+
+   Sem argumento *bpnumber*, "commands" refere-se ao último conjunto
+   de pontos de interrupção.
+
+   Você pode usar comandos de ponto de interrupção para iniciar seu
+   programa novamente. Simplesmente use o comando "continue", ou
+   "step", ou qualquer outro comando que reinicie a execução.
+
+   Especificar qualquer comando que retome a execução (atualmente
+   "continue", "step", "next", "return", "jump", "quit" e suas
+   abreviações) finaliza a lista de comandos (como se esse comando
+   fosse imediatamente seguido pelo final). Isso ocorre sempre que
+   você retoma a execução (mesmo com uma simples etapa ou etapa), você
+   pode encontrar outro ponto de interrupção — que pode ter sua
+   própria lista de comandos, levando a ambiguidades sobre qual lista
+   executar.
+
+   Se você usar o comando "silent" na lista de comandos, a mensagem
+   usual sobre a parada em um ponto de interrupção não será impressa.
+   Isso pode ser desejável para pontos de interrupção que devem
+   imprimir uma mensagem específica e continuar. Se nenhum dos outros
+   comandos imprimir alguma coisa, você não vê sinal de que o ponto de
+   interrupção foi atingido.
+
+s(tep)
+
+   Executa a linha atual, interrompe na primeira ocasião possível (em
+   uma função chamada ou na próxima linha na função atual).
+
+n(ext)
+
+   Continua a execução até que a próxima linha na função atual seja
+   atingida ou ela retorne. (A diferença entre "next" e "step" é que
+   "step" para dentro de uma função chamada, enquanto "next" executa
+   funções chamadas em (quase) velocidade máxima, parando apenas na
+   próxima linha da função atual.)
+
+unt(il) [lineno]
+
+   Sem argumento, continua a execução até que a linha com um número
+   maior que o atual seja atingida.
+
+   Com *lineno*, continua a execução até que uma linha com um número
+   maior ou igual a *lineno* ser alcançada. Nos dois casos, também
+   interrompe quando o quadro atual retornar.
+
+   Alterado na versão 3.2: Permite fornecer um número de linha
+   explícito.
+
+r(eturn)
+
+   Continua a execução até que a função atual retorne.
+
+c(ont(inue))
+
+   Continua a execução, interrompe apenas quando um ponto de
+   interrupção for encontrado.
+
+j(ump) lineno
+
+   Define a próxima linha que será executada. Disponível apenas no
+   quadro mais inferior. Isso permite voltar e executar o código
+   novamente ou avançar para pular o código que você não deseja
+   executar.
+
+   Deve-se notar que nem todos os saltos são permitidos -- por
+   exemplo, não é possível pular para o meio de um loop de "for" ou
+   sair de uma cláusula "finally".
+
+l(ist) [first[, last]]
+
+   Lista o código-fonte do arquivo atual. Sem argumentos, lista 11
+   linhas ao redor da linha atual ou continue a listagem anterior. Com
+   "." como argumento, lista 11 linhas ao redor da linha atual. Com um
+   argumento, lista 11 linhas nessa linha. Com dois argumentos, lista
+   o intervalo especificado; se o segundo argumento for menor que o
+   primeiro, ele será interpretado como uma contagem.
+
+   A linha atual no quadro atual é indicada por "->". Se uma exceção
+   estiver sendo depurada, a linha em que a exceção foi originalmente
+   gerada ou propagada é indicada por ">>", se for diferente da linha
+   atual.
+
+   Alterado na versão 3.2: Added the ">>" marker.
+
+ll | longlist
+
+   Lista todo o código-fonte da função ou quadro atual. As linhas
+   interessantes estão marcadas como para "list".
+
+   Novo na versão 3.2.
+
+a(rgs)
+
+   Imprime os argumentos da função atual e seus valores atuais.
+
+p expression
+
+   Avalia *expression* no contexto atual e imprima seu valor.
+
+   Nota:
+
+     "print()" também pode ser usado, mas não é um comando de
+     depuração --- isso executa a função Python "print()".
+
+pp expression
+
+   Como o comando "p", exceto que o valor de *expression* é bastante
+   impresso usando o módulo "pprint".
+
+whatis expression
+
+   Exibe o tipo de *expression*.
+
+source expression
+
+   Tenta obter o código-fonte de *expression* e exibe-o.
+
+   Novo na versão 3.2.
+
+display [expression]
+
+   Exibe o valor de *expression* caso ela tenha sido alterada, sempre
+   que a execução for interrompida no quadro atual.
+
+   Sem *expression*, lista todas as expressões de exibição para o
+   quadro atual.
+
+   Nota:
+
+     Display avalia *expression* e compara com o resultado da
+     avaliação anterior de *expression*, portanto, quando o resultado
+     é mutável, display pode não ser capaz de captar as alterações.
+
+   Exemplo:
+
+      lst = []
+      breakpoint()
+      pass
+      lst.append(1)
+      print(lst)
+
+   Display não perceberá que "lst" foi alterado porque o resultado da
+   avaliação foi modificado internamente por "lst.append(1)" antes de
+   ser comparado:
+
+      > example.py(3)<module>()
+      -> pass
+      (Pdb) display lst
+      display lst: []
+      (Pdb) n
+      > example.py(4)<module>()
+      -> lst.append(1)
+      (Pdb) n
+      > example.py(5)<module>()
+      -> print(lst)
+      (Pdb)
+
+   Você pode fazer alguns truques com o mecanismo de cópia para
+   fazê-lo funcionar:
+
+      > example.py(3)<module>()
+      -> pass
+      (Pdb) display lst[:]
+      display lst[:]: []
+      (Pdb) n
+      > example.py(4)<module>()
+      -> lst.append(1)
+      (Pdb) n
+      > example.py(5)<module>()
+      -> print(lst)
+      display lst[:]: [1]  [old: []]
+      (Pdb)
+
+   Novo na versão 3.2.
+
+undisplay [expression]
+
+   Não exibe mais *expression* no quadro atual. Sem expressão, limpa
+   todas as expressões de exibição para o quadro atual.
+
+   Novo na versão 3.2.
+
+interact
+
+   Inicia um interpretador interativo (usando o módulo "code") cujo
+   espaço de nomes global contenha todos os nomes (globais e locais)
+   encontrados no escopo atual.
+
+   Novo na versão 3.2.
+
+alias [name [command]]
+
+   Cria um alias chamado *name* que executa *command*. O comando *não*
+   deve estar entre aspas. Os parâmetros substituíveis podem ser
+   indicados por "%1", "%2" e assim por diante, enquanto "%*" é
+   substituído por todos os parâmetros. Se *command* for omitido, o
+   alias atual para *name* será mostrado. Se nenhum argumento for
+   fornecido, todos os aliases serão listados.
+
+   Os aliases podem ser aninhados e podem conter qualquer coisa que
+   possa ser digitada legalmente no prompt do pdb. Observe que os
+   comandos internos do pdb *podem* ser substituídos por aliases. Esse
+   comando é oculto até que o alias seja removido. O alias é aplicado
+   recursivamente à primeira palavra da linha de comando; todas as
+   outras palavras da linha são deixadas em paz.
+
+   Como exemplo, aqui estão dois aliases úteis (especialmente quando
+   colocados no arquivo ".pdbrc"):
+
+      # Print instance variables (usage "pi classInst")
+      alias pi for k in %1.__dict__.keys(): print(f"%1.{k} = {%1.__dict__[k]}")
+      # Print instance variables in self
+      alias ps pi self
+
+unalias name
+
+   Executa o alias *name* especificado.
+
+! statement
+
+   Execute the (one-line) *statement* in the context of the current
+   stack frame. The exclamation point can be omitted unless the first
+   word of the statement resembles a debugger command, e.g.:
+
+      (Pdb) ! n=42
+      (Pdb)
+
+   To set a global variable, you can prefix the assignment command
+   with a "global" statement on the same line, e.g.:
+
+      (Pdb) global list_options; list_options = ['-l']
+      (Pdb)
+
+run [args ...]
+restart [args ...]
+
+   Reinicia o programa Python depurado. Se *args* for fornecido, ele é
+   dividido com "shlex" e o resultado é usado como o novo "sys.argv".
+   Histórico, pontos de interrupção, ações e opções do depurador são
+   preservados. "restart" é um apelido para "run".
+
+q(uit)
+
+   Sai do depurador. O programa que está sendo executado é abortado.
+
+debug code
+
+   Entra em um depurador recursivo que percorre *code* (que é uma
+   expressão ou instrução arbitrária a ser executada no ambiente
+   atual).
+
+retval
+
+   Exibe o valor de retorno para o último retorno de a função atual.
+
+-[ Notas de rodapé ]-
+
+[1] Se um quadro é considerado originário de um determinado módulo é
+    determinado pelo "__name__" nos globais do quadro.

@@ -1,0 +1,168 @@
+"getopt" --- Analisador sintático no estilo C para opções de linha de comando
+*****************************************************************************
+
+**Código-fonte:** Lib/getopt.py
+
+Nota:
+
+  O módulo "getopt" é um analisador sintático para opções de linha de
+  comando cuja API é projetada para ser familiar aos usuários da
+  função C "getopt()". Os usuários que não estão familiarizados com a
+  função C "getopt()" ou que gostariam de escrever menos código e
+  obter mensagens de ajuda e de erro melhores devem considerar o uso
+  do módulo "argparse".
+
+======================================================================
+
+Este módulo ajuda os scripts a analisar os argumentos da linha de
+comando em "sys.argv". Ele suporta as mesmas convenções da função Unix
+"getopt()" (incluindo os significados especiais de argumentos da forma
+'"-"' e '"--"'). Longas opções semelhantes às suportadas pelo software
+GNU também podem ser usadas por meio de um terceiro argumento
+opcional.
+
+Este módulo fornece duas funções e uma exceção:
+
+getopt.getopt(args, shortopts, longopts=[])
+
+   Analisa opções de linha de comando e lista de parâmetros. *args* é
+   a lista de argumentos a ser analisada, sem a referência inicial
+   para o programa em execução. Normalmente, isso significa
+   "sys.argv[1:]". *shortopts* é a string de letras de opção que o
+   script deseja reconhecer, com opções que requerem um argumento
+   seguido por dois pontos ("':'"; ou seja, o mesmo formato que Unix
+   "getopt()" usa).
+
+   Nota:
+
+     Ao contrário do GNU "getopt()", após um argumento sem opção,
+     todos os argumentos adicionais são considerados também sem opção.
+     Isso é semelhante à maneira como os sistemas Unix não GNU
+     funcionam.
+
+   *longopts*, se especificado, deve ser uma lista de strings com os
+   nomes das opções longas que devem ser suportadas. Os caracteres
+   "'--'" no início não devem ser incluídos no nome da opção. Opções
+   longas que requerem um argumento devem ser seguidas por um sinal de
+   igual ("'='"). Argumentos opcionais não são suportados. Para
+   aceitar apenas opções longas, *shortopts* deve ser uma string
+   vazia. Opções longas na linha de comando podem ser reconhecidas,
+   desde que forneçam um prefixo do nome da opção que corresponda
+   exatamente a uma das opções aceitas. Por exemplo, se *longopts* for
+   "['foo', 'frob']", a opção "--fo" irá corresponder a "--foo", mas "
+   --f" não corresponderá exclusivamente, então "GetoptError" será
+   levantada.
+
+   O valor de retorno consiste em dois elementos: o primeiro é uma
+   lista de pares "(option, value)"; a segunda é a lista de argumentos
+   de programa restantes depois que a lista de opções foi removida
+   (esta é uma fatia ao final de *args*). Cada par de opção e valor
+   retornado tem a opção como seu primeiro elemento, prefixado com um
+   hífen para opções curtas (por exemplo, "'-x'") ou dois hifenes para
+   opções longas (por exemplo, "'--long-option'"), e o argumento da
+   opção como seu segundo elemento, ou uma string vazia se a opção não
+   tiver argumento. As opções ocorrem na lista na mesma ordem em que
+   foram encontradas, permitindo assim múltiplas ocorrências. Opções
+   longas e curtas podem ser misturadas.
+
+getopt.gnu_getopt(args, shortopts, longopts=[])
+
+   Esta função funciona como "getopt()", exceto que o modo de
+   digitalização do estilo GNU é usado por padrão. Isso significa que
+   os argumentos de opção e não opção podem ser misturados. A função
+   "getopt()" interrompe o processamento das opções assim que um
+   argumento não opcional é encontrado.
+
+   Se o primeiro caractere da string de opção for "'+'", ou se a
+   variável de ambiente "POSIXLY_CORRECT" estiver definida, então o
+   processamento da opção para assim que um argumento não opcional for
+   encontrado.
+
+exception getopt.GetoptError
+
+   Isso é levantado quando uma opção não reconhecida é encontrada na
+   lista de argumentos ou quando uma opção que requer um argumento não
+   é fornecida. O argumento para a exceção é uma string que indica a
+   causa do erro. Para opções longas, um argumento dado a uma opção
+   que não requer uma também fará com que essa exceção seja levantada.
+   Os atributos "msg" e "opt" fornecem a mensagem de erro e a opção
+   relacionada; se não houver uma opção específica à qual a exceção se
+   relaciona, "opt" é uma string vazia.
+
+exception getopt.error
+
+   Alias para "GetoptError"; para compatibilidade reversa.
+
+Um exemplo usando apenas opções de estilo Unix:
+
+>>> import getopt
+>>> args = '-a -b -cfoo -d bar a1 a2'.split()
+>>> args
+['-a', '-b', '-cfoo', '-d', 'bar', 'a1', 'a2']
+>>> optlist, args = getopt.getopt(args, 'abc:d:')
+>>> optlist
+[('-a', ''), ('-b', ''), ('-c', 'foo'), ('-d', 'bar')]
+>>> args
+['a1', 'a2']
+
+Usar nomes de opções longos é igualmente fácil:
+
+>>> s = '--condition=foo --testing --output-file abc.def -x a1 a2'
+>>> args = s.split()
+>>> args
+['--condition=foo', '--testing', '--output-file', 'abc.def', '-x', 'a1', 'a2']
+>>> optlist, args = getopt.getopt(args, 'x', [
+...     'condition=', 'output-file=', 'testing'])
+>>> optlist
+[('--condition', 'foo'), ('--testing', ''), ('--output-file', 'abc.def'), ('-x', '')]
+>>> args
+['a1', 'a2']
+
+Em um script, o uso típico é algo assim:
+
+   import getopt, sys
+
+   def main():
+       try:
+           opts, args = getopt.getopt(sys.argv[1:], "ho:v", ["help", "output="])
+       except getopt.GetoptError as err:
+           # print help information and exit:
+           print(err)  # will print something like "option -a not recognized"
+           usage()
+           sys.exit(2)
+       output = None
+       verbose = False
+       for o, a in opts:
+           if o == "-v":
+               verbose = True
+           elif o in ("-h", "--help"):
+               usage()
+               sys.exit()
+           elif o in ("-o", "--output"):
+               output = a
+           else:
+               assert False, "unhandled option"
+       # ...
+
+   if __name__ == "__main__":
+       main()
+
+Observe que uma interface de linha de comando equivalente pode ser
+produzida com menos código e mais mensagens de erro de ajuda e erro
+informativas usando o módulo "argparse":
+
+   import argparse
+
+   if __name__ == '__main__':
+       parser = argparse.ArgumentParser()
+       parser.add_argument('-o', '--output')
+       parser.add_argument('-v', dest='verbose', action='store_true')
+       args = parser.parse_args()
+       # ... do something with args.output ...
+       # ... do something with args.verbose ..
+
+Ver também:
+
+  Módulo "argparse"
+     Alternativa de opção de linha de comando e biblioteca de análise
+     de argumento.

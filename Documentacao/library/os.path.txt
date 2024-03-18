@@ -1,0 +1,525 @@
+"os.path" --- Manipulações comuns de nomes de caminhos
+******************************************************
+
+**Código-fonte:** Lib/posixpath.py (para POSIX) e Lib/ntpath.py (para
+Windows).
+
+======================================================================
+
+Este módulo implementa algumas funções úteis em nomes de caminho. Para
+ler ou escrever arquivos veja "open()", e para acessar o sistema de
+arquivos veja o módulo "os". Os parâmetros de caminho podem ser
+passados como strings, ou bytes, ou qualquer objeto que implemente o
+protocolo "os.PathLike".
+
+Ao contrário de um shell Unix, Python não faz nenhuma expansão
+*automática* de caminho. Funções como "expanduser()" e "expandvars()"
+podem ser invocadas explicitamente quando uma aplicação deseja uma
+expansão de caminho no estilo do shell. (Veja também o módulo "glob".)
+
+Ver também:
+
+  O módulo "pathlib" oferece objetos de caminho de alto nível.
+
+Nota:
+
+  Todas essas funções aceitam apenas bytes ou apenas objetos de string
+  como seus parâmetros. O resultado é um objeto do mesmo tipo, se um
+  caminho ou nome de arquivo for retornado.
+
+Nota:
+
+  Uma vez que diferentes sistemas operacionais têm diferentes
+  convenções de nome de caminho, existem várias versões deste módulo
+  na biblioteca padrão. O módulo "os.path" é sempre o módulo de
+  caminho adequado para o sistema operacional em que o Python está
+  sendo executado e, portanto, pode ser usado para caminhos locais. No
+  entanto, você também pode importar e usar os módulos individuais se
+  quiser manipular um caminho que esteja *sempre* em um dos diferentes
+  formatos. Todos eles têm a mesma interface:
+
+  * "posixpath" para caminhos no estilo UNIX
+
+  * "ntpath" para caminhos do Windows
+
+Alterado na versão 3.8: "exists()", "lexists()", "isdir()",
+"isfile()", "islink()" e "ismount()" agora retornam "False" em vez de
+levantar uma exceção para caminhos que contêm caracteres ou bytes não
+representáveis no nível de sistema de operacional.
+
+os.path.abspath(path)
+
+   Retorna uma versão normalizada e absolutizada do nome de caminho
+   *path*. Na maioria das plataformas, isso é equivalente a chamar a
+   função "normpath()" da seguinte forma: "normpath(join(os.getcwd(),
+   path))".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.basename(path)
+
+   Retorna o nome base do caminho *path*. Este é o segundo elemento do
+   par retornado pela passagem de *path* para a função "split()".
+   Observe que o resultado desta função é diferente do programa Unix
+   **basename**; onde **basename** para "'/foo/bar/'" retorna "'bar'",
+   a função "basename()" retorna uma string vazia ("''").
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.commonpath(paths)
+
+   Retorna o subcaminho comum mais longo de cada nome de caminho na
+   sequência *paths*. Levanta "ValueError" se *path* contiverem nomes
+   de caminho absolutos e relativos, os *paths* estiverem em unidades
+   diferentes ou se *paths* estiverem vazios. Ao contrário de
+   "commonprefix()", retorna um caminho válido.
+
+   Disponibilidade: Unix, Windows.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.6: Aceita uma sequência de *objetos caminho ou
+   similar*.
+
+os.path.commonprefix(list)
+
+   Retorna o prefixo de caminho mais longo (obtido caractere por
+   caractere) que é um prefixo de todos os caminhos em *list*. Se
+   *list* estiver vazia, retorna a string vazia ("''").
+
+   Nota:
+
+     Esta função pode retornar caminhos inválidos porque funciona um
+     caractere por vez. Para obter um caminho válido, consulte
+     "commonpath()".
+
+        >>> os.path.commonprefix(['/usr/lib', '/usr/local/lib'])
+        '/usr/l'
+
+        >>> os.path.commonpath(['/usr/lib', '/usr/local/lib'])
+        '/usr'
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.dirname(path)
+
+   Retorna o nome do diretório do nome de caminho *path*. Este é o
+   primeiro elemento do par retornado passando *path* para a função
+   "split()".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.exists(path)
+
+   Retorna "True" se *path* se referir a um caminho existente ou um
+   descritor de arquivo aberto. Retorna "False" para links simbólicos
+   quebrados. Em algumas plataformas, esta função pode retornar
+   "False" se a permissão não for concedida para executar "os.stat()"
+   no arquivo solicitado, mesmo se o *path* existir fisicamente.
+
+   Alterado na versão 3.3: *path* agora pode ser um inteiro: "True" é
+   retornado se for um descritor de arquivo aberto, "False" caso
+   contrário.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.lexists(path)
+
+   Retorna "True" se *path* se referir a um caminho existente. Retorna
+   "True" para links simbólicos quebrados. Equivalente a "exists()" em
+   plataformas sem "os.lstat()".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.expanduser(path)
+
+   No Unix e no Windows, retorna o argumento com um componente inicial
+   de "~" ou "~user" substituído pelo diretório inicial daquele
+   usuário *user*.
+
+   No Unix, um "~" no início é substituído pela variável de ambiente
+   "HOME" se estiver definida; caso contrário, o diretório pessoal do
+   usuário atual é procurado no diretório de senha através do módulo
+   embutido "pwd". Um "~user" no início é procurado diretamente no
+   diretório de senhas.
+
+   No Windows, "USERPROFILE" será usada se definida; caso contrário,
+   uma combinação de "HOMEPATH" e "HOMEDRIVE" será usada. Um "~user"
+   inicial é tratado verificando se o último componente do diretório
+   home do usuário atual corresponde a "USERNAME", e substituindo-o se
+   for o caso.
+
+   Se a expansão falhar ou se o caminho não começar com um til, o
+   caminho será retornado inalterado.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.8: Não usa mais "HOME" no Windows.
+
+os.path.expandvars(path)
+
+   Retorna o argumento com as variáveis de ambiente expandidas.
+   Substrings da forma "$name" ou "${name}" são substituídas pelo
+   valor da variável de ambiente *name*. Nomes de variáveis
+   malformados e referências a variáveis não existentes permanecem
+   inalterados.
+
+   No Windows, expansões "%name%" são suportadas juntamente a "$name"
+   e "${name}".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.getatime(path)
+
+   Retorna a hora do último acesso de *path*. O valor de retorno é um
+   número de ponto flutuante dando o número de segundos desde a Era
+   Unix (veja o módulo "time"). Levanta "OSError" se o arquivo não
+   existe ou está inacessível.
+
+os.path.getmtime(path)
+
+   Retorna a hora da última modificação de *path*. O valor de retorno
+   é um número de ponto flutuante dando o número de segundos desde a
+   Era Unix (veja o módulo "time"). Levanta "OSError" se o arquivo não
+   existe ou está inacessível.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.getctime(path)
+
+   Retorna o ctime do sistema que, em alguns sistemas (como Unix) é a
+   hora da última alteração de metadados, e, em outros (como Windows),
+   é a hora de criação de *path*. O valor de retorno é um número que
+   fornece o número de segundos desde a Era Unix (veja o módulo
+   "time"). Levanta "OSError" se o arquivo não existe ou está
+   inacessível.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.getsize(path)
+
+   Retorna o tamanho, em bytes, de *path*. Levanta "OSError" se o
+   arquivo não existe ou está inacessível.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.isabs(path)
+
+   Retorna "True" se *path* for um nome de caminho absoluto. No Unix,
+   isso significa que começa com uma barra, no Windows começa com uma
+   barra (invertida) depois de eliminar uma possível letra de unidade.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.isfile(path)
+
+   Retorna "True" se *path* for um arquivo regular "existente". Isso
+   segue links simbólicos, então "islink()" e "isfile()" podem ser
+   verdadeiros para o mesmo caminho.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.isdir(path)
+
+   Retorna "True" se *path* for um diretório "existente". Isso segue
+   links simbólicos, então "islink()" e "isdir()" podem ser
+   verdadeiros para o mesmo caminho.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.isjunction(path)
+
+   Return "True" if *path* refers to an "existing" directory entry
+   that is a junction.  Always return "False" if junctions are not
+   supported on the current platform.
+
+   Novo na versão 3.12.
+
+os.path.islink(path)
+
+   Retorna "True" se *path* se referir a uma entrada de diretório
+   "existente" que é um link simbólico. Sempre "False" se links
+   simbólicos não forem suportados pelo tempo de execução Python.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.ismount(path)
+
+   Retorna "True" se o nome de caminho *path* for um *ponto de
+   montagem*: um ponto em um sistema de arquivos onde um sistema de
+   arquivos diferente foi montado. No POSIX, a função verifica se o
+   pai de *path*, "*path*/..", está em um dispositivo diferente de
+   *path*, ou se "*path*/.." e *path* apontam para o mesmo nó-i no
+   mesmo dispositivo -- isso deve detectar pontos de montagem para
+   todas as variantes Unix e POSIX. Não é capaz de detectar
+   confiavelmente montagens bind no mesmo sistema de arquivos. No
+   Windows, uma raiz de letra de unidade e um UNC de compartilhamento
+   são sempre pontos de montagem e, para qualquer outro caminho,
+   "GetVolumePathName" é chamado para ver se é diferente do caminho de
+   entrada.
+
+   Novo na versão 3.4: Suporte para detecção de pontos de montagem não
+   raiz no Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.isdevdrive(path)
+
+   Return "True" if pathname *path* is located on a Windows Dev Drive.
+   A Dev Drive is optimized for developer scenarios, and offers faster
+   performance for reading and writing files. It is recommended for
+   use for source code, temporary build directories, package caches,
+   and other IO-intensive operations.
+
+   May raise an error for an invalid path, for example, one without a
+   recognizable drive, but returns "False" on platforms that do not
+   support Dev Drives. See the Windows documentation for information
+   on enabling and creating Dev Drives.
+
+   Disponibilidade: Windows.
+
+   Novo na versão 3.12.
+
+os.path.join(path, *paths)
+
+   Junta um ou mais segmentos do caminho de forma inteligente. O valor
+   de retorno é a concatenação de *path* e todos os membros de
+   **paths* com exatamente um separador de diretório seguindo cada
+   parte não vazia exceto a última. Significa que o resultado só
+   terminará em um separador se a última parte estiver vazia ou
+   terminar em um separador. Se um segmento for um caminho absoluto
+   (que no Windows requer a unidade/drive e uma raiz), todos os
+   segmentos anteriores serão ignorados e a união continuará a partir
+   do segmento do caminho absoluto.
+
+   No Windows, a unidade não é redefinida quando um segmento de
+   caminho raiz (por exemplo, "r'\foo'") é encontrado. Se um segmento
+   contiver uma unidade diferente ou um caminho absoluto, todos os
+   segmentos anteriores serão ignorados e a unidade será redefinida.
+   Observe que, como há um diretório atual para cada unidade,
+   "os.path.join("c:", "foo")" representa um caminho relativo ao
+   diretório atual na unidade "C:" ("c:foo"), e não "c:\foo".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *path* e *paths*.
+
+os.path.normcase(path)
+
+   Normaliza o estado de letras maiúsculas/minúsculas de um nome de
+   caminho. No Windows, converte todos os caracteres do nome do
+   caminho em minúsculas e também converte barras normais em barras
+   invertidas. Em outros sistemas operacionais, retorna o caminho
+   inalterado.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.normpath(path)
+
+      Normaliza um nome de caminho retirando separadores redundantes e
+      referências de nível superior para que "A//B", "A/B/", "A/./B" e
+      "A/foo/../B" todos se tornem "A/B". Essa manipulação de string
+      pode mudar o significado de um caminho que contém links
+      simbólicos. No Windows, ele converte barras normais em barras
+      invertidas. Para normalizar o estado de letras
+      maiúsculas/minúsculas, use "normcase()".
+
+   Nota:
+
+        Em sistemas POSIX, de acordo com IEEE Std 1003.1 2013 Edition;
+        4.13 Pathname Resolution, se um nome de caminho começa com
+        exatamente duas barras, o primeiro componente após os
+        caracteres iniciais pode ser interpretado em um forma definida
+        pela implementação, embora mais de dois caracteres iniciais
+        devam ser tratados como um único caractere.
+
+     Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.realpath(path, *, strict=False)
+
+   Retorna o caminho canônico do nome do arquivo especificado,
+   eliminando quaisquer links simbólicos encontrados no caminho (se
+   esses forem suportados pelo sistema operacional).
+
+   Se um caminho não existe ou um loop de link simbólico é encontrado,
+   e *strict* é "True", "OSError" é levantada. Se *strict* for
+   "False", o caminho será resolvido tanto quanto possível e qualquer
+   resto é anexado sem verificar se existe.
+
+   Nota:
+
+     Esta função emula o procedimento do sistema operacional para
+     tornar um caminho canônico, que difere ligeiramente entre o
+     Windows e o UNIX no que diz respeito à interação dos links e dos
+     componentes do caminho subsequentes.As APIs do sistema
+     operacional tornam os caminhos canônicos conforme necessário,
+     portanto, normalmente não é necessário chamar esta função.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.8: Links simbólicos e junções agora são
+   resolvidos no Windows.
+
+   Alterado na versão 3.10: O parâmetro *script* foi adicionado.
+
+os.path.relpath(path, start=os.curdir)
+
+   Retorna um caminho de arquivo relativo a *caminho* do diretório
+   atual ou de um diretório *start* opcional. Este é um cálculo de
+   caminho: o sistema de arquivos não é acessado para confirmar a
+   existência ou natureza de *path* ou *start*. No Windows,
+   "ValueError" é levantada quando *path* e *start* estão em unidades
+   diferentes.
+
+   *start* defaults to "os.curdir".
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.samefile(path1, path2)
+
+   Retorna "True" se ambos os argumentos de nome de caminho se referem
+   ao mesmo arquivo ou diretório. Isso é determinado pelo número do
+   dispositivo e número do nó-i e levanta uma exceção se uma chamada
+   "os.stat()" em qualquer um dos caminhos falhar.
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.2: Adicionado suporte ao Windows.
+
+   Alterado na versão 3.4: O Windows agora usa a mesma implementação
+   que todas as outras plataformas.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.sameopenfile(fp1, fp2)
+
+   Retorna "True" se os descritores de arquivo *fp1* e *fp2* fazem
+   referência ao mesmo arquivo.
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.2: Adicionado suporte ao Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.samestat(stat1, stat2)
+
+   Retorna "True" se as tuplas de estatísticas *stat1* e *stat2* fazem
+   referência ao mesmo arquivo. Essas estruturas podem ter sido
+   retornadas por "os.fstat()", "os.lstat()" ou "os.stat()". Esta
+   função implementa a comparação subjacente usada por "samefile()" e
+   "sameopenfile()".
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.4: Adicionado suporte ao Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.split(path)
+
+   Divide o caminho *path* em um par, "(cabeça, rabo)" onde *rabo* é o
+   último componente do nome do caminho e *cabeça* é tudo o que leva a
+   isso. A parte *rabo* nunca conterá uma barra; se *path* terminar
+   com uma barra, *tail* ficará vazio. Se não houver uma barra no
+   *path*, o *head* ficará vazio. Se *path* estiver vazio, *cabeça* e
+   *rabo* estarão vazios. As barras finais são retiradas da *cabeça*,
+   a menos que seja a raiz (uma ou mais barras apenas). Em todos os
+   casos, "join(cabeça, rabo)" retorna um caminho para o mesmo local
+   que *path* (mas as strings podem ser diferentes). Veja também as
+   funções "dirname()" e "basename()".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.splitdrive(path)
+
+   Divide o nome do caminho *path* em um par "(unidade, rabo)" onde
+   *unidade* é um ponto de montagem ou uma string vazia. Em sistemas
+   que não usam especificações de unidade, *unidade* sempre será a
+   string vazia. Em todos os casos, "unidade + rabo" será o mesmo que
+   *path*.
+
+   No Windows, divide um nome de caminho em unidade/ponto de
+   compartilhamento UNC e caminho relativo.
+
+   Se o caminho contiver uma letra de unidade, a unidade conterá tudo,
+   incluindo os dois pontos:
+
+      >>> splitdrive("c:/dir")
+      ("c:", "/dir")
+
+   If the path contains a UNC path, drive will contain the host name
+   and share:
+
+      >>> splitdrive("//host/computer/dir")
+      ("//host/computer", "/dir")
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.splitroot(path)
+
+   Split the pathname *path* into a 3-item tuple "(drive, root, tail)"
+   where *drive* is a device name or mount point, *root* is a string
+   of separators after the drive, and *tail* is everything after the
+   root. Any of these items may be the empty string. In all cases,
+   "drive + root + tail" will be the same as *path*.
+
+   On POSIX systems, *drive* is always empty. The *root* may be empty
+   (if *path* is relative), a single forward slash (if *path* is
+   absolute), or two forward slashes (implementation-defined per IEEE
+   Std 1003.1-2017; 4.13 Pathname Resolution.) For example:
+
+      >>> splitroot('/home/sam')
+      ('', '/', 'home/sam')
+      >>> splitroot('//home/sam')
+      ('', '//', 'home/sam')
+      >>> splitroot('///home/sam')
+      ('', '/', '//home/sam')
+
+   On Windows, *drive* may be empty, a drive-letter name, a UNC share,
+   or a device name. The *root* may be empty, a forward slash, or a
+   backward slash. For example:
+
+      >>> splitroot('C:/Users/Sam')
+      ('C:', '/', 'Users/Sam')
+      >>> splitroot('//Server/Share/Users/Sam')
+      ('//Server/Share', '/', 'Users/Sam')
+
+   Novo na versão 3.12.
+
+os.path.splitext(path)
+
+   Divida o nome do caminho *path* em um par "(root, ext)" de modo que
+   "root + ext == path", e a extensão, *ext*, esteja vazia ou comece
+   com um ponto e contenha no máximo um período.
+
+   Se o caminho não contiver extensão, *ext* será "''":
+
+      >>> splitext('bar')
+      ('bar', '')
+
+   Se o caminho contiver uma extensão, *ext* será definido para esta
+   extensão, incluindo o ponto inicial. Observe que os períodos
+   anteriores serão ignorados:
+
+      >>> splitext('foo.bar.exe')
+      ('foo.bar', '.exe')
+      >>> splitext('/foo/bar.exe')
+      ('/foo/bar', '.exe')
+
+   Os períodos iniciais do último componente do caminho são
+   considerados parte da raiz:
+
+      >>> splitext('.cshrc')
+      ('.cshrc', '')
+      >>> splitext('/foo/....jpg')
+      ('/foo/....jpg', '')
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.path.supports_unicode_filenames
+
+   "True" se strings Unicode arbitrárias podem ser usadas como nomes
+   de arquivo (dentro das limitações impostas pelo sistema de
+   arquivos).

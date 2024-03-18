@@ -1,0 +1,43 @@
+Internacionalização
+*******************
+
+Os módulos descritos neste capítulo ajudam você a criar um software
+que é independente de idioma e localidade, fornecendo mecanismos para
+selecionar um idioma a ser usado em mensagens de programa ou adaptando
+a saída para corresponder às convenções locais.
+
+A lista de módulos descritos neste capítulo é:
+
+* "gettext" --- Serviços de internacionalização multilíngues
+
+  * API do GNU **gettext**
+
+  * API baseada em classe
+
+    * A classe "NullTranslations"
+
+    * A classe "GNUTranslations"
+
+    * Suporte a catálogo de mensagens do Solaris
+
+    * O construtor Catalog
+
+  * Internacionalizando seus programas e módulos
+
+    * Localizando seu módulo
+
+    * Localizando sua aplicação
+
+    * Alterando os idiomas durante o uso
+
+    * Traduções adiadas
+
+  * Reconhecimentos
+
+* "locale" --- Serviços de internacionalização
+
+  * Histórico, detalhes, dicas, dicas e advertências
+
+  * Para escritores de extensão e programas que incorporam Python
+
+  * Acesso a catálogos de mensagens

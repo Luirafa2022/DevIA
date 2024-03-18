@@ -1,0 +1,102 @@
+Serviços da Linguagem Python
+****************************
+
+O Python fornece vários módulos para ajudar a trabalhar com a
+linguagem Python. Estes módulos suportam tokenizing, parsing, análise
+de sintaxe, disassembly de bytecode e várias outras facilidades.
+
+Esses módulos incluem:
+
+* "ast" --- Árvores de Sintaxe Abstrata
+
+  * Gramática Abstrata
+
+  * Classes de nó
+
+    * Root nodes
+
+    * Literais
+
+    * Variáveis
+
+    * Expressões
+
+      * Subscrição
+
+      * Compreensões
+
+    * Instruções
+
+      * Importações
+
+    * Control flow
+
+    * Pattern matching
+
+    * Type parameters
+
+    * Function and class definitions
+
+    * Async and await
+
+  * Auxiliares de "ast"
+
+  * Compiler Flags
+
+  * Uso da linha de comando
+
+* "symtable" --- Acesso a tabela de símbolos do compilador
+
+  * Generating Symbol Tables
+
+  * Examining Symbol Tables
+
+* "token" --- Constantes usadas com árvores de análises do Python
+
+* "keyword" --- Testando palavras reservadas do Python
+
+* "tokenize" --- Tokenizer for Python source
+
+  * Tokenizando entradas
+
+  * Uso da linha de comando
+
+  * Exemplos
+
+* "tabnanny" --- Detecção de recuo ambíguo
+
+* "pyclbr" --- Suporte a navegador de módulos do Python
+
+  * Objetos Função
+
+  * Objetos de Class
+
+* "py_compile" --- Compila arquivos fonte do Python
+
+  * Interface de Linha de Comando
+
+* "compileall" --- Compilar bibliotecas do Python para bytecode
+
+  * Uso na linha de comando
+
+  * Funções públicas
+
+* "dis" --- Disassembler de bytecode do Python
+
+  * Command-line interface
+
+  * Analise do Bytecode
+
+  * Analysis functions
+
+  * Python Bytecode Instructions
+
+  * Opcode collections
+
+* "pickletools" --- Ferramentas para desenvolvedores pickle
+
+  * Uso na linha de comando
+
+    * Opções da linha de comando
+
+  * Interface programática

@@ -1,0 +1,62 @@
+"linecache" --- Acesso aleatório a linhas de texto
+**************************************************
+
+**Código-fonte:** Lib/linecache.py
+
+======================================================================
+
+O módulo "linecache" permite obter qualquer linha de um arquivo fonte
+Python, enquanto tenta otimizar internamente, usando um cache, o caso
+comum em que muitas linhas são lidas em um único arquivo. Isso é usado
+pelo módulo "traceback" para recuperar as linhas de origem para
+inclusão no traceback (situação da pilha de execução) formatado.
+
+A função "tokenize.open()" é usada para abrir arquivos. Esta função
+usa "tokenize.detect_encoding()" para obter a codificação do arquivo;
+na ausência de um token de codificação, o padrão de codificação do
+arquivo é UTF-8.
+
+O módulo "linecache" define as seguintes funções:
+
+linecache.getline(filename, lineno, module_globals=None)
+
+   Obtém a linha *lineno* do arquivo chamado *filename*. Essa função
+   nunca levanta uma exceção --- ela retornará "''" em erros (o
+   caractere de nova linha final será incluído para as linhas
+   encontradas).
+
+   Se um arquivo chamado *filename* não for encontrado, a função
+   primeiro verifica por um "__loader__" da **PEP 302** em
+   *module_globals*. Se existe um carregador e ele define um método
+   "get_source", isso determina as linhas fonte (se "get_source()"
+   retornar "None", então "''" será retornado). Por fim, se *filename*
+   for um nome de arquivo relativo, ele será procurado em relação às
+   entradas no caminho de pesquisa do módulo, "sys.path".
+
+linecache.clearcache()
+
+   Limpa o cache. Use esta função se você não precisar mais de linhas
+   de arquivos lidos anteriormente usando "getline()".
+
+linecache.checkcache(filename=None)
+
+   Verifica a validade do cache. Use esta função se os arquivos no
+   cache tiverem sido alterados no disco e você precisar da versão
+   atualizada. Se *filename* for omitido, ele verificará todas as
+   entradas no cache.
+
+linecache.lazycache(filename, module_globals)
+
+   Captura detalhes suficientes sobre um módulo não baseado em arquivo
+   para permitir obter suas linhas posteriormente via "getline()"
+   mesmo se *module_globals* for "None" na chamada posterior. Isso
+   evita a execução de E/S até que uma linha seja realmente
+   necessária, sem ter que carregar o módulo global indefinidamente.
+
+   Novo na versão 3.5.
+
+Exemplo:
+
+   >>> import linecache
+   >>> linecache.getline(linecache.__file__, 8)
+   'import sys\n'

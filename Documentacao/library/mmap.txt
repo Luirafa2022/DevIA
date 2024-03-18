@@ -1,0 +1,380 @@
+"mmap" --- Suporte a arquivos mapeados na memória
+*************************************************
+
+======================================================================
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+Objetos arquivo mapeados na memória se comportam como "bytearray" e
+como *objetos arquivo*. Você pode usar objetos mmap na maioria dos
+lugares onde "bytearray" é esperado; por exemplo, você pode usar o
+módulo "re" para pesquisar um arquivo mapeado na memória. Você também
+pode alterar um único byte executando "obj[index] = 97" ou alterar uma
+subsequência atribuindo a uma fatia: "obj[i1:i2] = b'...'". Você
+também pode ler e gravar dados começando na posição atual do arquivo e
+"seek()" através do arquivo para diferentes posições.
+
+A memory-mapped file is created by the "mmap" constructor, which is
+different on Unix and on Windows.  In either case you must provide a
+file descriptor for a file opened for update. If you wish to map an
+existing Python file object, use its "fileno()" method to obtain the
+correct value for the *fileno* parameter.  Otherwise, you can open the
+file using the "os.open()" function, which returns a file descriptor
+directly (the file still needs to be closed when done).
+
+Nota:
+
+  Se você deseja criar um mapeamento de memória para um arquivo
+  gravável e armazenado em buffer, deve usar "flush()" no arquivo
+  primeiro. Isso é necessário para garantir que as modificações locais
+  nos buffers estejam realmente disponíveis para o mapeamento.
+
+Para as versões Unix e Windows do construtor, *access* pode ser
+especificado como um parâmetro opcional de palavra-chave. *access*
+aceita um dos quatro valores: "ACCESS_READ", "ACCESS_WRITE" ou
+"ACCESS_COPY" para especificar memória somente leitura, gravação ou
+cópia na gravação, respectivamente "ACCESS_DEFAULT" para adiar para
+*prot*. *access* pode ser usado no Unix e no Windows. Se *access* não
+for especificado, o mmap do Windows retornará um mapeamento de
+gravação. Os valores iniciais da memória para todos os três tipos de
+acesso são obtidos do arquivo especificado. A atribuição a um mapa de
+memória "ACCESS_READ" gera uma exceção "TypeError". A atribuição a um
+mapa de memória "ACCESS_WRITE" afeta a memória e o arquivo subjacente.
+A atribuição a um mapa de memória "ACCESS_COPY" afeta a memória, mas
+não atualiza o arquivo subjacente.
+
+Alterado na versão 3.7: Adicionada a constante "ACCESS_DEFAULT".
+
+Para mapear a memória anônima, -1 deve ser passado como o fileno junto
+com o comprimento.
+
+class mmap.mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
+
+   **(Versão Windows)** Mapeia *length* bytes do arquivo especificado
+   pelo identificador de arquivo *fileno* e cria um objeto mmap. Se
+   *length* for maior que o tamanho atual do arquivo, o arquivo será
+   estendido para conter *length* bytes. Se *length* for "0", o
+   tamanho máximo do mapa será o tamanho atual do arquivo, exceto que,
+   se o arquivo estiver vazio, o Windows levantará uma exceção (você
+   não poderá criar um mapeamento vazio no Windows).
+
+   *tagname*, if specified and not "None", is a string giving a tag
+   name for the mapping.  Windows allows you to have many different
+   mappings against the same file.  If you specify the name of an
+   existing tag, that tag is opened, otherwise a new tag of this name
+   is created.  If this parameter is omitted or "None", the mapping is
+   created without a name.  Avoiding the use of the *tagname*
+   parameter will assist in keeping your code portable between Unix
+   and Windows.
+
+   *offset* may be specified as a non-negative integer offset. mmap
+   references will be relative to the offset from the beginning of the
+   file. *offset* defaults to 0.  *offset* must be a multiple of the
+   "ALLOCATIONGRANULARITY".
+
+   Raises an auditing event "mmap.__new__" with arguments "fileno",
+   "length", "access", "offset".
+
+class mmap.mmap(fileno, length, flags=MAP_SHARED, prot=PROT_WRITE|PROT_READ, access=ACCESS_DEFAULT[, offset])
+
+   **(Unix version)** Maps *length* bytes from the file specified by
+   the file descriptor *fileno*, and returns a mmap object.  If
+   *length* is "0", the maximum length of the map will be the current
+   size of the file when "mmap" is called.
+
+   *flags* specifies the nature of the mapping. "MAP_PRIVATE" creates
+   a private copy-on-write mapping, so changes to the contents of the
+   mmap object will be private to this process, and "MAP_SHARED"
+   creates a mapping that's shared with all other processes mapping
+   the same areas of the file.  The default value is "MAP_SHARED".
+   Some systems have additional possible flags with the full list
+   specified in MAP_* constants.
+
+   *prot*, if specified, gives the desired memory protection; the two
+   most useful values are "PROT_READ" and "PROT_WRITE", to specify
+   that the pages may be read or written.  *prot* defaults to
+   "PROT_READ | PROT_WRITE".
+
+   *access* may be specified in lieu of *flags* and *prot* as an
+   optional keyword parameter.  It is an error to specify both
+   *flags*, *prot* and *access*.  See the description of *access*
+   above for information on how to use this parameter.
+
+   *offset* may be specified as a non-negative integer offset. mmap
+   references will be relative to the offset from the beginning of the
+   file. *offset* defaults to 0. *offset* must be a multiple of
+   "ALLOCATIONGRANULARITY" which is equal to "PAGESIZE" on Unix
+   systems.
+
+   To ensure validity of the created memory mapping the file specified
+   by the descriptor *fileno* is internally automatically synchronized
+   with the physical backing store on macOS.
+
+   This example shows a simple way of using "mmap":
+
+      import mmap
+
+      # write a simple example file
+      with open("hello.txt", "wb") as f:
+          f.write(b"Hello Python!\n")
+
+      with open("hello.txt", "r+b") as f:
+          # memory-map the file, size 0 means whole file
+          mm = mmap.mmap(f.fileno(), 0)
+          # read content via standard file methods
+          print(mm.readline())  # prints b"Hello Python!\n"
+          # read content via slice notation
+          print(mm[:5])  # prints b"Hello"
+          # update content using slice notation;
+          # note that new content must have same size
+          mm[6:] = b" world!\n"
+          # ... and read again using standard file methods
+          mm.seek(0)
+          print(mm.readline())  # prints b"Hello  world!\n"
+          # close the map
+          mm.close()
+
+   "mmap" can also be used as a context manager in a "with" statement:
+
+      import mmap
+
+      with mmap.mmap(-1, 13) as mm:
+          mm.write(b"Hello world!")
+
+   Novo na versão 3.2: Suporte a gerenciador de contexto.
+
+   The next example demonstrates how to create an anonymous map and
+   exchange data between the parent and child processes:
+
+      import mmap
+      import os
+
+      mm = mmap.mmap(-1, 13)
+      mm.write(b"Hello world!")
+
+      pid = os.fork()
+
+      if pid == 0:  # In a child process
+          mm.seek(0)
+          print(mm.readline())
+
+          mm.close()
+
+   Raises an auditing event "mmap.__new__" with arguments "fileno",
+   "length", "access", "offset".
+
+   Memory-mapped file objects support the following methods:
+
+   close()
+
+      Closes the mmap. Subsequent calls to other methods of the object
+      will result in a ValueError exception being raised. This will
+      not close the open file.
+
+   closed
+
+      "True" if the file is closed.
+
+      Novo na versão 3.2.
+
+   find(sub[, start[, end]])
+
+      Returns the lowest index in the object where the subsequence
+      *sub* is found, such that *sub* is contained in the range
+      [*start*, *end*]. Optional arguments *start* and *end* are
+      interpreted as in slice notation. Returns "-1" on failure.
+
+      Alterado na versão 3.5: Writable *bytes-like object* is now
+      accepted.
+
+   flush([offset[, size]])
+
+      Flushes changes made to the in-memory copy of a file back to
+      disk. Without use of this call there is no guarantee that
+      changes are written back before the object is destroyed.  If
+      *offset* and *size* are specified, only changes to the given
+      range of bytes will be flushed to disk; otherwise, the whole
+      extent of the mapping is flushed.  *offset* must be a multiple
+      of the "PAGESIZE" or "ALLOCATIONGRANULARITY".
+
+      "None" is returned to indicate success.  An exception is raised
+      when the call failed.
+
+      Alterado na versão 3.8: Previously, a nonzero value was returned
+      on success; zero was returned on error under Windows.  A zero
+      value was returned on success; an exception was raised on error
+      under Unix.
+
+   madvise(option[, start[, length]])
+
+      Send advice *option* to the kernel about the memory region
+      beginning at *start* and extending *length* bytes.  *option*
+      must be one of the MADV_* constants available on the system.  If
+      *start* and *length* are omitted, the entire mapping is spanned.
+      On some systems (including Linux), *start* must be a multiple of
+      the "PAGESIZE".
+
+      Availability: Systems with the "madvise()" system call.
+
+      Novo na versão 3.8.
+
+   move(dest, src, count)
+
+      Copy the *count* bytes starting at offset *src* to the
+      destination index *dest*.  If the mmap was created with
+      "ACCESS_READ", then calls to move will raise a "TypeError"
+      exception.
+
+   read([n])
+
+      Return a "bytes" containing up to *n* bytes starting from the
+      current file position. If the argument is omitted, "None" or
+      negative, return all bytes from the current file position to the
+      end of the mapping. The file position is updated to point after
+      the bytes that were returned.
+
+      Alterado na versão 3.3: Argument can be omitted or "None".
+
+   read_byte()
+
+      Returns a byte at the current file position as an integer, and
+      advances the file position by 1.
+
+   readline()
+
+      Returns a single line, starting at the current file position and
+      up to the next newline. The file position is updated to point
+      after the bytes that were returned.
+
+   resize(newsize)
+
+      Resizes the map and the underlying file, if any. If the mmap was
+      created with "ACCESS_READ" or "ACCESS_COPY", resizing the map
+      will raise a "TypeError" exception.
+
+      **On Windows**: Resizing the map will raise an "OSError" if
+      there are other maps against the same named file. Resizing an
+      anonymous map (ie against the pagefile) will silently create a
+      new map with the original data copied over up to the length of
+      the new size.
+
+      Alterado na versão 3.11: Correctly fails if attempting to resize
+      when another map is held Allows resize against an anonymous map
+      on Windows
+
+   rfind(sub[, start[, end]])
+
+      Returns the highest index in the object where the subsequence
+      *sub* is found, such that *sub* is contained in the range
+      [*start*, *end*]. Optional arguments *start* and *end* are
+      interpreted as in slice notation. Returns "-1" on failure.
+
+      Alterado na versão 3.5: Writable *bytes-like object* is now
+      accepted.
+
+   seek(pos[, whence])
+
+      Set the file's current position.  *whence* argument is optional
+      and defaults to "os.SEEK_SET" or "0" (absolute file
+      positioning); other values are "os.SEEK_CUR" or "1" (seek
+      relative to the current position) and "os.SEEK_END" or "2" (seek
+      relative to the file's end).
+
+   size()
+
+      Return the length of the file, which can be larger than the size
+      of the memory-mapped area.
+
+   tell()
+
+      Returns the current position of the file pointer.
+
+   write(bytes)
+
+      Write the bytes in *bytes* into memory at the current position
+      of the file pointer and return the number of bytes written
+      (never less than "len(bytes)", since if the write fails, a
+      "ValueError" will be raised).  The file position is updated to
+      point after the bytes that were written.  If the mmap was
+      created with "ACCESS_READ", then writing to it will raise a
+      "TypeError" exception.
+
+      Alterado na versão 3.5: Writable *bytes-like object* is now
+      accepted.
+
+      Alterado na versão 3.6: The number of bytes written is now
+      returned.
+
+   write_byte(byte)
+
+      Write the integer *byte* into memory at the current position of
+      the file pointer; the file position is advanced by "1". If the
+      mmap was created with "ACCESS_READ", then writing to it will
+      raise a "TypeError" exception.
+
+
+Constantes MADV_*
+=================
+
+mmap.MADV_NORMAL
+mmap.MADV_RANDOM
+mmap.MADV_SEQUENTIAL
+mmap.MADV_WILLNEED
+mmap.MADV_DONTNEED
+mmap.MADV_REMOVE
+mmap.MADV_DONTFORK
+mmap.MADV_DOFORK
+mmap.MADV_HWPOISON
+mmap.MADV_MERGEABLE
+mmap.MADV_UNMERGEABLE
+mmap.MADV_SOFT_OFFLINE
+mmap.MADV_HUGEPAGE
+mmap.MADV_NOHUGEPAGE
+mmap.MADV_DONTDUMP
+mmap.MADV_DODUMP
+mmap.MADV_FREE
+mmap.MADV_NOSYNC
+mmap.MADV_AUTOSYNC
+mmap.MADV_NOCORE
+mmap.MADV_CORE
+mmap.MADV_PROTECT
+mmap.MADV_FREE_REUSABLE
+mmap.MADV_FREE_REUSE
+
+   These options can be passed to "mmap.madvise()".  Not every option
+   will be present on every system.
+
+   Availability: Systems with the madvise() system call.
+
+   Novo na versão 3.8.
+
+
+Constantes MAP_*
+================
+
+mmap.MAP_SHARED
+mmap.MAP_PRIVATE
+mmap.MAP_DENYWRITE
+mmap.MAP_EXECUTABLE
+mmap.MAP_ANON
+mmap.MAP_ANONYMOUS
+mmap.MAP_POPULATE
+mmap.MAP_STACK
+mmap.MAP_ALIGNED_SUPER
+mmap.MAP_CONCEAL
+
+   These are the various flags that can be passed to "mmap.mmap()".
+   "MAP_ALIGNED_SUPER" is only available at FreeBSD and "MAP_CONCEAL"
+   is only available at OpenBSD.  Note that some options might not be
+   present on some systems.
+
+   Alterado na versão 3.10: Added "MAP_POPULATE" constant.
+
+   Novo na versão 3.11: Added "MAP_STACK" constant.
+
+   Novo na versão 3.12: Added "MAP_ALIGNED_SUPER" constant. Added
+   "MAP_CONCEAL" constant.

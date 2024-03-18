@@ -1,0 +1,210 @@
+"graphlib" --- Funcionalidade para operar com estruturas do tipo grafo
+**********************************************************************
+
+**Código-fonte:** Lib/graphlib.py
+
+======================================================================
+
+class graphlib.TopologicalSorter(graph=None)
+
+   Fornece funcionalidade para classificar topologicamente um grafo de
+   nós *hasheáveis*.
+
+   Uma ordem topológica é uma ordenação linear dos vértices em um
+   grafo, de modo que para cada aresta direcionada u -> v do vértice u
+   ao vértice v, o vértice u vem antes do vértice v na ordenação. Por
+   exemplo, os vértices do grafo podem representar tarefas a serem
+   executadas e as arestas podem representar restrições de que uma
+   tarefa deve ser executada antes de outra; neste exemplo, uma ordem
+   topológica é apenas uma sequência válida para as tarefas. Uma
+   ordenação topológica completa é possível se e somente se o grafo
+   não tiver ciclos direcionados, ou seja, se for um grafo acíclico
+   direcionado.
+
+   Se o argumento opcional *graph* for fornecido, ele deverá ser um
+   dicionário que represente um grafo acíclico direcionado no qual as
+   chaves sejam nós e os valores sejam iteráveis de todos os
+   predecessores desse nó no grafo (os nós que possuem bordas que
+   apontam para o valor na chave). Nós adicionais podem ser
+   adicionados ao grafo usando o método "add()".
+
+   No caso geral, as etapas necessárias para executar a classificação
+   de um determinado grafo são as seguintes:
+
+   * Cria uma instância da classe "TopologicalSorter" com um grafo
+     inicial opcional.
+
+   * Adiciona nós adicionais ao grafo.
+
+   * Chama o método "prepare()" no grafo.
+
+   * Enquanto "is_active()" é "True", itera pelos nós retornados por
+     "get_ready()" e os processa. Chama "done()" em cada nó na medida
+     em que finaliza o processamento.
+
+   Caso apenas uma classificação imediata dos nós no grafo seja
+   necessária e nenhum paralelismo esteja envolvido, o método de
+   conveniência "TopologicalSorter.static_order()" pode ser usado
+   diretamente:
+
+      >>> graph = {"D": {"B", "C"}, "C": {"A"}, "B": {"A"}}
+      >>> ts = TopologicalSorter(graph)
+      >>> tuple(ts.static_order())
+      ('A', 'C', 'B', 'D')
+
+   A classe foi projetada para suportar facilmente o processamento
+   paralelo dos nós à medida que eles se tornam prontos. Por exemplo:
+
+      topological_sorter = TopologicalSorter()
+
+      # Add nodes to 'topological_sorter'...
+
+      topological_sorter.prepare()
+      while topological_sorter.is_active():
+          for node in topological_sorter.get_ready():
+              # Worker threads or processes take nodes to work on off the
+              # 'task_queue' queue.
+              task_queue.put(node)
+
+          # When the work for a node is done, workers put the node in
+          # 'finalized_tasks_queue' so we can get more nodes to work on.
+          # The definition of 'is_active()' guarantees that, at this point, at
+          # least one node has been placed on 'task_queue' that hasn't yet
+          # been passed to 'done()', so this blocking 'get()' must (eventually)
+          # succeed.  After calling 'done()', we loop back to call 'get_ready()'
+          # again, so put newly freed nodes on 'task_queue' as soon as
+          # logically possible.
+          node = finalized_tasks_queue.get()
+          topological_sorter.done(node)
+
+   add(node, *predecessors)
+
+      Adiciona um novo nó e seus predecessores ao grafo. O *node* e
+      todos os elementos em *predecessors* devem ser *hasheáveis*.
+
+      Se chamado várias vezes com o mesmo argumento do nó, o conjunto
+      de dependências será a união de todas as dependências
+      transmitidas.
+
+      É possível adicionar um nó sem dependências (*predecessors* não
+      são fornecidos) ou fornecer uma dependência duas vezes. Se um nó
+      que não foi fornecido anteriormente for incluído entre os
+      *predecessors*, ele será automaticamente adicionado ao grafo sem
+      predecessores próprios.
+
+      Levanta "ValueError" se chamado após "prepare()".
+
+   prepare()
+
+      Marca o grafo como concluído e verifica os ciclos no grafo. Se
+      qualquer ciclo for detectado, "CycleError" será gerado, mas
+      "get_ready()" ainda poderá ser usado para obter o maior número
+      possível de nós até que os ciclos bloqueiem mais progressos.
+      Após uma chamada para esta função, o grafo não pode ser
+      modificado e, portanto, nenhum nó pode ser adicionado usando
+      "add()".
+
+   is_active()
+
+      Retorna "True" se mais progresso puder ser feito e "False" caso
+      contrário. É possível progredir se os ciclos não bloquearem a
+      resolução e ainda houver nós prontos que ainda não foram
+      retornados por "TopologicalSorter.get_ready()" ou o número de
+      nós marcados "TopologicalSorter.done()" é menor que o número
+      retornado por "TopologicalSorter.get_ready()".
+
+      O método "__bool__()" desta classe adia para essa função, então,
+      em vez de:
+
+         if ts.is_active():
+             ...
+
+      é possível simplesmente fazer:
+
+         if ts:
+             ...
+
+      Levanta "ValueError" se chamado sem chamar "prepare()"
+      anteriormente.
+
+   done(*nodes)
+
+      Marca um conjunto de nós retornados por
+      "TopologicalSorter.get_ready()" como processado, desbloqueando
+      qualquer sucessor de cada nó em *nodes* para ser retornado no
+      futuro por uma chamada para "TopologicalSorter.get_ready()".
+
+      Levanta "ValueError" se algum nó em *nodes* já foi marcado como
+      processado por uma chamada anterior a este método ou se um nó
+      não foi adicionado ao grafo usando "TopologicalSorter.add()", se
+      chamado sem chamar "prepare()" ou se o nó ainda não foi
+      retornado por "get_ready()".
+
+   get_ready()
+
+      Retorna uma "tupla" com todos os nós que estão prontos.
+      Inicialmente, ele retorna todos os nós sem predecessores e, uma
+      vez marcados como processados, chamando
+      "TopologicalSorter.done()", novas chamadas retornarão todos os
+      novos nós que já tenham seus antecessores já processados. Quando
+      não for possível fazer mais progresso, as tuplas vazias serão
+      retornadas.
+
+      Levanta "ValueError" se chamado sem chamar "prepare()"
+      anteriormente.
+
+   static_order()
+
+      Retorna um objeto iterador que irá iterar sobre os nós em uma
+      ordem topológica. Ao usar este método, "prepare()" e "done()"
+      não devem ser chamados. Este método é equivalente a:
+
+         def static_order(self):
+             self.prepare()
+             while self.is_active():
+                 node_group = self.get_ready()
+                 yield from node_group
+                 self.done(*node_group)
+
+      A ordem específica retornada pode depender da ordem específica
+      em que os itens foram inseridos no grafo. Por exemplo:
+
+         >>> ts = TopologicalSorter()
+         >>> ts.add(3, 2, 1)
+         >>> ts.add(1, 0)
+         >>> print([*ts.static_order()])
+         [2, 0, 1, 3]
+
+         >>> ts2 = TopologicalSorter()
+         >>> ts2.add(1, 0)
+         >>> ts2.add(3, 2, 1)
+         >>> print([*ts2.static_order()])
+         [0, 2, 1, 3]
+
+      Isso se deve ao fato de que "0" e "2" estão no mesmo nível no
+      grafo (eles teriam sido retornados na mesma chamada para
+      "get_ready()") e a ordem entre eles é determinada pela ordem de
+      inserção.
+
+      Se qualquer ciclo for detectado, "CycleError" será levantada.
+
+   Novo na versão 3.9.
+
+
+Exceções
+========
+
+O módulo "graphlib" define as seguintes classes de exceção:
+
+exception graphlib.CycleError
+
+   Subclasse de "ValueError" levantada por
+   "TopologicalSorter.prepare()" se houver ciclos no grafo de
+   trabalho. Se existirem vários ciclos, apenas uma opção indefinida
+   entre eles será relatada e incluída na exceção.
+
+   O ciclo detectado pode ser acessado através do segundo elemento no
+   atributo "args" da instância de exceção e consiste em uma lista de
+   nós, de modo que cada nó seja, no grafo, um predecessor imediato do
+   próximo nó na lista. Na lista relatada, o primeiro e o último nó
+   serão os mesmos, para deixar claro que é cíclico.

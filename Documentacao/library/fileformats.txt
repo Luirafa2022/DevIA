@@ -1,0 +1,56 @@
+Formatos de Arquivo
+*******************
+
+Os módulos descritos neste capítulo analisam vários formatos de
+arquivo diversos que não são linguagens de marcação e não estão
+relacionados ao e-mail.
+
+* "csv" --- Leitura e escrita de arquivos CSV
+
+  * Conteúdo do módulo
+
+  * Dialetos e parâmetros de formatação
+
+  * Objetos Reader
+
+  * Objetos Writer
+
+  * Exemplos
+
+* "configparser" --- Configuration file parser
+
+  * Quick Start
+
+  * Supported Datatypes
+
+  * Fallback Values
+
+  * Estrutura dos arquivos INI
+
+  * Interpolation of values
+
+  * Mapping Protocol Access
+
+  * Customizing Parser Behaviour
+
+  * Exemplos de APIs legadas
+
+  * ConfigParser Objects
+
+  * RawConfigParser Objects
+
+  * Exceções
+
+* "tomllib" --- Analisa arquivos TOML
+
+  * Exemplos
+
+  * Tabela de conversão
+
+* "netrc" --- Arquivo de processamento netrc
+
+  * Objetos netrc
+
+* "plistlib" --- Generate and parse Apple ".plist" files
+
+  * Exemplos

@@ -1,0 +1,41 @@
+"html.entities" --- Definições de entidades gerais de HTML
+**********************************************************
+
+**Código-fonte:** Lib/html/entities.py
+
+======================================================================
+
+Esse módulo define quatro dicionários, "html5", "name2codepoint",
+"codepoint2name" e "entitydefs".
+
+html.entities.html5
+
+   Um dicionário que mapeia referências de caracteres nomeados em
+   HTML5 [1] para os caracteres Unicode equivalentes, por exemplo,
+   "html5['gt;'] == '>'". Note que o caractere de ponto e vírgula
+   final está incluído no nome (por exemplo, "'gt;'"), entretanto
+   alguns dos nomes são aceitos pelo padrão mesmo sem o ponto e
+   vírgula: neste caso o nome está presente com e sem o "';'". Veja
+   também "html.unescape()".
+
+   Novo na versão 3.3.
+
+html.entities.entitydefs
+
+   Um dicionário que mapeia as definições de entidade XHTML 1.0 para
+   seu texto substituto em ISO Latin-1.
+
+html.entities.name2codepoint
+
+   Um dicionário que mapeia nomes de entidades HTML4 para os pontos de
+   código Unicode.
+
+html.entities.codepoint2name
+
+   Um dicionário que mapeia pontos de código Unicode para nomes de
+   entidades HTML4.
+
+-[ Notas de rodapé ]-
+
+[1] Veja https://html.spec.whatwg.org/multipage/named-characters.html
+    #named-character-references

@@ -1,0 +1,683 @@
+A Biblioteca Padrão do Python
+*****************************
+
+Enquanto A Referência da Linguagem Python descreve a sintaxe e a
+semântica exatas da linguagem Python, este manual de referência de
+bibliotecas descreve a biblioteca padrão que é distribuída com o
+Python. Ele também descreve alguns dos componentes opcionais que são
+comumente incluídos nas distribuições do Python.
+
+A biblioteca padrão do Python é muito extensa, oferecendo uma ampla
+gama de recursos, conforme indicado pelo longo índice listado abaixo.
+A biblioteca contém módulos embutidos (escritos em C) que fornecem
+acesso à funcionalidade do sistema, como E/S de arquivos que de outra
+forma seriam inacessíveis para programadores Python, bem como módulos
+escritos em Python que fornecem soluções padronizadas para muitos
+problemas que ocorrem em programação cotidiana. Alguns desses módulos
+são explicitamente projetados para incentivar e aprimorar a
+portabilidade de programas em Python, abstraindo os detalhes da
+plataforma em APIs neutras em plataforma.
+
+Os instaladores do Python para a plataforma Windows geralmente incluem
+toda a biblioteca padrão e muitas vezes também incluem muitos
+componentes adicionais. Para sistemas operacionais semelhantes a Unix,
+o Python é normalmente fornecido como uma coleção de pacotes,
+portanto, pode ser necessário usar as ferramentas de empacotamento
+fornecidas com o sistema operacional para obter alguns ou todos os
+componentes opcionais.
+
+Além da biblioteca padrão, há uma coleção ativa de centenas de
+milhares de componentes (de programas e módulos individuais a pacotes
+e frameworks de desenvolvimento de aplicativos inteiros), disponíveis
+no Python Package Index.
+
+* Introdução
+
+  * Observações sobre disponibilidade
+
+* Funções embutidas
+
+* Constantes embutidas
+
+  * Constantes adicionadas pelo módulo "site"
+
+* Tipos embutidos
+
+  * Teste do valor verdade
+
+  * Operações booleanas --- "and", "or", "not"
+
+  * Comparações
+
+  * Tipos numéricos --- "int", "float", "complex"
+
+  * Tipo booleano - "bool"
+
+  * Tipos iteradores
+
+  * Tipos sequências --- "list", "tuple", "range"
+
+  * Tipo sequência de texto --- "str"
+
+  * Tipos de Sequência Binária --- "bytes", "bytearray", "memoryview"
+
+  * Tipo conjuntos --- "set", "frozenset"
+
+  * Tipo mapeamento --- "dict"
+
+  * Tipos de Gerenciador de Contexto
+
+  * Tipos de anotação de tipo --- *Apelido genérico*, *União*
+
+  * Outros tipos embutidos
+
+  * Atributos Especiais
+
+  * Limitação de comprimento de string na conversão para inteiro
+
+* Exceções embutidas
+
+  * Contexto da exceção
+
+  * Herdando de exceções embutidas
+
+  * Classes base
+
+  * Exceções concretas
+
+  * Avisos
+
+  * Grupos de exceções
+
+  * Hierarquia das exceções
+
+* Serviços de Processamento de Texto
+
+  * "string" --- Operações comuns de strings
+
+  * "re" --- Operações com expressões regulares
+
+  * "difflib" --- Helpers for computing deltas
+
+  * "textwrap" --- Text wrapping and filling
+
+  * "unicodedata" --- Unicode Database
+
+  * "stringprep" --- Internet String Preparation
+
+  * "readline" --- GNU readline interface
+
+  * "rlcompleter" --- Função de completamento para GNU readline
+
+* Serviços de Dados Binários
+
+  * "struct" --- Interpret bytes as packed binary data
+
+  * "codecs" --- Codec registry and base classes
+
+* Tipos de Dados
+
+  * "datetime" --- Tipos básicos de data e hora
+
+  * "zoneinfo" --- Suporte a fuso horário da IANA
+
+  * "calendar" --- General calendar-related functions
+
+  * "collections" --- Tipos de dados de contêineres
+
+  * "collections.abc" --- Classes Base Abstratas para Contêineres
+
+  * "heapq" --- Heap queue algorithm
+
+  * "bisect" --- Algoritmo de bisseção de vetor
+
+  * "array"--- Vetores eficientes de valores numéricos
+
+  * "weakref" --- Weak references
+
+  * "types" --- Criação de tipos dinâmicos e nomes para tipos
+    embutidos
+
+  * "copy" --- Operações de cópia profunda e cópia rasa
+
+  * "pprint" --- Impressão Bonita de Dados
+
+  * "reprlib" --- Implementação alternativa à "repr()"
+
+  * "enum" --- Suporte a enumerações
+
+  * "graphlib" --- Funcionalidade para operar com estruturas do tipo
+    grafo
+
+* Módulos Matemáticos e Numéricos
+
+  * "numbers" --- Classes base abstratas numéricas
+
+  * "math" --- Funções matemáticas
+
+  * "cmath" --- Funções matemáticas para números complexos
+
+  * "decimal" --- Aritmética de ponto fixo decimal e ponto flutuante
+
+  * "fractions" --- Rational numbers
+
+  * "random" --- Gera números pseudoaleatórios
+
+  * "statistics" --- Funções estatísticas
+
+* Módulos de Programação Funcional
+
+  * "itertools" --- Funções que criam iteradores para laços eficientes
+
+  * "functools" --- Funções e operações de ordem superior em objetos
+    chamáveis
+
+  * "operator" --- Operadores padrões como funções
+
+* Acesso a arquivos e diretórios
+
+  * "pathlib" --- Caminhos do sistema de arquivos orientados a objetos
+
+  * "os.path" --- Manipulações comuns de nomes de caminhos
+
+  * "fileinput" --- Iterate over lines from multiple input streams
+
+  * "stat" --- Interpreting "stat()" results
+
+  * "filecmp" --- Comparações de arquivos e diretórios
+
+  * "tempfile" --- Gerar arquivos temporários e diretórios
+
+  * "glob" --- Expansão de padrão de nome de arquivo no estilo Unix
+
+  * "fnmatch" --- Correspondência de padrões de nome de arquivo Unix
+
+  * "linecache" --- Acesso aleatório a linhas de texto
+
+  * "shutil" --- Operações de arquivo de alto nível
+
+* Persistência de Dados
+
+  * "pickle" --- Serialização de objetos Python
+
+  * "copyreg" --- Registra funções de suporte "pickle"
+
+  * "shelve" --- Persistência de objetos Python
+
+  * "marshal" --- Serialização interna de objetos Python
+
+  * "dbm" --- Interfaces to Unix "databases"
+
+  * "sqlite3" --- Interface DB-API 2.0 para bancos de dados SQLite
+
+* Compressão de Dados e Arquivamento
+
+  * "zlib" --- Compactação compatível com **gzip**
+
+  * "gzip" --- Support for **gzip** files
+
+  * "bz2" --- Suporte para compressão **bzip2**
+
+  * "lzma" --- Compactação usando o algoritmo LZMA
+
+  * "zipfile" --- Trabalha com arquivos ZIP
+
+  * "tarfile" --- Read and write tar archive files
+
+* Formatos de Arquivo
+
+  * "csv" --- Leitura e escrita de arquivos CSV
+
+  * "configparser" --- Configuration file parser
+
+  * "tomllib" --- Analisa arquivos TOML
+
+  * "netrc" --- Arquivo de processamento netrc
+
+  * "plistlib" --- Generate and parse Apple ".plist" files
+
+* Serviços Criptográficos
+
+  * "hashlib" --- Secure hashes and message digests
+
+  * "hmac" --- Keyed-Hashing for Message Authentication
+
+  * "secrets" --- Gera números aleatórios seguros para gerenciar
+    segredos
+
+* Serviços Genéricos do Sistema Operacional
+
+  * "os" --- Diversas interfaces de sistema operacional
+
+  * "io" --- Ferramentas principais para trabalhar com fluxos
+
+  * "time" --- Acesso ao horário e conversões
+
+  * "argparse" --- Analisador sintático para opções de linha de
+    comando, argumentos e subcomandos
+
+  * "getopt" --- Analisador sintático no estilo C para opções de linha
+    de comando
+
+  * "logging" --- Recurso de utilização do Logging para Python
+
+  * "logging.config" --- Logging configuration
+
+  * "logging.handlers" --- Tratadores de registro
+
+  * "getpass" --- Entrada de senha portátil
+
+  * "curses" --- Gerenciador de terminal para visualizadores de
+    células de caracteres.
+
+  * "curses.textpad" --- Text input widget for curses programs
+
+  * "curses.ascii" --- Utilities for ASCII characters
+
+  * "curses.panel" --- A panel stack extension for curses
+
+  * "platform" ---  Access to underlying platform's identifying data
+
+  * "errno" --- Standard errno system symbols
+
+  * "ctypes" --- Uma biblioteca de funções externas para Python
+
+* Execução Concorrente
+
+  * "threading" --- Paralelismo baseado em Thread
+
+  * "multiprocessing" --- Paralelismo baseado em processo
+
+  * "multiprocessing.shared_memory" --- Memória compartilhada para
+    acesso direto entre processos
+
+  * O pacote "concurrent"
+
+  * "concurrent.futures" --- Iniciando tarefas em paralelo
+
+  * "subprocess" --- Gerenciamento de subprocessos
+
+  * "sched" --- Event scheduler
+
+  * "queue" --- A synchronized queue class
+
+  * "contextvars" --- Variáveis de contexto
+
+  * "_thread"--- API de segmentação de baixo nível
+
+* Comunicação em Rede e Interprocesso
+
+  * "asyncio" --- E/S assíncrona
+
+  * "socket" --- Interface de rede de baixo nível
+
+  * "ssl" --- TLS/SSL wrapper for socket objects
+
+  * "select" --- Waiting for I/O completion
+
+  * "selectors" --- High-level I/O multiplexing
+
+  * "signal" --- Set handlers for asynchronous events
+
+  * "mmap" --- Suporte a arquivos mapeados na memória
+
+* Manuseio de Dados na Internet
+
+  * "email" --- Um e-mail e um pacote MIME manipulável
+
+  * "json" --- Codificador e decodificador JSON
+
+  * "mailbox" --- Manipulate mailboxes in various formats
+
+  * "mimetypes" --- Mapeia nomes de arquivos para tipos MIME
+
+  * "base64" --- Codificações de dados em Base16, Base32, Base64,
+    Base85
+
+  * "binascii" --- Converte entre binário e ASCII
+
+  * "quopri" --- Codifica e decodifica dados MIME imprimidos entre
+    aspas
+
+* Ferramentas de Processamento de Markup Estruturado
+
+  * "html" --- Suporte HTML(HyperText Markup Language)
+
+  * "html.parser" --- Simple HTML and XHTML parser
+
+  * "html.entities" --- Definições de entidades gerais de HTML
+
+  * Módulos de Processamento de XML
+
+  * API XML ElementTree
+
+  * "xml.dom" --- The Document Object Model API
+
+  * "xml.dom.minidom" --- Minimal DOM implementation
+
+  * "xml.dom.pulldom" --- Support for building partial DOM trees
+
+  * "xml.sax" --- Support for SAX2 parsers
+
+  * "xml.sax.handler" --- Classes base para manipuladores de SAX
+
+  * "xml.sax.saxutils" --- SAX Utilities
+
+  * "xml.sax.xmlreader" --- Interface for XML parsers
+
+  * "xml.parsers.expat" --- Fast XML parsing using Expat
+
+* Protocolos de Internet e Suporte
+
+  * "webbrowser" --- Convenient web-browser controller
+
+  * "wsgiref" --- Utilidades WSGI e Implementação de Referência
+
+  * "urllib" --- Módulos de manipulação de URL
+
+  * "urllib.request" --- Biblioteca extensível para abrir URLs
+
+  * "urllib.response" --- Response classes used by urllib
+
+  * "urllib.parse" --- Analisa URLs para componentes
+
+  * "urllib.error" --- Classes de exceção levantadas por
+    urllib.request
+
+  * "urllib.robotparser" ---  Parser for robots.txt
+
+  * "http" --- módulos HTTP
+
+  * "http.client" --- cliente de protocolo HTTP
+
+  * "ftplib" --- FTP protocol client
+
+  * "poplib" --- Cliente de protocolo POP3
+
+  * "imaplib" --- IMAP4 protocol client
+
+  * "smtplib" --- SMTP protocol client
+
+  * "uuid" --- UUID objects according to **RFC 4122**
+
+  * "socketserver" --- A framework for network servers
+
+  * "http.server" --- servidores HTTP
+
+  * "http.cookies" --- Gerenciadores de estado HTTP
+
+  * "http.cookiejar" --- Cookie handling for HTTP clients
+
+  * "xmlrpc" --- Módulos de servidor e cliente XMLRPC
+
+  * "xmlrpc.client" --- Cliente XML-RPC
+
+  * "xmlrpc.server" --- Servidores XML-RPC básicos
+
+  * "ipaddress" --- IPv4/IPv6 manipulation library
+
+* Serviços Multimídia
+
+  * "wave" --- Read and write WAV files
+
+  * "colorsys" --- Conversões entre sistemas de cores
+
+* Internacionalização
+
+  * "gettext" --- Serviços de internacionalização multilíngues
+
+  * "locale" --- Serviços de internacionalização
+
+* Frameworks de programa
+
+  * "turtle" --- Gráficos Tartaruga
+
+  * "cmd" --- Suporte para interpretadores de comando orientado a
+    linhas
+
+  * "shlex" --- Análise léxica simples
+
+* Interfaces Gráficas de Usuário com Tk
+
+  * "tkinter" --- Interface Python para Tcl/Tk
+
+  * "tkinter.colorchooser" --- Diálogo de escolha de cor
+
+  * "tkinter.font" --- Tkinter font wrapper
+
+  * Diálogos Tkinter
+
+  * "tkinter.messagebox" --- Prompts de mensagem do Tkinter
+
+  * "tkinter.scrolledtext" --- Widget Scrolled Text
+
+  * "tkinter.dnd" --- Suporte para arrastar e soltar
+
+  * : mod: *tkinter.ttk* --- Widgets temáticos do Tk
+
+  * "tkinter.tix" --- Extension widgets for Tk
+
+  * IDLE
+
+* Ferramentas de Desenvolvimento
+
+  * "typing" --- Suporte para dicas de tipo
+
+  * "pydoc" --- Gerador de documentação e sistema de ajuda online
+
+  * Modo de Desenvolvimento do Python
+
+  * "doctest" --- Teste exemplos interativos de Python
+
+  * "unittest" --- Framework de Testes Unitários
+
+  * "unittest.mock" --- biblioteca de objeto mock
+
+  * "unittest.mock" --- primeiros passos
+
+  * 2to3 --- Tradução Automatizada de Código Python 2 para 3
+
+  * "test" --- Pacote de Testes de Regressão do Python
+
+  * "test.support" --- Utilitários para o conjunto de teste do Python
+
+  * "test.support.socket_helper" --- Utilities for socket tests
+
+  * "test.support.script_helper" --- Utilities for the Python
+    execution tests
+
+  * "test.support.bytecode_helper" --- Ferramentas de suporte para
+    testar a geração correta de bytecode
+
+  * "test.support.threading_helper" --- Utilities for threading tests
+
+  * "test.support.os_helper" --- Utilities for os tests
+
+  * "test.support.import_helper" --- Utilities for import tests
+
+  * "test.support.warnings_helper" --- Utilities for warnings tests
+
+* Depuração e perfilamento
+
+  * Tabela de eventos de auditoria
+
+  * "bdb" --- Debugger framework
+
+  * "faulthandler" --- Dump the Python traceback
+
+  * "pdb" --- O Depurador do Python
+
+  * The Python Profilers
+
+  * "timeit" --- Measure execution time of small code snippets
+
+  * "trace" --- Rastreia ou acompanha a execução de instruções Python
+
+  * "tracemalloc" --- Trace memory allocations
+
+* Empacotamento e Distribuição de Software
+
+  * "ensurepip" --- Inicialização do instalador do "pip"
+
+  * "venv"--- Criação de ambientes virtuais
+
+  * "zipapp" --- Manage executable Python zip archives
+
+* Serviços de Tempo de Execução Python
+
+  * "sys" --- Parâmetros e funções específicas do sistema
+
+  * "sys.monitoring" --- Monitoramento de eventos de execução
+
+  * "sysconfig" --- Fornece acesso às informações de configuração do
+    Python
+
+  * "builtins" --- Objetos embutidos
+
+  * "__main__" --- Ambiente de código principal
+
+  * "warnings" --- Controle de avisos
+
+  * "dataclasses" --- Data Classes
+
+  * "contextlib" --- Utilities for "with"-statement contexts
+
+  * "abc" --- Classes Base Abstratas
+
+  * "atexit" --- Manipuladores de Saída
+
+  * "traceback" --- Print or retrieve a stack traceback
+
+  * "__future__" --- Definições de instruções de future
+
+  * "gc" --- Interface para o coletor de lixo
+
+  * "inspect" --- Inspeciona objetos vivos
+
+  * "site" --- Gancho de configuração específico do site
+
+* Interpretadores Python Personalizados
+
+  * "code" --- Classes Bases do Interpretador
+
+  * "codeop" --- Compila código Python
+
+* Importando módulos
+
+  * "zipimport" --- Import modules from Zip archives
+
+  * "pkgutil" --- Utilitário de extensão de pacote
+
+  * "modulefinder" --- Procura módulos usados por um script
+
+  * "runpy" --- Localizando e executando módulos Python
+
+  * "importlib" --- The implementation of "import"
+
+  * "importlib.resources" -- Leitura, abertura e acesso aos recursos
+    de pacote
+
+  * "importlib.resources.abc" -- Classes base abstratas para recursos
+
+  * "importlib.metadata" -- Accessing package metadata
+
+  * The initialization of the "sys.path" module search path
+
+* Serviços da Linguagem Python
+
+  * "ast" --- Árvores de Sintaxe Abstrata
+
+  * "symtable" --- Acesso a tabela de símbolos do compilador
+
+  * "token" --- Constantes usadas com árvores de análises do Python
+
+  * "keyword" --- Testando palavras reservadas do Python
+
+  * "tokenize" --- Tokenizer for Python source
+
+  * "tabnanny" --- Detecção de recuo ambíguo
+
+  * "pyclbr" --- Suporte a navegador de módulos do Python
+
+  * "py_compile" --- Compila arquivos fonte do Python
+
+  * "compileall" --- Compilar bibliotecas do Python para bytecode
+
+  * "dis" --- Disassembler de bytecode do Python
+
+  * "pickletools" --- Ferramentas para desenvolvedores pickle
+
+* Serviços Específicos do MS Windows
+
+  * "msvcrt" --- Rotinas úteis do tempo de execução do MS VC++
+
+  * "winreg" -- Registro de acesso do Windows
+
+  * "winsound" --- Interface de reprodução de som para Windows
+
+* Serviços Específicos Unix
+
+  * "posix" --- As chamadas de sistema mais comuns do POSIX
+
+  * "pwd" --- A senha do banco de dados
+
+  * "grp" --- The group database
+
+  * "termios" --- Controle de tty no estilo POSIX
+
+  * "tty" --- Funções de controle de terminal
+
+  * "pty" --- Utilitários de pseudoterminal
+
+  * "fcntl" --- as chamadas de sistema "fcntl" e "ioctl"
+
+  * "resource" --- Resource usage information
+
+  * "syslog" --- Rotinas da biblioteca syslog do Unix
+
+* Interface de linha de comando (CLI) de módulos
+
+* Módulos Substituídos
+
+  * "aifc" --- Lê e escreve arquivos AIFF e AIFC
+
+  * "audioop" --- Manipulando dados de áudio original
+
+  * "cgi" --- Suporte a Common Gateway Interface
+
+  * "cgitb" --- Gerenciador de traceback (situação da pilha de
+    execução) para roteiros de CGI
+
+  * "chunk" --- Read IFF chunked data
+
+  * "crypt" --- Function to check Unix passwords
+
+  * "imghdr" --- Determina o tipo de uma imagem
+
+  * "mailcap" --- Mailcap file handling
+
+  * "msilib" --- Read and write Microsoft Installer files
+
+  * "nis" --- Interface para NIS da Sun (Yellow Pages)
+
+  * "nntplib" --- NNTP protocol client
+
+  * "optparse" --- Parser for command line options
+
+  * "ossaudiodev" --- Access to OSS-compatible audio devices
+
+  * "pipes" --- Interface to shell pipelines
+
+  * "sndhdr" --- Determina o tipo de arquivos de som
+
+  * "spwd" --- O banco de dados de senhas shadow
+
+  * "sunau" --- Lê e escreve arquivos AU da Sun
+
+  * "telnetlib" --- cliente Telnet
+
+  * "uu" --- Codifica e decodifica arquivos uuencode
+
+  * "xdrlib" --- Encode and decode XDR data
+
+* Considerações de segurança

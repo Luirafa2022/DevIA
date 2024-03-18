@@ -1,0 +1,105 @@
+"pickletools" --- Ferramentas para desenvolvedores pickle
+*********************************************************
+
+**Código-fonte:** Lib/pickletools.py
+
+======================================================================
+
+Este módulo contém várias constantes relacionadas aos detalhes íntimos
+do módulo "pickle", alguns comentários extensos sobre a implementação
+e algumas funções úteis para analisar dados em conserva. O conteúdo
+deste módulo é útil para desenvolvedores do núcleo Python que estão
+trabalhando no "pickle"; usuários comuns do módulo "pickle"
+provavelmente não acharão o módulo "pickletools" relevante.
+
+
+Uso na linha de comando
+=======================
+
+Novo na versão 3.2.
+
+Quando chamado a partir da linha de comando, "python -m pickletools"
+irá desmontar o conteúdo de um ou mais arquivos pickle. Note que se
+você quiser ver o objeto Python armazenado serializado em pickle ao
+invés dos detalhes do formato pickle, você pode usar "-m pickle". No
+entanto, quando o arquivo serializado em pickle que você deseja
+examinar vem de uma fonte não confiável, "-m pickletools" é uma opção
+mais segura porque não executa bytecode pickle.
+
+Por exemplo, com uma tupla "(1, 2)" tratada com pickling no arquivo
+"x.pickle":
+
+   $ python -m pickle x.pickle
+   (1, 2)
+
+   $ python -m pickletools x.pickle
+       0: \x80 PROTO      3
+       2: K    BININT1    1
+       4: K    BININT1    2
+       6: \x86 TUPLE2
+       7: q    BINPUT     0
+       9: .    STOP
+   highest protocol among opcodes = 2
+
+
+Opções da linha de comando
+--------------------------
+
+-a, --annotate
+
+   Anota cada linha com uma descrição curta do código de operação.
+
+-o, --output=<file>
+
+   Nome de um arquivo no qual a saída deve ser escrita.
+
+-l, --indentlevel=<num>
+
+   O número de espaços em branco para indentar um novo nível MARK.
+
+-m, --memo
+
+   Quando vários objetos são desmontados, preserva memo entre as
+   desmontagens.
+
+-p, --preamble=<preamble>
+
+   Quando mais de um arquivo serializado em pickle for especificado,
+   imprime o preâmbulo fornecido antes de cada desmontagem.
+
+
+Interface programática
+======================
+
+pickletools.dis(pickle, out=None, memo=None, indentlevel=4, annotate=0)
+
+   Produz uma desmontagem simbólica do pickle para o objeto arquivo ou
+   similar *out*, tendo como padrão "sys.stdout". *pickle* pode ser
+   uma string ou um objeto arquivo ou similar. *memo* pode ser um
+   dicionário Python que será usado como memo do pickle; ele pode ser
+   usado para realizar desmontagens em várias serializações com pickle
+   criadas pelo mesmo pickler. Níveis sucessivos, indicados por
+   códigos de operação "MARK" no fluxo, são indentados por espaços
+   *indentlevel*. Se um valor diferente de zero for fornecido para
+   *annotate*, cada código de operação na saída será anotado com uma
+   breve descrição. O valor de *annotate* é usado como uma dica para a
+   coluna onde a anotação deve começar.
+
+   Alterado na versão 3.2: Added the *annotate* parameter.
+
+pickletools.genops(pickle)
+
+   Fornece um *iterador* sobre todos os códigos de operação em uma
+   serialização com pickle, retornando uma sequência de triplos
+   "(opcode, arg, pos)". *opcode* é uma instância de uma classe
+   "OpcodeInfo"; *arg* é o valor decodificado, como um objeto Python,
+   do argumento do opcode; *pos* é a posição em que este código de
+   operação está localizado. *pickle* pode ser uma string ou um objeto
+   arquivo ou similar.
+
+pickletools.optimize(picklestring)
+
+   Retorna uma nova string pickle equivalente após eliminar códigos de
+   operação "PUT" não utilizados. O pickle otimizado é mais curto,
+   leva menos tempo de transmissão, requer menos espaço de
+   armazenamento e efetua unpickling com mais eficiência.

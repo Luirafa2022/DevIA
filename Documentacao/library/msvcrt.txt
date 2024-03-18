@@ -1,0 +1,160 @@
+"msvcrt" --- Rotinas úteis do tempo de execução do MS VC++
+**********************************************************
+
+======================================================================
+
+Essas funções fornecem acesso a alguns recursos úteis nas plataformas
+Windows. Alguns módulos de nível superior usam essas funções para
+criar as implementações do Windows de seus serviços. Por exemplo, o
+módulo "getpass" usa isso na implementação da função "getpass()".
+
+Mais documentação sobre essas funções pode ser encontrada na
+documentação da API da plataforma.
+
+O módulo implementa as variantes normal e ampla de caracteres da API
+de E/S do console. A API normal lida apenas com caracteres ASCII e é
+de uso limitado para aplicativos internacionalizados. A API ampla de
+caracteres deve ser usada sempre que possível.
+
+Alterado na versão 3.3: As operações neste módulo agora levantam
+"OSError" onde "IOError" foi levantado.
+
+
+Operações com arquivos
+======================
+
+msvcrt.locking(fd, mode, nbytes)
+
+   Bloqueia parte de um arquivo com base no descritor de arquivo *fd*
+   no tempo de execução C. Levanta "OSError" em falha. A região
+   bloqueada do arquivo se estende da posição atual do arquivo para
+   *nbytes* bytes e pode continuar além do final do arquivo. *mode*
+   deve ser uma das constantes "LK_*" listadas abaixo. Várias regiões
+   em um arquivo podem estar bloqueadas ao mesmo tempo, mas não podem
+   se sobrepor. Regiões adjacentes não são mescladas; eles devem ser
+   desbloqueados individualmente.
+
+   Levanta um evento de auditoria "msvcrt.locking" com argumentos
+   "fd", "mode", "nbytes".
+
+msvcrt.LK_LOCK
+msvcrt.LK_RLCK
+
+   Bloqueia os bytes especificados. Se os bytes não puderem ser
+   bloqueados, o programa tentará imediatamente novamente após 1
+   segundo. Se, após 10 tentativas, os bytes não puderem ser
+   bloqueados, "OSError" será levantado.
+
+msvcrt.LK_NBLCK
+msvcrt.LK_NBRLCK
+
+   Bloqueia os bytes especificados. Se os bytes não puderem ser
+   bloqueados, "OSError" é levantado.
+
+msvcrt.LK_UNLCK
+
+   Desbloqueia os bytes especificados, que devem ter sido bloqueados
+   anteriormente.
+
+msvcrt.setmode(fd, flags)
+
+   Defina o modo de conversão de final de linha para o descritor de
+   arquivo *fd*. Para configurá-lo no modo de texto, *flags* deve ser
+   "os.O_TEXT"; para binário, deve ser "os.O_BINARY".
+
+msvcrt.open_osfhandle(handle, flags)
+
+   Cria um descritor de arquivo em tempo de execução C a partir do
+   identificador de arquivo *handle*. O parâmetro *flags* deve ser um
+   OR bit a bit de "os.O_APPEND", "os.O_RDONLY" e "os.O_TEXT". O
+   descritor de arquivo retornado pode ser usado como um parâmetro
+   para "os.fdopen()" para criar um objeto arquivo.
+
+   Levanta um evento de auditoria "msvcrt.open_osfhandle" com
+   argumentos "handle", "flags".
+
+msvcrt.get_osfhandle(fd)
+
+   Retorna o identificador de arquivo para o descritor de arquivo
+   *fd*. Leva "OSError" se *fd* não for reconhecido.
+
+   Levanta um evento de auditoria "msvcrt.get_osfhandle" com argumento
+   "fd".
+
+
+E/S de console
+==============
+
+msvcrt.kbhit()
+
+   Retorna "True" se um pressionamento de tecla estiver aguardando
+   para ser lido.
+
+msvcrt.getch()
+
+   Lê um pressionamento de tecla e retorna o caractere resultante como
+   uma sequência de bytes. Nada é ecoado no console. Essa chamada será
+   bloqueada se um pressionamento de tecla ainda não estiver
+   disponível, mas não esperará que "Enter" seja pressionado. Se a
+   tecla pressionada for uma tecla de função especial, ela retornará
+   "\000'" ou "'\xe0'"; a próxima chamada retornará o código da chave.
+   A tecla "Control-C" não pode ser lida com esta função.
+
+msvcrt.getwch()
+
+   Variante com caractere largo de "getch()", retornando um valor
+   Unicode.
+
+msvcrt.getche()
+
+   Semelhante a "getch()", mas o pressionamento de tecla será repetido
+   se representar um caractere imprimível.
+
+msvcrt.getwche()
+
+   Variante com caractere largo de "getche()", retornando um valor
+   Unicode.
+
+msvcrt.putch(char)
+
+   Imprime a string de bytes *char* no console sem armazenar em
+   buffer.
+
+msvcrt.putwch(unicode_char)
+
+   Variante com caractere largo de "putch()", retornando um valor
+   Unicode.
+
+msvcrt.ungetch(char)
+
+   Faz com que a string de bytes *char* seja "empurrada" para o buffer
+   do console; será o próximo caractere lido por "getch()" ou
+   "getche()".
+
+msvcrt.ungetwch(unicode_char)
+
+   Variante com caractere largo de "ungetch()", retornando um valor
+   Unicode.
+
+
+Outras funções
+==============
+
+msvcrt.heapmin()
+
+   Force the "malloc()" heap to clean itself up and return unused
+   blocks to the operating system. On failure, this raises "OSError".
+
+msvcrt.CRT_ASSEMBLY_VERSION
+
+   The CRT Assembly version, from the "crtassem.h" header file.
+
+msvcrt.VC_ASSEMBLY_PUBLICKEYTOKEN
+
+   The VC Assembly public key token, from the "crtassem.h" header
+   file.
+
+msvcrt.LIBRARIES_ASSEMBLY_NAME_PREFIX
+
+   The Libraries Assembly name prefix, from the "crtassem.h" header
+   file.

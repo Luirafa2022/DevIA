@@ -1,0 +1,124 @@
+"pty" --- Utilitários de pseudoterminal
+***************************************
+
+**Código-fonte:** Lib/pty.py
+
+======================================================================
+
+O módulo "pty" define operações para lidar com o conceito de
+pseudoterminal: iniciar outro processo e poder gravar e ler de seu
+terminal de controle programaticamente.
+
+Disponibilidade: Unix.
+
+O tratamento do pseudoterminal é altamente dependente da plataforma.
+Esse código foi testado principalmente no Linux, no FreeBSD e no macOS
+(supõe-se que funcione em outras plataformas POSIX, mas não foi
+testado exaustivamente).
+
+O módulo "pty" define as seguintes funções:
+
+pty.fork()
+
+   Faz um fork. Conecta o terminal de controle do filho a um
+   pseudoterminal. O valor de retorno é "(pid, fd)". Observe que a
+   criança recebe *pid* 0 e o *fd* é *inválido*. O valor de retorno do
+   pai é o *pid* do filho, e o *fd* é um descritor de arquivo
+   conectado ao terminal de controle do filho (e também à entrada e à
+   saída padrão do filho).
+
+   Aviso:
+
+     No macOS, o uso desta função é inseguro quando misturado com o
+     uso de APIs de sistema de nível superior, e isso inclui o uso de
+     "urllib.request".
+
+pty.openpty()
+
+   Abre um novo par de pseudoterminais, usando "os.openpty()", se
+   possível, ou código de emulação para sistemas genérico Unix .
+   Retorna um par de descritores de arquivo "(master, slave)", para a
+   extremidade mestre e escrava, respectivamente.
+
+pty.spawn(argv[, master_read[, stdin_read]])
+
+   Gera um processo e conecta seu terminal de controle com o E/S
+   padrão do processo atual. Isso é frequentemente usado para
+   confundir programas que insistem em ler no terminal de controle.
+   Espera-se que o processo gerado por trás do pty acabe sendo
+   encerrado e, quando isso acontecer, o *spawn* é retornado.
+
+   Um laço copia o STDIN do processo atual para o filho e os dados
+   recebidos do filho para o STDOUT do site processar atual. Não é
+   sinalizado para o filho se o STDIN do processar atual fechar.
+
+   As funções *master_read* e o *stdin_read* recebem um descritor de
+   arquivo do qual devem ler e devem sempre retorna uma string de
+   bytes. Para forçar *spawn* retornar antes que o processo filho
+   saia, um byte vazio vetor deve ser retornado para sinalizar o fim
+   do arquivo.
+
+   A implementação padrão para ambos os funções vai ler e retornar até
+   1024 bytes cada vez que a função for chamada. A função de retorno
+   *master_read* é passada para o descritor de arquivo mestre do
+   pseudoterminal para ler a saída do processo filho, e ao
+   *stdin_read* é passado o descritor de arquivo 0, para ler a entrada
+   padrão do processo pai.
+
+   Retornar uma string de bytes vazia de qualquer uma das funções de
+   retorno é interpretado como uma condição de fim de vida (EOF), e
+   que a função de retorno não será chamada depois disso. Se
+   *stdin_read* sinalizar EOF, o terminal de controle não poderá mais
+   se comunicar com o processo pai OU o processo filho. A menos que o
+   filho processar seja encerrado sem nenhuma entrada, *spawn* vai
+   então fazer o laço para sempre. Se *master_read* sinalizar EOF, os
+   mesmos comportamento resultados (pelo menos no Linux).
+
+   Retorna o valor de status de saída de "os.waitpid()" no processo
+   filho.
+
+   "os.waitstatus_to_exitcode()" pode ser usado para converter o
+   status de saída em um código de saída.
+
+   Levanta um evento de auditoria "pty.spawn" com o argumento "argv".
+
+   Alterado na versão 3.4: "spawn()" agora retorna o valor de status
+   de "os.waitpid()" no processo filho.
+
+
+Exemplo
+=======
+
+O programa a seguir funciona como o comando Unix *script(1)* , usando
+um pseudoterminal para registrar todas as entradas e saídas de uma
+sessão de terminal em um "script".
+
+   import argparse
+   import os
+   import pty
+   import sys
+   import time
+
+   parser = argparse.ArgumentParser()
+   parser.add_argument('-a', dest='append', action='store_true')
+   parser.add_argument('-p', dest='use_python', action='store_true')
+   parser.add_argument('filename', nargs='?', default='typescript')
+   options = parser.parse_args()
+
+   shell = sys.executable if options.use_python else os.environ.get('SHELL', 'sh')
+   filename = options.filename
+   mode = 'ab' if options.append else 'wb'
+
+   with open(filename, mode) as script:
+       def read(fd):
+           data = os.read(fd, 1024)
+           script.write(data)
+           return data
+
+       print('Script started, file is', filename)
+       script.write(('Script started on %s\n' % time.asctime()).encode())
+
+       pty.spawn(shell, read)
+
+       script.write(('Script done on %s\n' % time.asctime()).encode())
+       print('Script done, file is', filename)

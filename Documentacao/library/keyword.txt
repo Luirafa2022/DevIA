@@ -1,0 +1,37 @@
+"keyword" --- Testando palavras reservadas do Python
+****************************************************
+
+**Código-fonte:** Lib/keyword.py
+
+======================================================================
+
+Este módulo permite a um programa Python determinar se uma string é
+uma palavra reservada ou palavra reservada contextual.
+
+keyword.iskeyword(s)
+
+   Retorna "True" se *s* for uma palavra reservada do Python.
+
+keyword.kwlist
+
+   Sequência contendo todas as palavras reservadas definidas para o
+   interpretador. Se alguma palavra reservada estiver definida para
+   apenas estar ativa quando instruções "__future__" específicas
+   tiverem efeito, estas serão incluídas também.
+
+keyword.issoftkeyword(s)
+
+   Retorna "True" se *s* for uma palavra reservada contextual do
+   Python.
+
+   Novo na versão 3.9.
+
+keyword.softkwlist
+
+   Sequência contendo todas as palavras reservadas contextuais
+   definadas para o interpretador.  Se alguma palavra reservada
+   contextual estiver definida para apenas estar ativo quando
+   instruções "__future__" tiverem efeito, estas serão incluídas
+   também.
+
+   Novo na versão 3.9.

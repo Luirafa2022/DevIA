@@ -1,0 +1,463 @@
+"lzma" --- Compactação usando o algoritmo LZMA
+**********************************************
+
+Novo na versão 3.3.
+
+**Código-fonte:** Lib/lzma.py
+
+======================================================================
+
+Este módulo fornece classes e funções de conveniência para compactar e
+descompactar dados usando o algoritmo de compactação LZMA. Também está
+incluída uma interface de arquivo que oferece suporte aos formatos de
+arquivo ".xz" e legado ".lzma" usados pelo utilitário **xz**, bem como
+fluxos brutos compactados.
+
+A interface fornecida por este módulo é muito semelhante à do módulo
+"bz2". Observe que "LZMAFile" e "bz2.BZ2File" *não* são seguro para
+thread, portanto, se você precisar usar uma única instância "LZMAFile"
+de vários threads, é necessário protegê-la com um bloqueio.
+
+exception lzma.LZMAError
+
+   Essa exceção é levantada quando ocorre um erro durante a
+   compactação ou descompactação ou durante a inicialização do estado
+   compactador/descompactador.
+
+
+Lendo e escrevendo arquivos compactados
+=======================================
+
+lzma.open(filename, mode='rb', *, format=None, check=-1, preset=None, filters=None, encoding=None, errors=None, newline=None)
+
+   Abre um arquivo compactado com LZMA no modo binário ou texto,
+   retornando um *objeto arquivo*.
+
+   O argumento *filename* pode ser um nome de arquivo real (dado como
+   um objeto "str", "bytes" ou *caminho ou similar*), neste caso o
+   arquivo nomeado é aberto , ou pode ser um objeto arquivo existente
+   para leitura ou escrita.
+
+   O argumento *mode* pode ser qualquer um de ""r"", ""rb"", ""w"",
+   ""wb"", ""x"", ""xb"", ""a"" ou ""ab"" para modo binário, ou
+   ""rt"", ""wt"", ""xt"" , ou ""at"" para o modo de texto. O padrão é
+   ""rb"".
+
+   Ao abrir um arquivo para leitura, os argumentos *format* e
+   *filters* têm os mesmos significados que em "LZMADecompressor".
+   Neste caso, os argumentos *check* e *preset* não devem ser usados.
+
+   Ao abrir um arquivo para escrita, os argumentos *format*, *check*,
+   *preset* e *filters* têm os mesmos significados que em
+   "LZMACompressor".
+
+   Para o modo binário, esta função é equivalente ao construtor
+   "LZMAFile": "LZMAFile(filename, mode, ...)". Nesse caso, os
+   argumentos *encoding*, *errors* e *newline* não devem ser
+   fornecidos.
+
+   Para o modo texto, um objeto "LZMAFile" é criado e encapsulado em
+   uma instância "io.TextIOWrapper" com a codificação especificada,
+   comportamento de tratamento de erros e final(is) de linha.
+
+   Alterado na versão 3.4: Adicionado suporte para os modos ""x"",
+   ""xb"" e ""xt"".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+class lzma.LZMAFile(filename=None, mode='r', *, format=None, check=-1, preset=None, filters=None)
+
+   Abre um arquivo compactado com LZMA no modo binário.
+
+   Um "LZMAFile" pode envolver um *objeto arquivo* já aberto, ou
+   operar diretamente em um arquivo nomeado. O argumento *filename*
+   especifica o objeto arquivo a ser encapsulado ou o nome do arquivo
+   a ser aberto (como um objeto "str", "bytes" ou *caminho ou
+   similar*). Ao agrupar um objeto de arquivo existente, o arquivo
+   agrupado não será fechado quando o "LZMAFile" for fechado.
+
+   O argumento *mode* pode ser ""r"" para leitura (padrão), ""w"" para
+   substituição, ""x"" para criação exclusiva ou ""a"" para anexar.
+   Estes podem ser equivalentemente dados como ""rb"", ""wb"", ""xb""
+   e ""ab"" respectivamente.
+
+   Se *filename* for um objeto arquivo (em vez de um nome de arquivo
+   real), um modo de ""w"" não truncará o arquivo e será equivalente a
+   ""a"".
+
+   Ao abrir um arquivo para leitura, o arquivo de entrada pode ser a
+   concatenação de vários fluxos compactados separados. Estes são
+   decodificados de forma transparente como um único fluxo lógico.
+
+   Ao abrir um arquivo para leitura, os argumentos *format* e
+   *filters* têm os mesmos significados que em "LZMADecompressor".
+   Neste caso, os argumentos *check* e *preset* não devem ser usados.
+
+   Ao abrir um arquivo para escrita, os argumentos *format*, *check*,
+   *preset* e *filters* têm os mesmos significados que em
+   "LZMACompressor".
+
+   "LZMAFile" supports all the members specified by
+   "io.BufferedIOBase", except for "detach()" and "truncate()".
+   Iteration and the "with" statement are supported.
+
+   O método a seguir também é fornecido:
+
+   peek(size=-1)
+
+      Retorna dados armazenados em buffer sem avançar a posição do
+      arquivo. Pelo menos um byte de dados será retornado, a menos que
+      o EOF tenha sido atingido. O número exato de bytes retornados
+      não é especificado (o argumento *size* é ignorado).
+
+      Nota:
+
+        Enquanto chamar "peek()" não altera a posição do arquivo de
+        "LZMAFile", pode alterar a posição do objeto arquivo
+        subjacente (por exemplo, se o "LZMAFile" foi construído
+        passando um objeto arquivo para *nome do arquivo*).
+
+   Alterado na versão 3.4: Adicionado suporte para os modos ""x"" e
+   ""xb"".
+
+   Alterado na versão 3.5: O método "read()" agora aceita um argumento
+   de "None".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+
+Compactando e descompactando dados na memória
+=============================================
+
+class lzma.LZMACompressor(format=FORMAT_XZ, check=-1, preset=None, filters=None)
+
+   Cria um objeto compactador, que pode ser usado para compactar dados
+   de forma incremental.
+
+   Para uma maneira mais conveniente de compactar um único bloco de
+   dados, consulte "compress()".
+
+   O argumento *format* especifica qual formato de contêiner deve ser
+   usado. Os valores possíveis são:
+
+   * "FORMAT_XZ": O formato de contêiner ".xz".
+        Este é o formato padrão.
+
+   * "FORMAT_ALONE": O formato de contêiner legado ".lzma".
+        Este formato é mais limitado que ".xz" -- ele não oferece
+        suporte a verificações de integridade ou filtros múltiplos.
+
+   * "FORMAT_RAW": Um fluxo de dados brutos, que não usa nenhum
+     formato de contêiner.
+        Esse especificador de formato não oferece suporte a
+        verificações de integridade e exige que você sempre
+        especifique uma cadeia de filtros personalizada (para
+        compactação e descompactação). Além disso, dados compactados
+        dessa maneira não podem ser descompactados usando
+        "FORMAT_AUTO" (veja "LZMADecompressor").
+
+   O argumento *check* especifica o tipo de verificação de integridade
+   a ser incluída nos dados compactados. Essa verificação é usada ao
+   descompactar, para garantir que os dados não foram corrompidos. Os
+   valores possíveis são:
+
+   * "CHECK_NONE": Sem verificação de integridade. Este é o padrão (e
+     o único valor aceitável) para "FORMAT_ALONE" e "FORMAT_RAW".
+
+   * "CHECK_CRC32": Verificação de redundância cíclica de 32 bits.
+
+   * "CHECK_CRC64": Verificação de redundância cíclica de 64 bits.
+     Este é o padrão para "FORMAT_XZ".
+
+   * "CHECK_SHA256": Algoritmo de hash seguro de 256 bits.
+
+   Se a verificação especificada não for suportada, uma exceção
+   "LZMAError" será levantada.
+
+   As configurações de compactação podem ser especificadas como um
+   nível de compactação predefinido (com o argumento *preset*) ou em
+   detalhes como uma cadeia de filtros personalizada (com o argumento
+   *filters*).
+
+   O argumento *preset* (se fornecido) deve ser um inteiro entre "0" e
+   "9" (inclusive), opcionalmente com OR com a constante
+   "PRESET_EXTREME". Se nem *preset* nem *filters* forem fornecidos, o
+   comportamento padrão é usar "PRESET_DEFAULT" (nível predefinido
+   "6"). Predefinições mais altas produzem uma saída menor, mas tornam
+   o processo de compactação mais lento.
+
+   Nota:
+
+     Além de consumir mais CPU, a compactação com predefinições mais
+     altas também requer muito mais memória (e produz uma saída que
+     precisa de mais memória para descompactar). Com a predefinição
+     "9" por exemplo, a sobrecarga para um objeto "LZMACompressor"
+     pode chegar a 800 MiB. Por esse motivo, geralmente é melhor ficar
+     com a predefinição padrão.
+
+   O argumento *filters* (se fornecido) deve ser um especificador de
+   cadeia de filtros. Veja Specifying custom filter chains para
+   detalhes.
+
+   compress(data)
+
+      Compress *data* (a "bytes" object), returning a "bytes" object
+      containing compressed data for at least part of the input. Some
+      of *data* may be buffered internally, for use in later calls to
+      "compress()" and "flush()". The returned data should be
+      concatenated with the output of any previous calls to
+      "compress()".
+
+   flush()
+
+      Finish the compression process, returning a "bytes" object
+      containing any data stored in the compressor's internal buffers.
+
+      The compressor cannot be used after this method has been called.
+
+class lzma.LZMADecompressor(format=FORMAT_AUTO, memlimit=None, filters=None)
+
+   Create a decompressor object, which can be used to decompress data
+   incrementally.
+
+   For a more convenient way of decompressing an entire compressed
+   stream at once, see "decompress()".
+
+   The *format* argument specifies the container format that should be
+   used. The default is "FORMAT_AUTO", which can decompress both ".xz"
+   and ".lzma" files. Other possible values are "FORMAT_XZ",
+   "FORMAT_ALONE", and "FORMAT_RAW".
+
+   The *memlimit* argument specifies a limit (in bytes) on the amount
+   of memory that the decompressor can use. When this argument is
+   used, decompression will fail with an "LZMAError" if it is not
+   possible to decompress the input within the given memory limit.
+
+   The *filters* argument specifies the filter chain that was used to
+   create the stream being decompressed. This argument is required if
+   *format* is "FORMAT_RAW", but should not be used for other formats.
+   See Specifying custom filter chains for more information about
+   filter chains.
+
+   Nota:
+
+     This class does not transparently handle inputs containing
+     multiple compressed streams, unlike "decompress()" and
+     "LZMAFile". To decompress a multi-stream input with
+     "LZMADecompressor", you must create a new decompressor for each
+     stream.
+
+   decompress(data, max_length=-1)
+
+      Descompacta dados *data* (um *objeto bytes ou similar*),
+      retornando dados não compactados como bytes. Alguns dos *data*
+      podem ser armazenados em buffer internamente, para uso em
+      chamadas posteriores para "decompress()". Os dados retornados
+      devem ser concatenados com a saída de qualquer chamada anterior
+      para "decompress()".
+
+      Se *max_length* for não negativo, retornará no máximo
+      *max_length* bytes de dados descompactados. Se este limite for
+      atingido e mais saída puder ser produzida, o atributo
+      "needs_input" será definido como "False". Neste caso, a próxima
+      chamada para "decompress()" pode fornecer *data* como "b''" para
+      obter mais saída.
+
+      Se todos os dados de entrada foram descompactados e retornados
+      (seja porque era menor que *max_length* bytes, ou porque
+      *max_length* era negativo), o atributo "needs_input" será
+      definido como "True" .
+
+      A tentativa de descompactar os dados após o final do fluxo ser
+      atingido gera um "EOFError". Quaisquer dados encontrados após o
+      final do fluxo são ignorados e salvos no atributo "unused_data".
+
+      Alterado na versão 3.5: Adicionado o parâmetro *max_length*.
+
+   check
+
+      The ID of the integrity check used by the input stream. This may
+      be "CHECK_UNKNOWN" until enough of the input has been decoded to
+      determine what integrity check it uses.
+
+   eof
+
+      "True" se o marcador de fim de fluxo foi atingido.
+
+   unused_data
+
+      Dados encontrados após o término do fluxo compactado.
+
+      Before the end of the stream is reached, this will be "b""".
+
+   needs_input
+
+      "False" se o método "decompress()" puder fornecer mais dados
+      descompactados antes de exigir uma nova entrada descompactada.
+
+      Novo na versão 3.5.
+
+lzma.compress(data, format=FORMAT_XZ, check=-1, preset=None, filters=None)
+
+   Compress *data* (a "bytes" object), returning the compressed data
+   as a "bytes" object.
+
+   See "LZMACompressor" above for a description of the *format*,
+   *check*, *preset* and *filters* arguments.
+
+lzma.decompress(data, format=FORMAT_AUTO, memlimit=None, filters=None)
+
+   Decompress *data* (a "bytes" object), returning the uncompressed
+   data as a "bytes" object.
+
+   If *data* is the concatenation of multiple distinct compressed
+   streams, decompress all of these streams, and return the
+   concatenation of the results.
+
+   See "LZMADecompressor" above for a description of the *format*,
+   *memlimit* and *filters* arguments.
+
+
+Diversos
+========
+
+lzma.is_check_supported(check)
+
+   Return "True" if the given integrity check is supported on this
+   system.
+
+   "CHECK_NONE" and "CHECK_CRC32" are always supported. "CHECK_CRC64"
+   and "CHECK_SHA256" may be unavailable if you are using a version of
+   **liblzma** that was compiled with a limited feature set.
+
+
+Specifying custom filter chains
+===============================
+
+A filter chain specifier is a sequence of dictionaries, where each
+dictionary contains the ID and options for a single filter. Each
+dictionary must contain the key ""id"", and may contain additional
+keys to specify filter-dependent options. Valid filter IDs are as
+follows:
+
+* Filtro Compression:
+
+  * "FILTER_LZMA1" (para ser usado com "FORMAT_ALONE")
+
+  * "FILTER_LZMA2" (para ser utilizado com "FORMAT_XZ" and
+    "FORMAT_RAW")
+
+* Delta filter:
+
+  * "FILTER_DELTA"
+
+* Branch-Call-Jump (BCJ) filters:
+
+  * "FILTER_X86"
+
+  * "FILTER_IA64"
+
+  * "FILTER_ARM"
+
+  * "FILTER_ARMTHUMB"
+
+  * "FILTER_POWERPC"
+
+  * "FILTER_SPARC"
+
+A filter chain can consist of up to 4 filters, and cannot be empty.
+The last filter in the chain must be a compression filter, and any
+other filters must be delta or BCJ filters.
+
+Compression filters support the following options (specified as
+additional entries in the dictionary representing the filter):
+
+* "preset": A compression preset to use as a source of default values
+  for options that are not specified explicitly.
+
+* "dict_size": Dictionary size in bytes. This should be between 4 KiB
+  and 1.5 GiB (inclusive).
+
+* "lc": Number of literal context bits.
+
+* "lp": Number of literal position bits. The sum "lc + lp" must be at
+  most 4.
+
+* "pb": Number of position bits; must be at most 4.
+
+* "mode": "MODE_FAST" or "MODE_NORMAL".
+
+* "nice_len": What should be considered a "nice length" for a match.
+  This should be 273 or less.
+
+* "mf": What match finder to use -- "MF_HC3", "MF_HC4", "MF_BT2",
+  "MF_BT3", or "MF_BT4".
+
+* "depth": Maximum search depth used by match finder. 0 (default)
+  means to select automatically based on other filter options.
+
+The delta filter stores the differences between bytes, producing more
+repetitive input for the compressor in certain circumstances. It
+supports one option, "dist". This indicates the distance between bytes
+to be subtracted. The default is 1, i.e. take the differences between
+adjacent bytes.
+
+The BCJ filters are intended to be applied to machine code. They
+convert relative branches, calls and jumps in the code to use absolute
+addressing, with the aim of increasing the redundancy that can be
+exploited by the compressor. These filters support one option,
+"start_offset". This specifies the address that should be mapped to
+the beginning of the input data. The default is 0.
+
+
+Exemplos
+========
+
+Reading in a compressed file:
+
+   import lzma
+   with lzma.open("file.xz") as f:
+       file_content = f.read()
+
+Criando um arquivo comprimido:
+
+   import lzma
+   data = b"Insert Data Here"
+   with lzma.open("file.xz", "w") as f:
+       f.write(data)
+
+Compressing data in memory:
+
+   import lzma
+   data_in = b"Insert Data Here"
+   data_out = lzma.compress(data_in)
+
+Compressão incremental:
+
+   import lzma
+   lzc = lzma.LZMACompressor()
+   out1 = lzc.compress(b"Some data\n")
+   out2 = lzc.compress(b"Another piece of data\n")
+   out3 = lzc.compress(b"Even more data\n")
+   out4 = lzc.flush()
+   # Concatenate all the partial results:
+   result = b"".join([out1, out2, out3, out4])
+
+Writing compressed data to an already-open file:
+
+   import lzma
+   with open("file.xz", "wb") as f:
+       f.write(b"This data will not be compressed\n")
+       with lzma.open(f, "w") as lzf:
+           lzf.write(b"This *will* be compressed\n")
+       f.write(b"Not compressed\n")
+
+Creating a compressed file using a custom filter chain:
+
+   import lzma
+   my_filters = [
+       {"id": lzma.FILTER_DELTA, "dist": 5},
+       {"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},
+   ]
+   with lzma.open("file.xz", "w", filters=my_filters) as f:
+       f.write(b"blah blah blah")

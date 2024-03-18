@@ -1,0 +1,66 @@
+"nis" --- Interface para NIS da Sun (Yellow Pages)
+**************************************************
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "nis" foi descontinuado (veja **PEP 594** para mais detalhes).
+
+======================================================================
+
+O módulo "nis" fornece um invólucro fino em torno da biblioteca NIS,
+útil para administração central de vários hosts.
+
+Como o NIS existe apenas em sistemas Unix, este módulo está disponível
+apenas para Unix.
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+O módulo "nis" define as seguintes funções:
+
+nis.match(key, mapname, domain=default_domain)
+
+   Retorna a correspondência para *key* no mapa *mapname* ou levanta
+   um erro ("nis.error") se não houver nenhum. Ambos devem ser
+   strings, *key* está limpo em 8 bits. O valor de retorno é uma
+   matriz arbitrária de bytes (pode conter "NULL" e outras diversões).
+
+   Observe que *mapname* é verificado primeiro se for um alias para
+   outro nome.
+
+   O argumento *domain* permite substituir o domínio NIS usado para a
+   pesquisa. Se não especificado, a pesquisa está no domínio NIS
+   padrão.
+
+nis.cat(mapname, domain=default_domain)
+
+   Retorna um mapeamento de dicionário de *key* para *value* de modo
+   que "match(key, mapname)==value". Observe que as chaves e os
+   valores do dicionário são matrizes arbitrárias de bytes.
+
+   Observe que *mapname* é verificado primeiro se for um alias para
+   outro nome.
+
+   O argumento *domain* permite substituir o domínio NIS usado para a
+   pesquisa. Se não especificado, a pesquisa está no domínio NIS
+   padrão.
+
+nis.maps(domain=default_domain)
+
+   Retorna uma lista de todos os mapas válidos.
+
+   O argumento *domain* permite substituir o domínio NIS usado para a
+   pesquisa. Se não especificado, a pesquisa está no domínio NIS
+   padrão.
+
+nis.get_default_domain()
+
+   Retorna o domínio NIS padrão do sistema.
+
+O módulo "nis" define a exceção padrão:
+
+exception nis.error
+
+   Um erro levantado quando uma função NIS retorna um códio de erro.

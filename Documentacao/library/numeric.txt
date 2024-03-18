@@ -1,0 +1,130 @@
+Módulos Matemáticos e Numéricos
+*******************************
+
+Os módulos descritos neste capítulo fornecem funções e tipos de dados
+relacionados com o numérico e matemática. O módulo "numbers" define
+uma hierarquia abstrata de tipos numéricos. Os módulos "math" e
+"cmath" contêm várias funções matemáticas para números de ponto
+flutuante e números complexos. O módulo "decimal" suporta
+representações exatas de números decimais, usando aritmética de
+precisão arbitrária.
+
+Os seguintes módulos estão documentados neste capítulo:
+
+* "numbers" --- Classes base abstratas numéricas
+
+  * A torre numérica
+
+  * Nota para implementadores de tipos
+
+    * Adicionando mais ABCs numéricas
+
+    * Implementando as operações aritméticas
+
+* "math" --- Funções matemáticas
+
+  * Funções teóricas dos números e de representação
+
+  * Funções de potência e logarítmicas
+
+  * Funções trigonométricas
+
+  * Conversão angular
+
+  * Funções hiperbólicas
+
+  * Funções especiais
+
+  * Constantes
+
+* "cmath" --- Funções matemáticas para números complexos
+
+  * Conversions to and from polar coordinates
+
+  * Funções de potência e logarítmicas
+
+  * Funções trigonométricas
+
+  * Funções hiperbólicas
+
+  * Classification functions
+
+  * Constantes
+
+* "decimal" --- Aritmética de ponto fixo decimal e ponto flutuante
+
+  * Tutorial de início rápido
+
+  * Objetos de Decimal
+
+    * Operandos lógicos
+
+  * Objetos de contexto
+
+  * Constantes
+
+  * Modos de arredondamento
+
+  * Sinais
+
+  * Observações sobre ponto flutuante
+
+    * Atenuando o erro de arredondamento com maior precisão
+
+    * Valores especiais
+
+  * Trabalhando com threads
+
+  * Receitas
+
+  * Perguntas Frequentes sobre Decimal
+
+* "fractions" --- Rational numbers
+
+* "random" --- Gera números pseudoaleatórios
+
+  * Funções de contabilidade
+
+  * Funções para bytes
+
+  * Funções para inteiros
+
+  * Funções para sequências
+
+  * Discrete distributions
+
+  * Distribuições com valor real
+
+  * Gerador alternativo
+
+  * Notas sobre reprodutibilidade
+
+  * Exemplos
+
+  * Receitas
+
+* "statistics" --- Funções estatísticas
+
+  * Médias e medidas de valor central
+
+  * Medidas de espalhamento
+
+  * Statistics for relations between two inputs
+
+  * Detalhes das funções
+
+  * Exceções
+
+  * Objetos "NormalDist"
+
+    * Exemplos e receitas com "NormalDist"
+
+      * Classic probability problems
+
+      * Monte Carlo inputs for simulations
+
+      * Approximating binomial distributions
+
+      * Naive bayesian classifier
+
+      * Kernel density estimation

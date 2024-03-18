@@ -1,0 +1,91 @@
+"fnmatch" --- Correspondência de padrões de nome de arquivo Unix
+****************************************************************
+
+**Código-fonte:** Lib/fnmatch.py
+
+======================================================================
+
+Este módulo fornece suporte para curingas no estilo shell do Unix, que
+*não* são iguais às expressões regulares (documentadas no módulo
+"re"). Os caracteres especiais usados nos curingas no estilo de shell
+são:
+
++--------------+--------------------------------------+
+| Padrão       | Significado                          |
+|==============|======================================|
+| "*"          | corresponde a tudo                   |
++--------------+--------------------------------------+
+| "?"          | Corresponde a qualquer caractere     |
+|              | único                                |
++--------------+--------------------------------------+
+| "[seq]"      | corresponde a qualquer caractere em  |
+|              | *seq*                                |
++--------------+--------------------------------------+
+| "[!seq]"     | corresponde a qualquer caractere     |
+|              | ausente em *seq*                     |
++--------------+--------------------------------------+
+
+Para uma correspondência literal, coloque os metacaracteres entre
+colchetes. Por exemplo, "'[?]'" corresponde ao caractere "'?'".
+
+Note que o separador de nome de arquivo ("'/'" no Unix) *não* é
+especial para este módulo. Veja o módulo "glob" para expansão do nome
+do caminho ("glob" usa "filter()" para corresponder aos segmentos do
+nome do caminho). Da mesma forma, os nomes de arquivos que começam com
+um ponto final não são especiais para este módulo e são correspondidos
+pelos padrões "*" e "?".
+
+Observe também que "functools.lru_cache()" com *maxsize* de 32768 é
+usado para armazenar em cache os padrões de regex compilados nas
+seguintes funções: "fnmatch()", "fnmatchcase()", "filter()".
+
+fnmatch.fnmatch(name, pat)
+
+   Test whether the filename string *name* matches the pattern string
+   *pat*, returning "True" or "False".  Both parameters are case-
+   normalized using "os.path.normcase()". "fnmatchcase()" can be used
+   to perform a case-sensitive comparison, regardless of whether
+   that's standard for the operating system.
+
+   Este exemplo vai exibir todos os nomes de arquivos no diretório
+   atual com a extensão ".txt":
+
+      import fnmatch
+      import os
+
+      for file in os.listdir('.'):
+          if fnmatch.fnmatch(file, '*.txt'):
+              print(file)
+
+fnmatch.fnmatchcase(name, pat)
+
+   Test whether the filename string *name* matches the pattern string
+   *pat*, returning "True" or "False"; the comparison is case-
+   sensitive and does not apply "os.path.normcase()".
+
+fnmatch.filter(names, pat)
+
+   Construct a list from those elements of the *iterable* *names* that
+   match pattern *pat*. It is the same as "[n for n in names if
+   fnmatch(n, pat)]", but implemented more efficiently.
+
+fnmatch.translate(pat)
+
+   Return the shell-style pattern *pat* converted to a regular
+   expression for using with "re.match()".
+
+   Exemplo:
+
+   >>> import fnmatch, re
+   >>>
+   >>> regex = fnmatch.translate('*.txt')
+   >>> regex
+   '(?s:.*\\.txt)\\Z'
+   >>> reobj = re.compile(regex)
+   >>> reobj.match('foobar.txt')
+   <re.Match object; span=(0, 10), match='foobar.txt'>
+
+Ver também:
+
+  Módulo "glob"
+     Expansão de caminho no estilo shell do Unix.

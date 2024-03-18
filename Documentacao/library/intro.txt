@@ -1,0 +1,120 @@
+Introdução
+**********
+
+A "biblioteca Python" contém vários tipos diferentes de componentes.
+
+Ela contém tipos de dados que seriam normalmente considerados como
+parte "central" de uma linguagem, tais como números e listas. Para
+esses tipos, o núcleo da linguagem Python define a forma de literais e
+coloca algumas restrições em suas semânticas, mas não define
+completamente as semânticas. (Por outro lado, o núcleo da linguagem
+define propriedades sintáticas como a ortografia e a prioridade de
+operadores.)
+
+A biblioteca também contém exceções e funções embutidas -- objetos que
+podem ser usados por todo o código Python sem a necessidade de uma
+instrução "import". Alguns desses são definidos pelo núcleo da
+linguagem, mas muitos não são essenciais para as semânticas principais
+e são apenas descritos aqui.
+
+A maior parte da biblioteca, entretanto, consiste em uma coleção de
+módulos. Há muitas formas de dissecar essa coleção. Alguns módulos são
+escritos em C e colocados no interpretador do Python; outros são
+escritos em Python e importados na forma de código. Alguns módulos
+fornecem interfaces que são muito específicas do Python, como imprimir
+um stack trace (situação da pilha de execução); alguns fornecem
+interfaces que são específicas para um sistema operacional em
+particular, tais como acessar hardware específico; outros fornecem
+interfaces que são específicas de um domínio de aplicação em
+particular, como a World Wide Web. Alguns módulos estão disponíveis em
+todas as versões do Python; outros estão apenas disponíveis quando o
+sistema subjacente suporta ou necessita deles; e ainda outros estão
+disponíveis apenas quando uma opção de configuração em particular foi
+escolhida no momento em que o Python foi compilado e instalado.
+
+Este manual está organizado "de dentro para fora": ele primeiro
+descreve as funções inclusas, tipos de dados e exceções, e finalmente
+os módulos, agrupados em capítulos de módulos relacionados.
+
+Isto significa que, se você começar a ler este manual do início, e
+pular para o próximo capítulo quando estiver entediado, você terá uma
+visão geral razoável dos módulos disponíveis e áreas de aplicação que
+são suportadas pela biblioteca Python. É claro, você não *tem* que ler
+como se fosse um romance --- você também pode navegar pela tabela de
+conteúdos (no início do manual), ou procurar por uma função, módulo ou
+termo específicos no índice (na parte final). E finalmente, se você
+gostar de aprender sobre assuntos diversos, você pode escolher um
+número de página aleatório (veja module "random") e leia uma seção ou
+duas. Independente da ordem na qual você leia as seções deste manual,
+ajuda iniciar pelo capítulo Funções embutidas, já que o resto do
+manual requer familiaridade com este material.
+
+E que o show comece!
+
+
+Observações sobre disponibilidade
+=================================
+
+* Uma observação "Disponibilidade: Unix" significa que essa função é
+  comumente encontrada em sistemas Unix. Não faz nenhuma reivindicação
+  sobre sua existência em um sistema operacional específico.
+
+* Se não for observado separadamente, todas as funções que afirmam
+  "Disponibilidade: Unix" são suportadas no macOS, que é baseado em um
+  núcleo Unix.
+
+* Se uma nota de disponibilidade contiver uma versão mínima do Kernel
+  e uma versão mínima da libc, ambas as condições deverão ser
+  atendidas. Por exemplo, um recurso com a observação
+  *Disponibilidade: Linux >= 3.17 com glibc >= 2.27* requer Linux 3.17
+  ou mais recente e glibc 2.27 ou mais recente.
+
+
+Plataformas WebAssembly
+-----------------------
+
+As plataformas WebAssembly "wasm32-emscripten" (Emscripten) e
+"wasm32-wasi" (WASI) fornecem um subconjunto de APIs POSIX. Os tempos
+de execução e navegadores do WebAssembly são colocados em área
+restrita e têm acesso limitado ao host e aos recursos externos.
+Qualquer módulo de biblioteca padrão do Python que usa processos,
+encadeamento, rede, sinais ou outras formas de comunicação entre
+processos (IPC) não está disponível ou pode não funcionar como em
+outros sistemas semelhantes ao Unix. E/S de arquivo, sistema de
+arquivos e funções relacionadas à permissão do Unix também são
+restritas. Emscripten não permite bloqueio de E/S. Outras operações de
+bloqueio como "sleep()" bloqueiam o laço de eventos do navegador.
+
+As propriedades e o comportamento do Python em plataformas WebAssembly
+dependem da versão Emscripten-SDK ou WASI-SDK, tempos de execução WASM
+(navegador, NodeJS, wasmtime) e sinalizadores de tempo de construção
+do Python. WebAssembly, Emscripten e WASI são padrões em evolução;
+alguns recursos como rede podem ser suportados no futuro.
+
+Para Python no navegador, os usuários devem considerar Pyodide ou
+PyScript. O PyScript é construído sobre o Pyodide, que por sua vez é
+construído sobre o CPython e o Emscripten. O Pyodide fornece acesso às
+APIs JavaScript e DOM dos navegadores, bem como recursos de rede
+limitados com as APIs "XMLHttpRequest" e "Fetch" do JavaScript.
+
+* As APIs relacionadas a processo não estão disponíveis ou sempre
+  falham com um erro. Isso inclui APIs que geram novos processos
+  ("fork()", "execve()"), aguardam processos ("waitpid()"), enviam
+  sinais ("kill()"), ou interagir com processos. O "subprocess" é
+  importável, mas não funciona.
+
+* O módulo "socket" está disponível, mas é limitado e se comporta de
+  maneira diferente de outras plataformas. No Emscripten, os soquetes
+  são sempre não bloqueantes e requerem código JavaScript adicional e
+  auxiliares no servidor para intermediar TCP por meio de WebSockets;
+  veja Emscripten Networking para mais informações. A primeira
+  snapshot de preview do WASI permite apenas soquetes de um descritor
+  de arquivo existente.
+
+* Algumas funções são esboço que não fazem nada e sempre retornam
+  valores definidos no código.
+
+* As funções relacionadas a descritores de arquivo, permissões de
+  arquivo, propriedade de arquivo e links são limitadas e não suportam
+  algumas operações. Por exemplo, WASI não permite links simbólicos
+  com nomes de arquivo absolutos.

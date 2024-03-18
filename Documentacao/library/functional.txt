@@ -1,0 +1,25 @@
+Módulos de Programação Funcional
+********************************
+
+Os módulos descritos neste capítulo fornecem funções e classes que
+suportam um estilo de programação funcional e operações gerais em
+chamáveis.
+
+Os seguintes módulos estão documentados neste capítulo:
+
+* "itertools" --- Funções que criam iteradores para laços eficientes
+
+  * Itertool Functions
+
+  * Receitas com itertools
+
+* "functools" --- Funções e operações de ordem superior em objetos
+  chamáveis
+
+  * Objetos "partial"
+
+* "operator" --- Operadores padrões como funções
+
+  * Mapeando os operadores para suas respectivas funções
+
+  * Operadores in-place

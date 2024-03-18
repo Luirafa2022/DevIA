@@ -1,0 +1,239 @@
+"importlib.resources" -- Leitura, abertura e acesso aos recursos de pacote
+**************************************************************************
+
+**Código-fonte:** Lib/importlib/resources/__init__.py
+
+======================================================================
+
+Novo na versão 3.7.
+
+Esse módulo aproveita o sistema de importação do Python para fornecer
+acesso a *recursos* dentro de *pacotes*.
+
+"Recursos" são recursos de arquivos ou similares associados a um
+módulo ou pacote em Python. Os recursos podem estar contidos
+diretamente em um pacote, em um subdiretório contido nesse pacote ou
+adjacentes a módulos fora de um pacote. Os recursos podem ser de texto
+ou binários. Como resultado, os códigos-fonte do módulo Python (.py)
+de um pacote e os artefatos de compilação (pycache) são tecnicamente
+recursos de fato desse pacote. Na prática, entretanto, os recursos são
+principalmente os artefatos não-Python expostos especificamente pelo
+autor do pacote.
+
+Os recursos podem ser abertos ou lidos no modo binário ou de texto.
+
+Os recursos são mais ou menos semelhantes a arquivos dentro de
+diretórios, embora seja importante ter em mente que isso é apenas uma
+metáfora.  Recursos e pacotes **não** precisam existir como arquivos e
+diretórios físicos no sistema de arquivos: por exemplo, um pacote e
+seus recursos podem ser importados de um arquivo zip usando
+"zipimport".
+
+Nota:
+
+  Esse módulo fornece funcionalidade semelhante ao Basic Resource
+  Access do pkg_resources sem a sobrecarga de desempenho desse pacote.
+  Isso facilita a leitura de recursos incluídos em pacotes, com uma
+  semântica mais estável e consistente.O backport autônomo desse
+  módulo fornece mais informações sobre uso do importlib.resources e
+  migração do pkg_resources para o importlib.resources.
+
+"Loaders" que desejam oferecer suporte à leitura de recursos devem
+implementar um método "get_resource_reader(fullname)" conforme
+especificado por "importlib.resources.abc.ResourceReader".
+
+class importlib.resources.Anchor
+
+   Representa uma âncora para recursos, seja um "objeto módulo" ou um
+   nome de módulo como uma string. Definido como "Union[str,
+   ModuleType]".
+
+importlib.resources.files(anchor: Anchor | None = None)
+
+   Retorna um objeto "Traversable" que representa o contêiner de
+   recursos (pense em diretório) e seus recursos (pense em arquivos).
+   Um Traversable pode conter outros contêineres (pense em
+   subdiretórios).
+
+   *anchor* é um "Anchor" opcional. Se a âncora for um pacote, os
+   recursos são resolvidos a partir desse pacote. Se for um módulo, os
+   recursos são resolvidos ao lado desse módulo (no mesmo pacote ou na
+   raiz do pacote). Se a âncora for omitido, o módulo do chamador é
+   usado.
+
+   Novo na versão 3.9.
+
+   Alterado na versão 3.12: O parâmetro *package* foi renomeado para
+   *anchor*. *anchor* agora pode ser um módulo sem ser pacote e, se
+   omitido, será o módulo do chamador por padrão. *package* ainda é
+   aceito por compatibilidade, mas irá levantar um
+   "DeprecationWarning". Considere passar a posição da âncora de forma
+   posicional ou usar "importlib_resources >= 5.10" para uma interface
+   compatível em versões mais antigas do Python.
+
+importlib.resources.as_file(traversable)
+
+   Dado um objeto "Traversable" que representa um arquivo ou
+   diretório, normalmente de "importlib.resources.files()", retorna um
+   gerenciador de contexto para uso em uma instrução "with". O
+   gerenciador de contexto fornece um objeto "pathlib.Path".
+
+   Sair do gerenciador de contexto limpa qualquer arquivo ou diretório
+   temporário criado quando o recurso foi extraído, por exemplo, de um
+   arquivo zip.
+
+   Use "as_file" quando os métodos de Traversable ("read_text", etc.)
+   forem insuficientes e for necessário um arquivo ou diretório real
+   no sistema de arquivos.
+
+   Novo na versão 3.9.
+
+   Alterado na versão 3.12: Adicionado suporte para *traversable*
+   representando um diretório.
+
+
+Funções descontinuadas
+======================
+
+Um conjunto de funções mais antigo e descontinuado ainda está
+disponível, mas está programado para ser removido em uma versão futura
+do Python. A principal desvantagem dessas funções é que elas não
+oferecem suporte a diretórios: elas presumem que todos os recursos
+estão localizados diretamente em um *package*.
+
+importlib.resources.Package
+
+      Sempre que uma função aceitar um argumento "Package", você
+      poderá passar um "objeto módulo"  ou um nome de módulo como uma
+      string.  Você só pode passar objetos de módulo cujo
+      "__spec__.submodule_search_locations" não seja "None".
+
+      O tipo "Package" é definido como "Union[str, ModuleType]".
+
+   Obsoleto desde a versão 3.12.
+
+importlib.resources.Resource
+
+   Para os argumentos *resource* das funções abaixo, você pode passar
+   o nome de um recurso como uma string ou um "objeto caminho ou
+   similar".
+
+   O tipo "Resource" é definido como "Union[str, os.PathLike]".
+
+importlib.resources.open_binary(package, resource)
+
+   Abre para leitura binária o *resource* dentro do *package*.
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos do "Package". *resource* é o nome do recurso a
+   ser aberto dentro de *package*; ele não pode conter separadores de
+   caminho e não pode ter sub-recursos (ou seja, não pode ser um
+   diretório). Essa função retorna uma instância de "typing.BinaryIO",
+   um fluxo de E/S binário aberto para leitura.
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      files(package).joinpath(resource).open('rb')
+
+importlib.resources.open_text(package, resource, encoding='utf-8', errors='strict')
+
+   Abre para leitura de texto o *resource* dentro do *package*.  Por
+   padrão, o recurso é aberto para leitura como UTF-8.
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos do "Package". *resource* é o nome do recurso a
+   ser aberto dentro de *package*; ele não pode conter separadores de
+   caminho e não pode ter sub-recursos (ou seja, não pode ser um
+   diretório). *encoding* e *errors* têm o mesmo significado que com
+   "open()" embutido.
+
+   Essa função retorna uma instância de "typing.TextIO", um fluxo de
+   E/S de texto aberto para leitura.
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      files(package).joinpath(resource).open('r', encoding=encoding)
+
+importlib.resources.read_binary(package, resource)
+
+   Lê e retorna o conteúdo do *resource* dentro do *package* como
+   "bytes".
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos do "Package". *resource* é o nome do recurso a
+   ser aberto dentro de *package*; ele não pode conter separadores de
+   caminho e não pode ter sub-recursos (ou seja, não pode ser um
+   diretório). Essa função retorna o conteúdo do recurso como "bytes".
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      files(package).joinpath(resource).read_bytes()
+
+importlib.resources.read_text(package, resource, encoding='utf-8', errors='strict')
+
+   Lê e retorna o conteúdo de *resource* em *package* como "str". Por
+   padrão, o conteúdo é lido como UTF-8 estrito.
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos do "Package". *resource* é o nome do recurso a
+   ser aberto dentro de *package*; ele não pode conter separadores de
+   caminho e não pode ter sub-recursos (ou seja, não pode ser um
+   diretório). *encoding* e *errors* têm o mesmo significado que com
+   "open()" embutido. Esta função retorna o conteúdo do recurso como
+   "str".
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      files(package).joinpath(resource).read_text(encoding=encoding)
+
+importlib.resources.path(package, resource)
+
+   Retorna o caminho para o *resource* como um caminho real do sistema
+   de arquivos.  Essa função retorna um gerenciador de contexto para
+   uso em uma instrução "with". O gerenciador de contexto fornece um
+   objeto "pathlib.Path".
+
+   Sair do gerenciador de contexto limpa qualquer arquivo temporário
+   criado quando o recurso precisa ser extraído, por exemplo, de um
+   arquivo zip.
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos do "Package". *resource* é o nome do recurso a
+   ser aberto dentro de *package*; ele não pode conter separadores de
+   caminho e não pode ter sub-recursos (ou seja, não pode ser um
+   diretório).
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas usando "as_file()":
+
+      as_file(files(package).joinpath(resource))
+
+importlib.resources.is_resource(package, name)
+
+   Retorna "True" se houver um recurso chamado *name* no pacote; caso
+   contrário, retorna "False". Essa função não considera os diretórios
+   como recursos. *package* é um nome ou um objeto módulo que está em
+   conformidade com os requisitos de "Package".
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      files(package).joinpath(resource).is_file()
+
+importlib.resources.contents(package)
+
+   Retorna um iterável sobre os itens nomeados no pacote.  O iterável
+   retorna "str" recursos (por exemplo, arquivos) e não recursos (por
+   exemplo, diretórios).  O iterável não recorre a subdiretórios.
+
+   *package* é um nome ou um objeto módulo que está em conformidade
+   com os requisitos de "Package".
+
+   Obsoleto desde a versão 3.11: Chamadas para essa função podem ser
+   substituídas por:
+
+      (resource.name for resource in files(package).iterdir() if resource.is_file())

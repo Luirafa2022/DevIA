@@ -1,0 +1,135 @@
+"glob" --- Expansão de padrão de nome de arquivo no estilo Unix
+***************************************************************
+
+**Código-fonte:** Lib/glob.py
+
+======================================================================
+
+O módulo "glob" encontra todos os nomes de caminho que correspondem a
+um padrão especificado de acordo com as regras usadas pelo shell Unix,
+embora os resultados sejam retornados em ordem arbitrária. Nenhuma
+expansão de til é feita, mas "*", "?" e os intervalos de caracteres
+expressos com "[]" serão correspondidos corretamente. Isso é feito
+usando as funções "os.scandir()" e "fnmatch.fnmatch()" em conjunto, e
+não invocando realmente um subshell.
+
+Observe que arquivos iniciados com um ponto (".") só podem ser
+correspondidos com padrões que também iniciam com um ponto, ao
+contrário de "fnmatch.fnmatch()" ou "pathlib.Path.glob()". (Para
+expansão de til e variável de shell, use "os.path.expanduser()" e
+"os.path.expandvars()".)
+
+Para uma correspondência literal, coloque os metacaracteres entre
+colchetes. Por exemplo, "'[?]'" corresponde ao caractere "'?'".
+
+Ver também:
+
+  O módulo "pathlib" oferece objetos de caminho de alto nível.
+
+glob.glob(pathname, *, root_dir=None, dir_fd=None, recursive=False, include_hidden=False)
+
+   Return a possibly empty list of path names that match *pathname*,
+   which must be a string containing a path specification. *pathname*
+   can be either absolute (like "/usr/src/Python-1.5/Makefile") or
+   relative (like "../../Tools/*/*.gif"), and can contain shell-style
+   wildcards. Broken symlinks are included in the results (as in the
+   shell). Whether or not the results are sorted depends on the file
+   system.  If a file that satisfies conditions is removed or added
+   during the call of this function, whether a path name for that file
+   will be included is unspecified.
+
+   Se *root_dir* não for "None", deve ser um *objeto caminho ou
+   similar* especificando o diretório raiz para pesquisa. Tem o mesmo
+   efeito em "glob()" que alterar o diretório atual antes de chamá-lo.
+   Se *pathname* for relativo, o resultado conterá caminhos relativos
+   a *root_dir*.
+
+   Esta função pode suportar paths relative to directory descriptors
+   com o parâmetro *dir_fd*.
+
+   Se *recursive* for verdadeiro, o padrão ""**"" corresponderá a
+   qualquer arquivo e zero ou mais diretórios, subdiretórios e links
+   simbólicos para diretórios. Se o padrão for seguido por um "os.sep"
+   ou "os.altsep", então os arquivos não irão corresponder.
+
+   Se *include_hidden* for verdadeiro, o padrão ""**"" corresponderá
+   aos diretórios ocultos.
+
+   Levanta um evento de auditoria "glob.glob" com argumentos
+   "pathname", "recursive".
+
+   Levanta um evento de auditoria "glob.glob/2" com argumentos
+   "pathname", "recursive", "root_dir", "dir_fd".
+
+   Nota:
+
+     Usar o padrão ""**"" em grandes árvores de diretório pode
+     consumir uma quantidade excessiva de tempo.
+
+   Alterado na versão 3.5: Suporte a globs recursivos usando ""**"".
+
+   Alterado na versão 3.10: Adicionados os parâmetros *root_dir* e
+   *dir_fd*.
+
+   Alterado na versão 3.11: Adicionado o parâmetro *include_hidden*.
+
+glob.iglob(pathname, *, root_dir=None, dir_fd=None, recursive=False, include_hidden=False)
+
+   Retorna um *iterador* que produz os mesmos valores que "glob()" sem
+   realmente armazená-los todos simultaneamente.
+
+   Levanta um evento de auditoria "glob.glob" com argumentos
+   "pathname", "recursive".
+
+   Levanta um evento de auditoria "glob.glob/2" com argumentos
+   "pathname", "recursive", "root_dir", "dir_fd".
+
+   Alterado na versão 3.5: Suporte a globs recursivos usando ""**"".
+
+   Alterado na versão 3.10: Adicionados os parâmetros *root_dir* e
+   *dir_fd*.
+
+   Alterado na versão 3.11: Adicionado o parâmetro *include_hidden*.
+
+glob.escape(pathname)
+
+   Escapa todos os caracteres especiais ("'?'", "'*'" e "'['"). Isso é
+   útil se você deseja corresponder a uma string literal arbitrária
+   que pode conter caracteres especiais. Os caracteres especiais nos
+   pontos de compartilhamento de unidade/UNC não têm escape, por
+   exemplo, no Windows  "escape('//?/c:/Quo vadis?.txt')" retorna
+   "'//?/c:/Quo vadis[?].txt'".
+
+   Novo na versão 3.4.
+
+Por exemplo, considere um diretório contendo os seguintes arquivos:
+"1.gif", "2.txt", "card.gif" e um subdiretório "sub" que contém apenas
+o arquivo "3.txt". "glob()" produzirá os seguintes resultados. Observe
+como todos os componentes principais do caminho são preservados.
+
+   >>> import glob
+   >>> glob.glob('./[0-9].*')
+   ['./1.gif', './2.txt']
+   >>> glob.glob('*.gif')
+   ['1.gif', 'card.gif']
+   >>> glob.glob('?.gif')
+   ['1.gif']
+   >>> glob.glob('**/*.txt', recursive=True)
+   ['2.txt', 'sub/3.txt']
+   >>> glob.glob('./**/', recursive=True)
+   ['./', './sub/']
+
+Se o diretório contém arquivos começando com "." eles não serão
+correspondidos por padrão. Por exemplo, considere um diretório
+contendo "card.gif" e ".card.gif"
+
+   >>> import glob
+   >>> glob.glob('*.gif')
+   ['card.gif']
+   >>> glob.glob('.c*')
+   ['.card.gif']
+
+Ver também:
+
+  Módulo "fnmatch"
+     Expansão de nome de arquivo no estilo shell (não caminho)

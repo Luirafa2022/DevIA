@@ -1,0 +1,531 @@
+"operator" --- Operadores padrões como funções
+**********************************************
+
+**Código-fonte:** Lib/operator.py
+
+======================================================================
+
+O módulo "operator" exporta um conjunto de funções eficientes
+correspondentes aos operadores intrínsecos do Python. Por exemplo,
+"operator.add(x,y)" é equivalente à expressão "x+y". Muitos nomes de
+função são aqueles usados para métodos especiais, sem os sublinhados
+duplos. Para compatibilidade com versões anteriores, muitos deles têm
+uma variante com os sublinhados duplos mantidos. As variantes sem os
+sublinhados duplos são preferenciais para maior clareza.
+
+As funções se enquadram em categorias que realizam comparações de
+objetos, operações lógicas, operações matemáticas e operações de
+sequência.
+
+As funções de comparação de objetos são úteis para todos os objetos e
+são nomeadas conforme os operadores de comparação que os mesmos
+suportam:
+
+operator.lt(a, b)
+operator.le(a, b)
+operator.eq(a, b)
+operator.ne(a, b)
+operator.ge(a, b)
+operator.gt(a, b)
+operator.__lt__(a, b)
+operator.__le__(a, b)
+operator.__eq__(a, b)
+operator.__ne__(a, b)
+operator.__ge__(a, b)
+operator.__gt__(a, b)
+
+   Executam "comparações ricas" entre *a* e *b*. Especialmente, "lt(a,
+   b)" é equivalente a "a < b", "le(a, b)" é equivalente a "a <= b",
+   "eq(a, b)" é equivalente a "a == b", "ne(a, b)" é equivalente a "a
+   != b", "gt(a, b)" é equivalente a "a > b" e "ge(a, b)" é
+   equivalente a "a >= b". Observe que essas funções podem retornar
+   qualquer valor, que pode ou não ser interpretável como um valor
+   booleano. Consulte Comparações para obter mais informações sobre
+   comparações ricas.
+
+As operações lógicas também são geralmente aplicáveis a todos os
+objetos e tem suporte para testes de verdade, testes de identidade e
+operações booleanas:
+
+operator.not_(obj)
+operator.__not__(obj)
+
+   Retorna o resultado de "not" *obj*. (Veja que não existe nenhum
+   método "__not__()" para instâncias de objetos; apenas o núcleo do
+   interpretador definirá esta operação. O resultado será afetado
+   pelos métodos "__bool__()" e "__len__()".)
+
+operator.truth(obj)
+
+   Retorna "True" se o *obj* for verdadeiro, e "False" caso contrário.
+   Isso é equivalente a utilizar a construção "bool".
+
+operator.is_(a, b)
+
+   Retorna "a is b". Testa a identidade do objeto.
+
+operator.is_not(a, b)
+
+   Retorna "a is not b". Testa a identidade do objeto.
+
+As operações matemáticas bit a bit são as mais numerosas:
+
+operator.abs(obj)
+operator.__abs__(obj)
+
+   Retorna o valor absoluto de *obj*.
+
+operator.add(a, b)
+operator.__add__(a, b)
+
+   Retorna "a + b", onde *a* e *b* são números.
+
+operator.and_(a, b)
+operator.__and__(a, b)
+
+   Retorna bit a bit de *a* e *b*.
+
+operator.floordiv(a, b)
+operator.__floordiv__(a, b)
+
+   Retorna "a // b".
+
+operator.index(a)
+operator.__index__(a)
+
+   Retorna *a* convertendo para um inteiro. Equivalente a
+   "a.__index__()".
+
+   Alterado na versão 3.10: O resultado sempre tem o tipo exato "int".
+   Anteriormente, o resultado poderia ter sido uma instância de uma
+   subclasse de "int".
+
+operator.inv(obj)
+operator.invert(obj)
+operator.__inv__(obj)
+operator.__invert__(obj)
+
+   Retorna o inverso bit a bit do número *obj*. Isso equivale a
+   "~obj".
+
+operator.lshift(a, b)
+operator.__lshift__(a, b)
+
+   Retorna *a* deslocado para a esquerda por *b*.
+
+operator.mod(a, b)
+operator.__mod__(a, b)
+
+   Retorna "a % b".
+
+operator.mul(a, b)
+operator.__mul__(a, b)
+
+   Retorna "a * b", onde *a* e *b* são números.
+
+operator.matmul(a, b)
+operator.__matmul__(a, b)
+
+   Retorna "a @ b".
+
+   Novo na versão 3.5.
+
+operator.neg(obj)
+operator.__neg__(obj)
+
+   Retorna *obj* negado ("-obj").
+
+operator.or_(a, b)
+operator.__or__(a, b)
+
+   Retorna bit a bit de *a* e *b*.
+
+operator.pos(obj)
+operator.__pos__(obj)
+
+   Retorna *obj* positivo ("+obj").
+
+operator.pow(a, b)
+operator.__pow__(a, b)
+
+   Retorna "a ** b", onde *a* e *b* são números.
+
+operator.rshift(a, b)
+operator.__rshift__(a, b)
+
+   Retorna *a* deslocado para a direita por *b*.
+
+operator.sub(a, b)
+operator.__sub__(a, b)
+
+   Retorna "a - b".
+
+operator.truediv(a, b)
+operator.__truediv__(a, b)
+
+   Retorna "a / b" onde 2/3 é .66 em vez de 0. Isso também é conhecido
+   como divisão "verdadeira".
+
+operator.xor(a, b)
+operator.__xor__(a, b)
+
+   Retorna o OU exclusivo bit a bit de *a* e *b*.
+
+Operações que funcionam com sequências (algumas delas com mapas
+também) incluem:
+
+operator.concat(a, b)
+operator.__concat__(a, b)
+
+   Retorna "a + b" para as sequências *a* e *b*.
+
+operator.contains(a, b)
+operator.__contains__(a, b)
+
+   Retorna o resultado do teste "b in a". Observe os operandos
+   invertidos.
+
+operator.countOf(a, b)
+
+   Retorna o número de ocorrências de *b* em *a*.
+
+operator.delitem(a, b)
+operator.__delitem__(a, b)
+
+   Remove de *a* o valor no índice *b*.
+
+operator.getitem(a, b)
+operator.__getitem__(a, b)
+
+   Retorna de *a* o valor no índice *b*.
+
+operator.indexOf(a, b)
+
+   Retorna o índice da primeira ocorrência de *b* em *a*.
+
+operator.setitem(a, b, c)
+operator.__setitem__(a, b, c)
+
+   Define em *a* o valor no índice *b* para *c*.
+
+operator.length_hint(obj, default=0)
+
+   Retorna um comprimento estimado para o objeto *obj*. Primeiro tenta
+   retornar o seu comprimento real, em seguida, uma estimativa
+   utilizando "object.__length_hint__()", e finalmente retorna o valor
+   padrão.
+
+   Novo na versão 3.4.
+
+Os operadores seguintes funcionam com chamáveis:
+
+operator.call(obj, /, *args, **kwargs)
+operator.__call__(obj, /, *args, **kwargs)
+
+   Retorna "obj(*args, **kwargs)".
+
+   Novo na versão 3.11.
+
+O módulo "operator" também define ferramentas para procura de itens e
+atributos generalizados. Estes são úteis para fazer extração de campo
+rapidamente como argumentos para as funções "map()", "sorted()",
+"itertools.groupby()", ou outra função que espera uma função como
+argumento.
+
+operator.attrgetter(attr)
+operator.attrgetter(*attrs)
+
+   Retorna um objeto chamável que pode buscar o *attr* do seu
+   operando. Caso seja solicitado mais de um atributo, retorna uma
+   tupla de atributos. Os nomes dos atributos também podem conter
+   pontos. Por exemplo:
+
+   * Depois de "f = attrgetter('name')", a chamada a "f(b)" retorna
+     "b.name".
+
+   * Depois de "f = attrgetter('name', 'date')", a chamada a "f(b)"
+     retorna "(b.name, b.date)".
+
+   * Depois de "f = attrgetter('name.first', 'name.last')", a chamada
+     a "f(b)" retorna "(b.name.first, b.name.last)".
+
+   Equivalente a:
+
+      def attrgetter(*items):
+          if any(not isinstance(item, str) for item in items):
+              raise TypeError('attribute name must be a string')
+          if len(items) == 1:
+              attr = items[0]
+              def g(obj):
+                  return resolve_attr(obj, attr)
+          else:
+              def g(obj):
+                  return tuple(resolve_attr(obj, attr) for attr in items)
+          return g
+
+      def resolve_attr(obj, attr):
+          for name in attr.split("."):
+              obj = getattr(obj, name)
+          return obj
+
+operator.itemgetter(item)
+operator.itemgetter(*items)
+
+   Retorna um objeto chamável que busca *item* de seu operando usando
+   o método "__getitem__()" do operando.  Se vários itens forem
+   especificados, retorna um tupla de valores de pesquisa. Por
+   exemplo:
+
+   * Depois de "f = itemgetter(2)", a chamada a "f(r)" retorna "r[2]".
+
+   * Depois de "g = itemgetter(2, 5, 3)", a chamada a "g(r)" retorna
+     "(r[2], r[5], r[3])".
+
+   Equivalente a:
+
+      def itemgetter(*items):
+          if len(items) == 1:
+              item = items[0]
+              def g(obj):
+                  return obj[item]
+          else:
+              def g(obj):
+                  return tuple(obj[item] for item in items)
+          return g
+
+   Os itens podem ser de qualquer tipo aceito pelo método
+   "__getitem__()" do operando.  Dicionários aceitam qualquer valor
+   *hasheável* . Listas, tuplas e strings aceitam um índice ou um
+   fatiamento:
+
+   >>> itemgetter(1)('ABCDEFG')
+   'B'
+   >>> itemgetter(1, 3, 5)('ABCDEFG')
+   ('B', 'D', 'F')
+   >>> itemgetter(slice(2, None))('ABCDEFG')
+   'CDEFG'
+   >>> soldier = dict(rank='captain', name='dotterbart')
+   >>> itemgetter('rank')(soldier)
+   'captain'
+
+   Exemplo de uso "itemgetter()" para recuperar campos específicos de
+   um registro de tupla:
+
+   >>> inventory = [('apple', 3), ('banana', 2), ('pear', 5), ('orange', 1)]
+   >>> getcount = itemgetter(1)
+   >>> list(map(getcount, inventory))
+   [3, 2, 5, 1]
+   >>> sorted(inventory, key=getcount)
+   [('orange', 1), ('banana', 2), ('apple', 3), ('pear', 5)]
+
+operator.methodcaller(name, /, *args, **kwargs)
+
+   Retorna um objeto chamável que invoca o método *name* em seu
+   operando. Se argumentos adicionais e/ou argumentos nomeados forem
+   fornecidos, os mesmos serão passados para o método. Por exemplo:
+
+   * Depois de "f = methodcaller('name')", a chamada a "f(b)" retorna
+     "b.name()".
+
+   * Depois de "f = methodcaller('name', 'foo', bar=1)", a chamada
+     "f(b)" retorna "b.name('foo', bar=1)".
+
+   Equivalente a:
+
+      def methodcaller(name, /, *args, **kwargs):
+          def caller(obj):
+              return getattr(obj, name)(*args, **kwargs)
+          return caller
+
+
+Mapeando os operadores para suas respectivas funções
+====================================================
+
+Esta tabela mostra como as operações abstratas correspondem aos
+símbolos do operador na sintaxe Python e às funções no módulo
+"operator".
+
++-------------------------+---------------------------+-----------------------------------------+
+| Operação                | Sintaxe                   | Função                                  |
+|=========================|===========================|=========================================|
+| Adição                  | "a + b"                   | "add(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Concatenação            | "seq1 + seq2"             | "concat(seq1, seq2)"                    |
++-------------------------+---------------------------+-----------------------------------------+
+| Teste de pertinência    | "obj in seq"              | "contains(seq, obj)"                    |
++-------------------------+---------------------------+-----------------------------------------+
+| Divisão                 | "a / b"                   | "truediv(a, b)"                         |
++-------------------------+---------------------------+-----------------------------------------+
+| Divisão                 | "a // b"                  | "floordiv(a, b)"                        |
++-------------------------+---------------------------+-----------------------------------------+
+| E bit a bit             | "a & b"                   | "and_(a, b)"                            |
++-------------------------+---------------------------+-----------------------------------------+
+| Ou exclusivo bit a bit  | "a ^ b"                   | "xor(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Inversão bit a bit      | "~ a"                     | "invert(a)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Ou bit a bit            | "a | b"                   | "or_(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Exponenciação           | "a ** b"                  | "pow(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Identidade              | "a is b"                  | "is_(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Identidade              | "a is not b"              | "is_not(a, b)"                          |
++-------------------------+---------------------------+-----------------------------------------+
+| Atribuição Indexada     | "obj[k] = v"              | "setitem(obj, k, v)"                    |
++-------------------------+---------------------------+-----------------------------------------+
+| Eliminação indexada     | "del obj[k]"              | "delitem(obj, k)"                       |
++-------------------------+---------------------------+-----------------------------------------+
+| Indexação               | "obj[k]"                  | "getitem(obj, k)"                       |
++-------------------------+---------------------------+-----------------------------------------+
+| Deslocamento à esquerda | "a << b"                  | "lshift(a, b)"                          |
++-------------------------+---------------------------+-----------------------------------------+
+| Módulo                  | "a % b"                   | "mod(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Multiplicação           | "a * b"                   | "mul(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Multiplicação de        | "a @ b"                   | "matmul(a, b)"                          |
+| matrizes                |                           |                                         |
++-------------------------+---------------------------+-----------------------------------------+
+| Negação (aritmética)    | "- a"                     | "neg(a)"                                |
++-------------------------+---------------------------+-----------------------------------------+
+| Negação (lógica)        | "not a"                   | "not_(a)"                               |
++-------------------------+---------------------------+-----------------------------------------+
+| Positivo                | "+ a"                     | "pos(a)"                                |
++-------------------------+---------------------------+-----------------------------------------+
+| Deslocamento à direita  | "a >> b"                  | "rshift(a, b)"                          |
++-------------------------+---------------------------+-----------------------------------------+
+| Atribuição de fatia     | "seq[i:j] = values"       | "setitem(seq, slice(i, j), values)"     |
++-------------------------+---------------------------+-----------------------------------------+
+| Remoção de fatia        | "del seq[i:j]"            | "delitem(seq, slice(i, j))"             |
++-------------------------+---------------------------+-----------------------------------------+
+| Fatiamento              | "seq[i:j]"                | "getitem(seq, slice(i, j))"             |
++-------------------------+---------------------------+-----------------------------------------+
+| Formatação de strings   | "s % obj"                 | "mod(s, obj)"                           |
++-------------------------+---------------------------+-----------------------------------------+
+| Subtração               | "a - b"                   | "sub(a, b)"                             |
++-------------------------+---------------------------+-----------------------------------------+
+| Teste verdadeiro        | "obj"                     | "truth(obj)"                            |
++-------------------------+---------------------------+-----------------------------------------+
+| Ordenação               | "a < b"                   | "lt(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+| Ordenação               | "a <= b"                  | "le(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+| Igualdade               | "a == b"                  | "eq(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+| Diferença               | "a != b"                  | "ne(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+| Ordenação               | "a >= b"                  | "ge(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+| Ordenação               | "a > b"                   | "gt(a, b)"                              |
++-------------------------+---------------------------+-----------------------------------------+
+
+
+Operadores in-place
+===================
+
+Muitas operações possuem uma versão "in-place". Listadas abaixo, as
+funções fornecem um acesso mais primitivo aos operadores locais do que
+a sintaxe usual; por exemplo, a *instrução* "x += y" é equivalente a
+"x = operator.iadd(x, y)". Outra maneira de colocá-lo é dizendo que "z
+= operator.iadd(x, y)" é equivalente à instrução composta "z = x; z +=
+y".
+
+Nesses exemplos, note que, quando um método in-place é invocado, a
+computação e a atribuição são realizadas em duas etapas separadas. As
+funções in-place listadas abaixo apenas fazem o primeiro passo,
+invocando o método in-place. O segundo passo, a atribuição, não é
+tratado.
+
+Para os casos imutáveis, como as strings, números e tuplas, o valor
+atualizado será calculado, mas não será atribuído de volta à variável
+de entrada:
+
+>>> a = 'hello'
+>>> iadd(a, ' world')
+'hello world'
+>>> a
+'hello'
+
+Para alvos mutáveis tal como listas e dicionários, o método in-place
+vai realizar a atualização, então nenhuma atribuição subsequente é
+necessária:
+
+>>> s = ['h', 'e', 'l', 'l', 'o']
+>>> iadd(s, [' ', 'w', 'o', 'r', 'l', 'd'])
+['h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd']
+>>> s
+['h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd']
+
+operator.iadd(a, b)
+operator.__iadd__(a, b)
+
+   "a = iadd(a, b)" é equivalente a "a += b".
+
+operator.iand(a, b)
+operator.__iand__(a, b)
+
+   "a = iand(a, b)" é equivalente a "a &= b".
+
+operator.iconcat(a, b)
+operator.__iconcat__(a, b)
+
+   "a = iconcat(a, b)" é equivalente a "a += b" onde *a* e *b* são
+   sequências.
+
+operator.ifloordiv(a, b)
+operator.__ifloordiv__(a, b)
+
+   "a = ifloordiv(a, b)" é equivalente a "a //= b".
+
+operator.ilshift(a, b)
+operator.__ilshift__(a, b)
+
+   "a = ilshift(a, b)" é equivalente a "a <<= b".
+
+operator.imod(a, b)
+operator.__imod__(a, b)
+
+   "a = imod(a, b)" é equivalente a "a %= b".
+
+operator.imul(a, b)
+operator.__imul__(a, b)
+
+   "a = imul(a, b)" é equivalente a "a *= b".
+
+operator.imatmul(a, b)
+operator.__imatmul__(a, b)
+
+   "a = imatmul(a, b)" é equivalente a "a @= b".
+
+   Novo na versão 3.5.
+
+operator.ior(a, b)
+operator.__ior__(a, b)
+
+   "a = ior(a, b)" é equivalente a "a |= b".
+
+operator.ipow(a, b)
+operator.__ipow__(a, b)
+
+   "a = ipow(a, b)" é equivalente a "a **= b".
+
+operator.irshift(a, b)
+operator.__irshift__(a, b)
+
+   "a = irshift(a, b)" é equivalente a "a >>= b".
+
+operator.isub(a, b)
+operator.__isub__(a, b)
+
+   "a = isub(a, b)" é equivalente a "a -= b".
+
+operator.itruediv(a, b)
+operator.__itruediv__(a, b)
+
+   "a = itruediv(a, b)" é equivalente a "a /= b".
+
+operator.ixor(a, b)
+operator.__ixor__(a, b)
+
+   "a = ixor(a, b)" é equivalente a "a ^= b".

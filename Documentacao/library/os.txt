@@ -1,0 +1,5370 @@
+"os" --- Diversas interfaces de sistema operacional
+***************************************************
+
+**Código-fonte:** Lib/os.py
+
+======================================================================
+
+Este módulo fornece uma maneira simples de usar funcionalidades que
+são dependentes de sistema operacional. Se você quiser ler ou escrever
+um arquivo, veja "open()"; se o que quer é manipular estruturas de
+diretórios, veja o módulo "os.path"; e se quiser ler todas as linhas,
+de todos os arquivos, na linha de comando, veja o módulo "fileinput".
+Para criar arquivos e diretórios temporários, veja o módulo
+"tempfile"; e, para manipulação em alto nível de arquivos e
+diretórios, veja o módulo "shutil".
+
+Notas sobre a disponibilidade dessas funções:
+
+* O modelo dos módulos embutidos dependentes do sistema operacional no
+  Python é tal que, desde que a mesma funcionalidade esteja
+  disponível, a mesma interface é usada; por exemplo, a função
+  "os.stat(path)" retorna informações estatísticas sobre *path* no
+  mesmo formato (que é originado com a interface POSIX).
+
+* Extensões específicas a um sistema operacional também estão
+  disponíveis através do módulo "os", mas usá-las é, naturalmente, uma
+  ameaça à portabilidade.
+
+* Todas as funções que aceitam nomes de caminhos ou arquivos, aceitam
+  objetos bytes e string, e resultam em um objeto do mesmo tipo, se um
+  caminho ou nome de arquivo for retornado.
+
+* Em VxWorks, os.popen, os.fork, os.execv e os.spawn*p* não são
+  suportados.
+
+* Nas plataformas WebAssembly "wasm32-emscripten" e "wasm32-wasi",
+  grandes partes do módulo "os" não estão disponíveis ou se comportam
+  de maneira diferente. API relacionada aos processos (p. ex.,
+  "fork()", "execve()"), sinais (p. ex., "kill()", "wait()") e
+  recursos (p. ex., "nice()") não estão disponíveis. Outros como
+  "getuid()" e "getpid()" são emulados ou simulados.
+
+Nota:
+
+  Todas as funções neste módulo trazem "OSError" (ou suas subclasses)
+  no caso de nomes e caminhos de arquivos inválidos ou inacessíveis,
+  ou outros argumentos que possuem o tipo correto, mas não são aceitos
+  pelo sistema operacional.
+
+exception os.error
+
+   Um apelido para a exceção embutida "OSError".
+
+os.name
+
+   O nome do módulo importado, dependente do sistema operacional.
+   Atualmente, os seguintes nomes foram registrados: "'posix'",
+   "'nt'", "'java'".
+
+   Ver também:
+
+     "sys.platform" tem uma granularidade mais fina. "os.uname()"
+     fornece informações de versão específicas do sistema.
+
+     O módulo "platform" fornece verificações detalhadas sobre a
+     identificação do sistema.
+
+
+Nomes de arquivos, argumentos de linha de comando e variáveis de ambiente
+=========================================================================
+
+No Python, nomes de arquivos, argumentos da linha de comando, e
+variáveis de ambiente são representadas usando o tipo string. Em
+alguns sistemas, decodificar essas strings de e para bytes é
+necessário antes de passá-las para o sistema operacional. Python usa o
+*tratador de erros e codificação do sistema de arquivos* para realizar
+essa conversão (veja "sys.getfilesystemencoding()").
+
+O *tratador de erros e codificação do sistema de arquivos* são
+configurados na inicialização do Python pela função "PyConfig_Read()":
+veja os membros "filesystem_encoding" e "filesystem_errors" do
+"PyConfig".
+
+Alterado na versão 3.1: Em alguns sistemas a conversão, usando a
+codificação do sistema de arquivos, pode falhar. Neste caso, Python
+usa o manipulador de erro de codificação surrogateescape, o que
+significa que bytes não decodificados são substituídos por um
+caractere Unicode U+DC*xx* na decodificação, e estes são novamente
+traduzidos para o byte original na codificação.
+
+A *codificação de sistema de arquivos* precisa garantir que todos os
+bytes abaixo de 128 serão decodificados com sucesso. Se a codificação
+do sistemas de arquivos falhar em garantir isso, funções de API podem
+levantar "UnicodeError".
+
+Veja também a *codificação da localidade*.
+
+
+Modo UTF-8 do Python
+====================
+
+Novo na versão 3.7: Veja **PEP 540** para mais detalhes.
+
+O Modo UTF-8 do Python ignora a *codificação da localidade* e força o
+uso da codificação UTF-8:
+
+* Usa UTF-8 como a *codificação do sistema de arquivos*.
+
+* "sys.getfilesystemencoding()" retorna "'utf-8'".
+
+* "locale.getpreferredencoding()" retorna "'utf-8'" (o argumento
+  *do_setlocale* não causa efeito).
+
+* "sys.stdin", "sys.stdout" e "sys.stderr" usam UTF-8 como codificação
+  de texto, com o tratador de erros "surrogateescape" sendo habilitado
+  para "sys.stdin" e "sys.stdout" ("sys.stderr" continua a usar
+  "backslashreplace" como faz no modo padrão com reconhecimento de
+  localidade)
+
+* No Unix, "os.device_encoding()" retorna "'utf-8'" invés da
+  codificação do dispositivo.
+
+Observe que as configurações de fluxo padrão no modo UTF-8 podem ser
+substituídas por "PYTHONIOENCODING" (assim como podem estar no modo
+com reconhecimento de localidade padrão).
+
+Como consequência das mudanças nessas APIs de baixo  nível, outras
+APIs de alto nível também exibem comportamentos padrões diferentes:
+
+* Argumentos de linha de comando, variáveis de ambiente e nomes de
+  arquivos são decodificados em texto usando a codificação UTF-8.
+
+* "os.fsdecode()" e "os.fsencode()" usam a codificação UTF-8.
+
+* "open()", "io.open()" e "codecs.open()" usam a codificação UTF-8 por
+  padrão. No entanto, elas ainda usam o tratador de erros estrito por
+  padrão, de modo que a tentativa de abrir um arquivo binário no modo
+  de texto provavelmente levantará uma exceção em vez de produzir
+  dados sem sentido.
+
+O Modo UTF-8 do Python está habilitado se a localidade LC_CTYPE for
+"C" ou "POSIX" na inicialização do Python (veja a função
+"PyConfig_Read()").
+
+Ele pode ser habilitado ou desabilitado utilizando a opção "-X utf8"
+da linha de comando e a variável de ambiente "PYTHONUTF8".
+
+Se a variável de ambiente "PYTHONUTF8" não está com valor definido,
+então o interpretador usa por padrão a configuração de localidade
+atual, *a menos que* a localidade atual esteja identificada como uma
+localidade legada baseada em ASCII (como descrita para
+"PYTHONCOERCECLOCALE"), e a coerção de localidade estiver desabilitada
+ou falhar. Nessas localidades legadas, o interpretador irá habilitar
+por padrão o modo UTF-8 a menos que seja explicitamente instruído para
+não fazer isso.
+
+O Modo UTF-8 do Python só pode ser ativado na inicialização do Python.
+Seu valor pode ser lido de "sys.flags.utf8_mode".
+
+Veja também o modo UTF-8 no Windows e o *tratador de erros e
+codificação do sistema de arquivos*.
+
+Ver também:
+
+  **PEP 686**
+     Python 3.15 utilizará Modo UTF-8 do Python por padrão.
+
+
+Parâmetros de processo
+======================
+
+Essas funções e itens de dados fornecem informações e operam no
+processo e usuário atuais.
+
+os.ctermid()
+
+   Retorna o nome do arquivo correspondente ao terminal de controle do
+   processo.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.environ
+
+   Um objeto *mapeamento* onde as chaves e strings que representam o
+   ambiente do processo. Por exemplo, "environ['HOME']" é o nome do
+   caminho do seu diretório pessoal (em algumas plataformas), e é
+   equivalente a "getenv("HOME")" em C.
+
+   Este mapeamento é capturado na primeira vez que o módulo "os" é
+   importado, normalmente durante a inicialização do Python, como
+   parte do processamento do arquivo "site.py". Mudanças no ambiente
+   feitas após esse momento não são refletidas em "os.environ", exceto
+   pelas mudanças feitas modificando "os.environ" diretamente.
+
+   Este mapeamento pode ser usado para modificar o ambiente, além de
+   consultá-lo. "putenv()" será chamado automaticamente quando o
+   mapeamento for modificado.
+
+   No Unix, chaves e valores usam "sys.getfilesystemencoding()" e o
+   tratador de erros "'surrogateescape'". Use "environb" se quiser
+   usar uma codificação diferente.
+
+   No Windows, as teclas são convertidas em maiúsculas. Isso também se
+   aplica ao obter, definir ou excluir um item. Por exemplo,
+   "environ['monty'] = 'python'" mapeia a chave "'MONTY'" para o valor
+   "'python'".
+
+   Nota:
+
+     Chamar a função "putenv()" diretamente não muda "os.environ", por
+     isso é melhor modificar "os.environ".
+
+   Nota:
+
+     Em algumas plataformas, incluindo FreeBSD e Mac OS X, a
+     modificação de "environ" pode causar vazamentos de memória.
+     Consulte a documentação do sistema para "putenv()".
+
+   Você pode excluir itens neste mapeamento para remover definição de
+   variáveis de ambiente. "unsetenv()" será chamado automaticamente
+   quando um item é excluído de "os.environ", e quando um dos métodos
+   "pop()" ou "clear()" é chamado.
+
+   Alterado na versão 3.9: Atualizado para ter suporte os operadores
+   de mesclagem ("|") e de atualização ("|=") da **PEP 584**.
+
+os.environb
+
+   Versão bytes de "environ": um objeto de *mapeamento* onde as chaves
+   e valores são objetos "bytes" representando o ambiente do processo.
+   "environ" e "environb" são sincronizados (modificar "environb"
+   atualiza "environ", e vice versa).
+
+   "environb" está disponível somente se "supports_bytes_environ" for
+   "True".
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.9: Atualizado para ter suporte os operadores
+   de mesclagem ("|") e de atualização ("|=") da **PEP 584**.
+
+os.chdir(path)
+os.fchdir(fd)
+os.getcwd()
+
+   Essas funções são descritas em: Arquivos e diretórios.
+
+os.fsencode(filename)
+
+   Codifica o *objeto caminho ou similar* *filename* para *tratador de
+   erros e codificação do sistema de arquivos*; retorna "bytes"
+   inalterados.
+
+   "fsdecode()" é a função inversa.
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.6: Adicionado suporte para aceitar objetos que
+   implementam a interface "os.PathLike".
+
+os.fsdecode(filename)
+
+   Decodifica o *objeto caminho ou similar* *filename* do *tratador de
+   erros e codificação do sistema de arquivos*; retorna "str"
+   inalterada.
+
+   "fsencode()" é a função inversa.
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.6: Adicionado suporte para aceitar objetos que
+   implementam a interface "os.PathLike".
+
+os.fspath(path)
+
+   Retorna a representação do sistema de arquivos do caminho
+   (argumento *path*).
+
+   Se um objeto "str" ou "bytes" é passado, é retornado inalterado.
+   Caso contrário, o método "__fspath__()" é chamado, e seu valor é
+   retornado, desde que seja um objeto "str" ou "bytes". Em todos os
+   outros casos, "TypeError" é levantada.
+
+   Novo na versão 3.6.
+
+class os.PathLike
+
+   Uma *classe base abstrata* para objetos representando um caminho do
+   sistema de arquivos, como, por exemplo, "pathlib.PurePath".
+
+   Novo na versão 3.6.
+
+   abstractmethod __fspath__()
+
+      Retorna a representação do caminho do sistema de arquivos do
+      objeto.
+
+      O método deverá retornar somente objetos "str" ou "bytes",
+      preferencialmente "str".
+
+os.getenv(key, default=None)
+
+   Retorna o valor da variável de ambiente *key* como uma string se
+   existir, ou *default* se não existir. *key* é uma string. Note que
+   uma vez que "getenv()" utiliza "os.environ", o mapeamento de
+   "getenv()" é capturado de maneira similar na importação, e a função
+   pode não refletir futuras mudanças no ambiente.
+
+   No Unix, chaves e valores são decodificados com a função
+   "sys.getfilesystemencoding()" e o o manipulador de erros
+   "'surrogateescape'". Use "os.getenvb()" se quiser usar uma
+   codificação diferente.
+
+   Disponibilidade: Unix, Windows.
+
+os.getenvb(key, default=None)
+
+   Retorna o valor da variável de ambiente *key* como bytes se
+   existir, ou *default* se não existir. *key* deve ser bytes. Note
+   que uma vez que "getenvb()" utiliza "os.environb", o mapeamento de
+   "getenvb()" é capturado de maneira similar na importação, e a
+   função pode não refletir futuras mudanças no ambiente.
+
+   "getenvb()" está disponível somente se "supports_bytes_environ" for
+   "True".
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.2.
+
+os.get_exec_path(env=None)
+
+   Retorna a lista de diretórios que serão buscados por um executável
+   nomeado, semelhante a um shell, ao iniciar um processo. *env*,
+   quando especificado, deve ser um dicionário de variáveis de
+   ambiente para procurar o PATH. Por padrão, quando *env* é "None",
+   "environ" é usado.
+
+   Novo na versão 3.2.
+
+os.getegid()
+
+   Retorna o ID do grupo efetivo do processo atual. Isso corresponde
+   ao bit "set id" no arquivo que está sendo executado no processo
+   atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.geteuid()
+
+   Retorna o ID de usuário efetivo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.getgid()
+
+   Retorna o ID do grupo real do processo atual.
+
+   Disponibilidade: Unix.
+
+   A função é um simulação em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.getgrouplist(user, group, /)
+
+   Retorna a lista de IDs de grupo aos quais *user* pertence. Se
+   *group* não estiver na lista, ele será incluído; normalmente,
+   *group* é especificado como o campo de ID de grupo do registro de
+   senha para *user*, porque esse ID de grupo será potencialmente
+   omitido.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.getgroups()
+
+   Retorna a lista de IDs de grupos suplementares associados ao
+   processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Nota:
+
+     No Mac OS, o comportamento da função "getgroups()" difere um
+     pouco de outras plataformas Unix. Se o interpretador Python foi
+     compilado para distribuição na versão "10.5", ou anterior,
+     "getgroups()" retorna a lista de IDs de grupos efetivos,
+     associados ao processo do usuário atual; esta lista é limitada a
+     um número de entradas definido pelo sistema, tipicamente 16, e
+     pode ser modificada por chamadas para "setgroups()" se tiver o
+     privilégio adequado. Se foi compilado para distribuição na versão
+     maior que "10.5", "getgroups()" retorna a lista de acesso de
+     grupo atual para o usuário associado ao ID de usuário efetivo do
+     processo; a lista de acesso de grupo pode mudar durante a vida
+     útil do processo, e ela não é afetada por chamadas para
+     "setgroups()", e seu comprimento não é limitado a 16. O valor da
+     constante "MACOSX_DEPLOYMENT_TARGET", pode ser obtido com
+     "sysconfig.get_config_var()".
+
+os.getlogin()
+
+   Retorna o nome do usuário conectado no terminal de controle do
+   processo. Para a maioria dos propósitos, é mais útil usar
+   "getpass.getuser()", já que esse último verifica as variáveis de
+   ambiente "LOGNAME" ou "USERNAME" para descobrir quem é o usuário, e
+   retorna para "pwd.getpwuid(os.getuid())[0]" para obter o nome de
+   login do ID do usuário real atual.
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+os.getpgid(pid)
+
+   Retorna o ID do grupo de processo com *pid*. Se *pid* for 0, o ID
+   do grupo do processos do processo atual é retornado.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.getpgrp()
+
+   Retorna o ID do grupo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.getpid()
+
+   Retorna o ID do processo atual.
+
+   A função é um simulação em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.getppid()
+
+   Retorna o ID do processo pai. Quando o processo pai é encerrado, no
+   Unix, o ID retornado é o do processo init(1); no Windows, ainda é o
+   mesmo ID, que já pode ser reutilizado por outro processo.
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   Alterado na versão 3.2: Adicionado suporte para Windows.
+
+os.getpriority(which, who)
+
+   Obtém prioridade de agendamento de programa. O valor *which* é um
+   entre "PRIO_PROCESS", "PRIO_PGRP" ou "PRIO_USER", e *who* é
+   interpretado em relação a *which* (um identificador de processo
+   para "PRIO_PROCESS", identificador do grupo de processos para
+   "PRIO_PGRP" e um ID de usuário para "PRIO_USER"). Um valor zero
+   para *who* indica (respectivamente) o processo de chamada, o grupo
+   de processos do processo de chamada ou o ID do usuário real do
+   processo de chamada.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.PRIO_PROCESS
+os.PRIO_PGRP
+os.PRIO_USER
+
+   Parâmetros para as funções "getpriority()" e "setpriority()".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.PRIO_DARWIN_THREAD
+os.PRIO_DARWIN_PROCESS
+os.PRIO_DARWIN_BG
+os.PRIO_DARWIN_NONUI
+
+   Parâmetros para as funções "getpriority()" e "setpriority()".
+
+   Disponibilidade: macOS
+
+   Novo na versão 3.12.
+
+os.getresuid()
+
+   Retorna uma tupla (ruid, euid, suid) indicando os IDs de usuário
+   reais, efetivos e salvos do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.2.
+
+os.getresgid()
+
+   Retorna uma tupla (rgid, egid, sgid) indicando os IDs de grupos
+   real, efetivo e salvo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.2.
+
+os.getuid()
+
+   Retorna o ID de usuário real do processo atual.
+
+   Disponibilidade: Unix.
+
+   A função é um simulação em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.initgroups(username, gid, /)
+
+   Chama o initgroups() do sistema para inicializar a lista de acesso
+   ao grupo com todos os grupos dos quais o nome de usuário
+   especificado é membro, mais o ID do grupo especificado.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.2.
+
+os.putenv(key, value, /)
+
+   Define a variável de ambiente denominada *key* como a string
+   *value*. Tais mudanças no ambiente afetam os subprocessos iniciados
+   com "os.system()", "popen()" ou "fork()" e "execv()".
+
+   Atribuições a itens em "os.environ" são automaticamente traduzidas
+   em chamadas correspondentes para "putenv()"; entretanto, chamadas
+   para "putenv()" não atualizam "os.environ", então é preferível
+   atribuir itens de "os.environ". Isso também se aplica a "getenv()"
+   e "getenvb()", que usam respectivamente "os.environ" e
+   "os.environb" em suas implementações.
+
+   Nota:
+
+     Em algumas plataformas, incluindo FreeBSD e Mac OS X, a
+     modificação de "environ" pode causar vazamentos de memória.
+     Consulte a documentação do sistema para "putenv()".
+
+   Levanta um evento de auditoria "os.putenv" com os argumentos "key",
+   "value".
+
+   Alterado na versão 3.9: A função está agora sempre disponível.
+
+os.setegid(egid, /)
+
+   Define o ID do grupo efetivo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.seteuid(euid, /)
+
+   Define o ID do usuário efetivo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setgid(gid, /)
+
+   Define o ID do grupo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setgroups(groups, /)
+
+   Define a lista de IDs de grupo suplementares associados ao processo
+   atual como *groups*. *groups* deve ser uma sequência e cada
+   elemento deve ser um número inteiro identificando um grupo. Esta
+   operação normalmente está disponível apenas para o superusuário.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Nota:
+
+     No Mac OS X, o comprimento de *groups* não pode exceder o número
+     máximo definido pelo sistema de IDs de grupo efetivos,
+     normalmente 16. Consulte a documentação de "getgroups()" para
+     casos em que ele pode não retornar o mesmo grupo de listas
+     definido chamando setgroups().
+
+os.setns(fd, nstype=0)
+
+   Reassocia a thread atual com um espaço de nomes do Linux. Veja as
+   páginas man *setns(2)* e *namespaces(7)* para mais detalhes.
+
+   Se *fd* se refere a um link "/proc/*pid*/ns/", "setns()" reassocia
+   a thread de chamada com o espaço de nomes associado a esse link, e
+   *nstype* pode ser definido como uma das constantes CLONE_NEW* para
+   impor restrições na operação ("0" significa sem restrições).
+
+   Desde o Linux 5.8, *fd* pode se referir a um descritor de arquivo
+   PID obtido de "pidfd_open()". Neste caso, "setns()" reassocia a
+   thread chamadora em um ou mais dos mesmos espaços de nomes que o
+   thread referenciado por *fd*. Isso está sujeito a quaisquer
+   restrições impostas por *nstype*, que é uma máscara de bits que
+   combina uma ou mais das constantes CLONE_NEW*, por exemplo
+   "setns(fd, os.CLONE_NEWUTS | os.CLONE_NEWPID)". As associações do
+   chamador em espaços de nomes não especificados permanecem
+   inalteradas.
+
+   *fd* pode ser qualquer objeto com um método "fileno()" ou um
+   descritor de arquivo bruto.
+
+   Este exemplo reassocia a thread com o espaço de nomes de rede do
+   processo "init":
+
+      fd = os.open("/proc/1/ns/net", os.O_RDONLY)
+      os.setns(fd, os.CLONE_NEWNET)
+      os.close(fd)
+
+   Disponibilidade: Linux >= 3.0 com glibc >= 2.14.
+
+   Novo na versão 3.12.
+
+   Ver também: A função "unshare()".
+
+os.setpgrp()
+
+   Executa a chamada de sistema "setpgrp()" ou "setpgrp(0, 0)"
+   dependendo da versão implementada (se houver). Veja o manual do
+   Unix para a semântica.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setpgid(pid, pgrp, /)
+
+   Executa a chamada de sistema "setpgid()" para definir o ID do grupo
+   do processo com *pid* para o grupo de processos com o id *pgrp*.
+   Veja o manual do Unix para a semântica.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setpriority(which, who, priority)
+
+   Define a prioridade de agendamento de programa. O valor *which* é
+   um entre "PRIO_PROCESS", "PRIO_PGRP" ou "PRIO_USER", e *who* é
+   interpretado em relação a *which* (um identificador de processo
+   para "PRIO_PROCESS", identificador do grupo de processos para
+   "PRIO_PGRP" e um ID de usuário para "PRIO_USER"). Um valor zero
+   para *who* indica (respectivamente) o processo de chamada, o grupo
+   de processos do processo de chamada ou o ID do usuário real do
+   processo de chamada. *priority* é um valor na faixa de -20 a 19. A
+   prioridade padrão é 0; prioridades menores resultam em um
+   agendamento mais favorável.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.setregid(rgid, egid, /)
+
+   Define os IDs de grupo real e efetivo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setresgid(rgid, egid, sgid, /)
+
+   Define os IDs de grupo real, efetivo e salvo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.2.
+
+os.setresuid(ruid, euid, suid, /)
+
+   Define os IDs de usuário real, efetivo e salvo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.2.
+
+os.setreuid(ruid, euid, /)
+
+   Define os IDs de usuário real e efetivo do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.getsid(pid, /)
+
+   Executa a chamada de sistema "getsid()". Veja o manual do Unix para
+   semântica.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setsid()
+
+   Executa a chamada de sistema "setsid()". Veja o manual do Unix para
+   semântica.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.setuid(uid, /)
+
+   Define o ID de usuário do processo atual.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.strerror(code, /)
+
+   Retorna a mensagem de erro correspondente ao código de erro em
+   *code*. Nas plataformas em que "strerror()" retorna "NULL" quando
+   recebe um número de erro desconhecido, "ValueError" é levantada.
+
+os.supports_bytes_environ
+
+   "True" se o tipo de sistema operacional nativo do ambiente estiver
+   em bytes (por exemplo, "False" no Windows).
+
+   Novo na versão 3.2.
+
+os.umask(mask, /)
+
+   Define o umask numérico atual e retorna o umask anterior.
+
+   A função é um simulação em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.uname()
+
+   Retorna informações identificando o sistema operacional atual. O
+   valor retornado é um objeto com cinco atributos:
+
+   * "sysname" - nome do sistema operacional
+
+   * "nodename" - nome da máquina na rede (definido pela
+     implementação)
+
+   * "release" - lançamento do sistema operacional
+
+   * "version" - versão do sistema operacional
+
+   * "machine" - identificador de hardware
+
+   Para compatibilidade com versões anteriores, esse objeto também é
+   iterável, comportando-se como uma tupla de 5 elementos contendo
+   "sysname", "nodename", "release", "version" e "machine" nessa
+   ordem.
+
+   Alguns sistemas truncam "nodename" para 8 caracteres ou para o
+   componente principal; uma maneira melhor de obter o nome do host é
+   "socket.gethostname()" ou até mesmo
+   "socket.gethostbyaddr(socket.gethostname())".
+
+   Disponibilidade: Unix.
+
+   Alterado na versão 3.3: Tipo de retorno foi alterado de uma tupla
+   para um objeto tupla ou similar com atributos nomeados.
+
+os.unsetenv(key, /)
+
+   Cancela (exclui) a variável de ambiente denominada *key*. Tais
+   mudanças no ambiente afetam subprocessos iniciados com
+   "os.system()", "popen()" ou "fork()" e "execv()".
+
+   A exclusão de itens em "os.environ" é automaticamente traduzida
+   para uma chamada correspondente a "unsetenv()"; no entanto,
+   chamadas a "unsetenv()" não atualizam "os.environ", por isso, na
+   verdade é preferível excluir itens de "os.environ".
+
+   Levanta um evento de auditoria "os.unsetenv" com o argumento "key".
+
+   Alterado na versão 3.9: A função está agora sempre disponível e
+   também está disponível no Windows.
+
+os.unshare(flags)
+
+   Desassocia partes do contexto de execução do processo e move-as
+   para um espaço de nomes recém-criado. Veja a página man
+   *unshare(2)* para mais detalhes. O argumento *flags* é uma máscara
+   de bits, combinando zero ou mais constantes CLONE_*, que especifica
+   quais partes do contexto de execução devem ser descompartilhadas de
+   suas associações existentes e movidas para um novo espaço de nomes.
+   Se o argumento *flags* for "0", nenhuma alteração será feita no
+   contexto de execução do processo de chamada.
+
+   Disponibilidade: Linux >= 2.6.16.
+
+   Novo na versão 3.12.
+
+   Ver também: A função "setns()".
+
+Sinalizações para a função "unshare()", se a implementação oferecer
+suporte. Veja *unshare(2)* no manual do Linux para seu exato efeito e
+disponibilidade.
+
+os.CLONE_FILES
+os.CLONE_FS
+os.CLONE_NEWCGROUP
+os.CLONE_NEWIPC
+os.CLONE_NEWNET
+os.CLONE_NEWNS
+os.CLONE_NEWPID
+os.CLONE_NEWTIME
+os.CLONE_NEWUSER
+os.CLONE_NEWUTS
+os.CLONE_SIGHAND
+os.CLONE_SYSVSEM
+os.CLONE_THREAD
+os.CLONE_VM
+
+
+Criação de objetos arquivos
+===========================
+
+Estas funções criam novos *objetos arquivos*. (Veja também "open()"
+para abrir os descritores de arquivos.)
+
+os.fdopen(fd, *args, **kwargs)
+
+   Retorna um objeto arquivo aberto conectado ao descritor de arquivo
+   *fd*. Este é um apelido para a função embutida "open()" e aceita os
+   mesmos argumentos. A única diferença é que o primeiro argumento de
+   "fdopen()" deve ser sempre um inteiro.
+
+
+Operações dos descritores de arquivos
+=====================================
+
+Estas funções operam em fluxos de E/S referenciados usando descritores
+de arquivos.
+
+Descritores de arquivos são pequenos números inteiros correspondentes
+a um arquivo que foi aberto pelo processo atual. Por exemplo, a
+entrada padrão geralmente é o descritor de arquivo 0, a saída padrão 1
+e erro padrão 2. Outros arquivos abertos por um processo serão então
+atribuídos 3, 4, 5, e assim por diante. O nome "descritor de arquivo"
+é um pouco enganoso; em plataformas UNIX, sockets e pipes também são
+referenciados como descritores de arquivos.
+
+O método "fileno()" pode ser usado para obter o descritor de arquivo
+associado a um *objeto arquivo* quando solicitado. Note-se que usar o
+descritor de arquivo diretamente ignorará os métodos do objeto
+arquivo, ignorando aspectos como buffer interno de dados.
+
+os.close(fd)
+
+   Fecha o descritor de arquivo *fd*.
+
+   Nota:
+
+     Esta função destina-se a E/S de baixo nível e deve ser aplicada a
+     um descritor de arquivo retornado por "os.open()" ou "pipe()".
+     Para fechar um "objeto arquivo" retornado pela função embutida
+     "open()" ou por "popen()" ou "fdopen()", use seu método
+     "close()".
+
+os.closerange(fd_low, fd_high, /)
+
+   Fecha todos os descritores de arquivos de *fd_low* (inclusivo) a
+   *fd_high* (exclusivo), ignorando erros. Equivalente a (mas muito
+   mais rápido do que):
+
+      for fd in range(fd_low, fd_high):
+          try:
+              os.close(fd)
+          except OSError:
+              pass
+
+os.copy_file_range(src, dst, count, offset_src=None, offset_dst=None)
+
+   Copia *count* bytes do descritor de arquivo *src*, começando no
+   deslocamento *offset_src*, para o descritor de arquivo *dst*,
+   começando no deslocamento *offset_dst*. Se *offset_src* for None,
+   *src* será lido a partir da posição atual; respectivamente para
+   *offset_dst*.
+
+   No kernel Linux anterior a 5.3, os arquivos apontados por *src* e
+   *dst* devem residir no mesmo sistema de arquivos, caso contrário,
+   uma exceção "OSError" é levantada com "errno" definido como
+   "errno.EXDEV".
+
+   Essa cópia é feita sem o custo adicional de transferência de dados
+   do kernel para o espaço do usuário e depois de volta para o kernel.
+   Além disso, alguns sistemas de arquivos podem implementar
+   otimizações extras, como o uso de reflinks (ou seja, dois ou mais
+   nós-i que compartilham ponteiros para os mesmos blocos de disco
+   copy-on-write; os sistemas de arquivos suportados incluem btrfs e
+   XFS) e cópia do lado do servidor (no caso de NFS).
+
+   A função copia bytes entre dois descritores de arquivo. As opções
+   de texto, como a codificação e o final da linha, são ignoradas.
+
+   O valor de retorno é a quantidade de bytes copiados. Ele pode ser
+   inferior à quantidade solicitada.
+
+   Nota:
+
+     No Linux, "os.copy_file_range()" não deve ser usada para copiar
+     um intervalo de um pseudo arquivo de um sistema de arquivos
+     especial como procfs e sysfs. Ele nunca copiará byte algum e
+     retornará 0 como se o arquivo estivesse vazio devido a um
+     problema conhecido do kernel do Linux.
+
+   Disponibilidade: Linux >= 4.5 com glibc >= 2.27.
+
+   Novo na versão 3.8.
+
+os.device_encoding(fd)
+
+   Retorna uma string descrevendo a codificação do dispositivo
+   associado a *fd* se estiver conectado a um terminal; senão retorna
+   "None".
+
+   No Unix, se o Modo UTF-8 do Python estiver habilitado, retorna
+   "'UTF-8'" ao invés da codificação do dispositivo.
+
+   Alterado na versão 3.10: No Unix, a função agora implementa o Modo
+   UTF-8 do Python.
+
+os.dup(fd, /)
+
+   Retorna uma cópia do descritor de arquivo *fd*. O novo descritor de
+   arquivo é não-herdável.
+
+   No Windows, ao duplicar um fluxo padrão (0: stdin, 1: stdout, 2:
+   stderr), o novo descritor de arquivo é herdável.
+
+   Disponibilidade: não WASI.
+
+   Alterado na versão 3.4: O novo descritor de arquivo agora é não-
+   herdável.
+
+os.dup2(fd, fd2, inheritable=True)
+
+   Duplica o descritor de arquivo *fd* como *fd2*, fechando o último
+   primeiro, se necessário. Retorna *fd2*. O novo descritor de arquivo
+   é herdável por padrão ou não-herdável se *inheritable* for "False".
+
+   Disponibilidade: não WASI.
+
+   Alterado na versão 3.4: Adicionado o parâmetro opcional
+   *inheritable*.
+
+   Alterado na versão 3.7: Retorna *fd2* em caso de sucesso.
+   Anteriormente, retornava sempre "None".
+
+os.fchmod(fd, mode)
+
+   Altera o modo do arquivo dado por *fd* ao *mode* numérico. Veja a
+   documentação de "chmod()" para valores possíveis de *mode*. A
+   partir do Python 3.3, isto é equivalente a "os.chmod(fd, mode)".
+
+   Levanta um evento de auditoria "os.chmod" com os argumentos "path",
+   "mode", "dir_fd".
+
+   Disponibilidade: Unix.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.fchown(fd, uid, gid)
+
+   Altera o o ID do proprietário e do grupo do arquivo dado por *fd*
+   para o *uid* e *gid* numérico. Para deixar um dos IDs inalteradas,
+   defina-o como -1. Veja "chown()". A partir do Python 3.3, isto é
+   equivalente a "os.chown(fd, uid, gid)".
+
+   Levanta um evento de auditoria "os.chown" com os argumentos "path",
+   "uid", "gid", "dir_fd".
+
+   Disponibilidade: Unix.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+os.fdatasync(fd)
+
+   Força a gravação de arquivo com descritor de arquivo *fd* no disco.
+   Não força a atualização de metadados.
+
+   Disponibilidade: Unix.
+
+   Nota:
+
+     Esta função não está disponível no MacOS.
+
+os.fpathconf(fd, name, /)
+
+   Retorna informações de configuração de sistema relevantes para um
+   arquivo aberto. *name* especifica o valor de configuração para
+   recuperar; pode ser uma string que é o nome de um valor do sistema
+   definido; estes nomes são especificados em uma série de padrões
+   (POSIX.1, Unix 95, Unix 98 e outros). Algumas plataformas definem
+   nomes adicionais também. Os nomes conhecidos do sistema operacional
+   hospedeiro são dadas no dicionário "pathconf_names". Para variáveis
+   ​​de configuração não incluídas neste mapeamento, também é aceito
+   passar um número inteiro para *name*.
+
+   Se *name* for uma string e não for conhecida, exceção "ValueError"
+   é levantada. Se um valor específico para *name* não for compatível
+   com o sistema hospedeiro, mesmo que seja incluído no
+   "pathconf_names", uma exceção "OSError" é levantada com
+   "errno.EINVAL" como número do erro.
+
+   Assim como no Python 3.3, é equivalente a "os.pathconf(fd, name)".
+
+   Disponibilidade: Unix.
+
+os.fstat(fd)
+
+   Captura o estado do descritor de arquivo *fd*. Retorna um objeto
+   "stat_result".
+
+   Assim como no Python 3.3, é equivalente a "os.stat(fd)".
+
+   Ver também: A função "stat()".
+
+os.fstatvfs(fd, /)
+
+   Retorna informações sobre o sistema de arquivos que contém o
+   arquivo associado com descritor de arquivo *fd*, como "statvfs()".
+   A partir do Python 3.3, isso equivale a "os.statvfs(fd)".
+
+   Disponibilidade: Unix.
+
+os.fsync(fd)
+
+   Força a gravação no disco de arquivo com descritor de arquivo *fd*.
+   No Unix, isto chama a função nativa "fsync()"; no Windows, a função
+   de MS "_commit()".
+
+   Se você estiver começando com um *objeto arquivo* *f* em buffer do
+   Python, primeiro use "f.flush()", e depois use
+   "os.fsync(f.fileno())", para garantir que todos os buffers internos
+   associados com *f* sejam gravados no disco.
+
+   Disponibilidade: Unix, Windows.
+
+os.ftruncate(fd, length, /)
+
+   Trunca o arquivo correspondente ao descritor de arquivo *fd*, de
+   modo que tenha no máximo *length* bytes de tamanho. A partir do
+   Python 3.3, isto é equivalente a "os.truncate(fd, length)".
+
+   Levanta evento de auditoria "os.truncate" com os argumentos "fd",
+   "length".
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.5: Adicionado suporte para o Windows.
+
+os.get_blocking(fd, /)
+
+   Obtém o modo de bloqueio do descritor de arquivo: "False" se o
+   sinalizador "O_NONBLOCK" estiver marcado, "True" se o sinalizador
+   estiver desmarcado.
+
+   Veja também "set_blocking()" e "socket.socket.setblocking()".
+
+   Disponibilidade: Unix, Windows.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+   No Windows, esta função é limitada a encadeamentos.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.12: Adicionado suporte a encadeamentos no
+   Windows.
+
+os.isatty(fd, /)
+
+   Retorna "True" se o descritor de arquivo *fd* estiver aberto e
+   conectado a um dispositivo do tipo tty, senão "False".
+
+os.lockf(fd, cmd, len, /)
+
+   Aplica, testa ou remove um bloqueio POSIX em um descritor de
+   arquivo aberto. *fd* é um descritor de arquivo aberto. *cmd*
+   especifica o comando a ser usado - um dentre "F_LOCK", "F_TLOCK",
+   "F_ULOCK" ou "F_TEST". *len* especifica a seção do arquivo a ser
+   bloqueada.
+
+   Levanta um evento de auditoria "os.lockf" com os argumentos "fd",
+   "cmd", "len".
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.F_LOCK
+os.F_TLOCK
+os.F_ULOCK
+os.F_TEST
+
+   Sinalizadores que especificam qual ação "lockf()" vai acontecer.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.login_tty(fd, /)
+
+   Prepara o tty do qual fd é um descritor de arquivo para uma nova
+   sessão de login. Faz do processo de chamada um líder de sessão;
+   torna o tty o tty de controle, o stdin, o stdout e o stderr do
+   processo de chamada; fecha o fd.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.11.
+
+os.lseek(fd, pos, whence, /)
+
+   Define a posição atual do descritor de arquivo *fd* para a posição
+   *pos*, modificada por *whence*, e retorna a nova posição em bytes
+   relativa ao início do arquivo. Os valores válidos de *whence* são:
+
+   * "SEEK_SET" ou "0" -- define *pos* em relação ao início do arquivo
+
+   * "SEEK_CUR" ou "1" -- define *pos* em relação à posição atual do
+     arquivo
+
+   * "SEEK_END" ou "2" -- define *pos* em relação ao final do arquivo
+
+   * "SEEK_HOLE" -- define *pos* para o próximo local de dados, em
+     relação a *pos*
+
+   * "SEEK_DATA" -- define *pos* para o próximo buraco de dados, em
+     relação a *pos*
+
+   Alterado na versão 3.3: Adicionado suporte para "SEEK_HOLE" e
+   "SEEK_DATA".
+
+os.SEEK_SET
+os.SEEK_CUR
+os.SEEK_END
+
+   Parâmetros para a função "lseek()" e o método "seek()" em *objetos
+   arquivo ou similar*, para onde ajustar o indicador de posição do
+   arquivo.
+
+   "SEEK_SET"
+      Ajusta a posição do arquivo em relação ao início do arquivo.
+
+   "SEEK_CUR"
+      Ajusta a posição do arquivo em relação a sua posição atual.
+
+   "SEEK_END"
+      Ajusta a posição do arquivo em relação ao fim do arquivo.
+
+   Seus valores são 0, 1 e 2, respectivamente.
+
+os.SEEK_HOLE
+os.SEEK_DATA
+
+   Parâmetros para a função "lseek()" e o método "seek()" em *objetos
+   arquivo ou similar*, para para buscar dados de arquivos e buracos
+   em arquivos alocados de forma esparsa.
+
+   "SEEK_DATA"
+      Ajusta o deslocamento do arquivo para o próximo local contendo
+      dados, em relação à posição de busca.
+
+   "SEEK_HOLE"
+      Ajusta o deslocamento do arquivo para o próximo local contendo
+      um buraco, em relação à posição de busca. Um buraco é definido
+      como uma sequência de zeros.
+
+   Nota:
+
+     Essas operações só fazem sentido para sistemas de arquivos que as
+     suportam.
+
+   Disponibilidade: Linux >= 3.1, macOS, Unix
+
+   Novo na versão 3.3.
+
+os.open(path, flags, mode=0o777, *, dir_fd=None)
+
+   Abre o arquivo *path* e define várias sinalizadores de acordo com
+   *flags* e, possivelmente, seu modo, de acordo com *mode*. Ao
+   computar *mode*, o valor atual de umask é iniciar com máscara.
+   Retorna o descritor de arquivo para o arquivo recém-aberto. O novo
+   descritor de arquivo é não-herdável.
+
+   Para ler uma descrição dos valores de sinalizadores e modos, veja a
+   documentação de tempo de execução de C; constantes de sinalizador
+   (como "O_RDONLY" e "O_WRONLY") são definidas no módulo "os". Em
+   particular, no Windows é necessário adicionar "O_BINARY" para abrir
+   arquivos em modo binário.
+
+   Esta função pode suportar caminhos relativos aos descritores de
+   diretório com o parâmetro *dir_fd*.
+
+   Levanta um evento de auditoria "open" com os argumentos "path",
+   "mode", "flags".
+
+   Alterado na versão 3.4: O novo descritor de arquivo agora é não-
+   herdável.
+
+   Nota:
+
+     Esta função é destinada a E/S de baixo nível. Para uso normal,
+     use a função embutida "open()", que retorna um *objeto arquivo*
+     com os métodos "read()" e "write()" (e muitos mais). Para
+     envolver um descritor de arquivo em um objeto arquivo, use
+     "fdopen()".
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.5: Se a chamada de sistema é interrompida e o
+   tratador de sinal não levanta uma exceção, a função agora tenta
+   novamente a chamada de sistema em vez de levantar uma exceção
+   "InterruptedError" (consulte **PEP 475** para entender a
+   justificativa).
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+As seguintes constantes são opções para o parâmetro *flags* da função
+"open()". Elas podem ser combinadas usando o operador bit a bit OR
+"|". Algumas delas não estão disponíveis em todas as plataformas. Para
+obter descrições de sua disponibilidade e uso, consulte a página do
+manual *open(2)* para Unix ou o MSDN para Windows.
+
+os.O_RDONLY
+os.O_WRONLY
+os.O_RDWR
+os.O_APPEND
+os.O_CREAT
+os.O_EXCL
+os.O_TRUNC
+
+   As constantes acima estão disponíveis no Unix e Windows.
+
+os.O_DSYNC
+os.O_RSYNC
+os.O_SYNC
+os.O_NDELAY
+os.O_NONBLOCK
+os.O_NOCTTY
+os.O_CLOEXEC
+
+   As constantes acima estão disponíveis apenas no Unix.
+
+   Alterado na versão 3.3: Adicionada a constante "O_CLOEXEC".
+
+os.O_BINARY
+os.O_NOINHERIT
+os.O_SHORT_LIVED
+os.O_TEMPORARY
+os.O_RANDOM
+os.O_SEQUENTIAL
+os.O_TEXT
+
+   As constantes acima estão disponíveis apenas no Windows.
+
+os.O_EVTONLY
+os.O_FSYNC
+os.O_SYMLINK
+os.O_NOFOLLOW_ANY
+
+   As constantes acima estão disponíveis apenas no macOS.
+
+   Alterado na versão 3.10: Adicionadas as constantes "O_EVTONLY",
+   "O_FSYNC", "O_SYMLINK" e "O_NOFOLLOW_ANY".
+
+os.O_ASYNC
+os.O_DIRECT
+os.O_DIRECTORY
+os.O_NOFOLLOW
+os.O_NOATIME
+os.O_PATH
+os.O_TMPFILE
+os.O_SHLOCK
+os.O_EXLOCK
+
+   As constantes acima são extensões e não estarão presentes, se não
+   forem definidos pela biblioteca C.
+
+   Alterado na versão 3.4: Adicionada "O_PATH" em sistemas que
+   suportam. Adicionada "O_TMPFILE", só está disponível no kernel
+   Linux 3.11 ou mais recente.
+
+os.openpty()
+
+   Abre um novo par de pseudo-terminal. Retorna um par de descritores
+   de arquivos "(master, slave)" para o pty e o tty, respectivamente.
+   Os novos descritores de arquivos são non-herdáveis. Para uma
+   abordagem (ligeiramente) mais portátil, use o módulo "pty".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.4: Os novos descritores de arquivos agora são
+   não-herdáveis.
+
+os.pipe()
+
+   Cria um encadeamento (pipe). Retorna um par de descritores de
+   arquivos "(r, w)" usáveis para leitura e escrita, respectivamente.
+   O novo descritor de arquivo é não-herdável.
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.4: Os novos descritores de arquivos agora são
+   não-herdáveis.
+
+os.pipe2(flags, /)
+
+   Cria um encadeamento (pipe) com *flags* definidos atomicamente.
+   *flags* podem ser construídos por ORing junto a um ou mais destes
+   valores: "O_NONBLOCK", "O_CLOEXEC". Retorna um par de descritores
+   de arquivos "(r, w)" utilizáveis para leitura e gravação,
+   respectivamente.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.posix_fallocate(fd, offset, len, /)
+
+   Garante que um espaço em disco suficiente seja alocado para o
+   arquivo especificado por *fd* iniciando em *offset* e continuando
+   por *len* bytes.
+
+   Disponibilidade: Unix, não Emscripten.
+
+   Novo na versão 3.3.
+
+os.posix_fadvise(fd, offset, len, advice, /)
+
+   Anuncia a intenção de acessar dados em um padrão específico,
+   permitindo assim que o kernel faça otimizações. O conteúdo em
+   *advice* se aplica à região do arquivo especificado por *fd*,
+   iniciando em *offset* e continuando por *len* bytes. *advice* é um
+   entre "POSIX_FADV_NORMAL", "POSIX_FADV_SEQUENTIAL",
+   "POSIX_FADV_RANDOM", "POSIX_FADV_NOREUSE", "POSIX_FADV_WILLNEED" ou
+   "POSIX_FADV_DONTNEED".
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.POSIX_FADV_NORMAL
+os.POSIX_FADV_SEQUENTIAL
+os.POSIX_FADV_RANDOM
+os.POSIX_FADV_NOREUSE
+os.POSIX_FADV_WILLNEED
+os.POSIX_FADV_DONTNEED
+
+   Sinalizadores que podem ser usados em *advice* em "posix_fadvise()"
+   que especificam o padrão de acesso que provavelmente será usado.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.pread(fd, n, offset, /)
+
+   Lê no máximo *n* bytes do descritor de arquivo *fd* na posição
+   *offset*, mantendo o deslocamento do arquivo inalterado.
+
+   Retorna uma bytestring contendo os bytes lidos. Se o final do
+   arquivo referido por *fd* for atingido, um objeto de bytes vazio
+   será retornado.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.preadv(fd, buffers, offset, flags=0, /)
+
+   Lê de um descritor de arquivo *fd* na posição de *offset* em
+   *buffers* mutáveis de *objetos byte ou similar*, deixando o
+   deslocamento do arquivo inalterado. Transfere os dados para cada
+   buffer até ficar cheio e depois passa para o próximo buffer na
+   sequência para armazenar o restante dos dados.
+
+   O argumento *flags* contém um OR bit a bit de zero ou mais dos
+   seguintes sinalizadores:
+
+   * "RWF_HIPRI"
+
+   * "RWF_NOWAIT"
+
+   Retorna o número total de bytes realmente lidos, que pode ser menor
+   que a capacidade total de todos os objetos.
+
+   O sistema operacional pode definir um limite ("sysconf()" valor
+   "'SC_IOV_MAX'") no número de buffers que podem ser usados.
+
+   Combina a funcionalidade de "os.readv()" e "os.pread()".
+
+   Disponibilidade: Linux >= 2.6.30, FreeBSD >= 6.0, OpenBSD >= 2.7,
+   AIX >= 7.1.
+
+   O uso de sinalizadores requer Linux >= 4.6.
+
+   Novo na versão 3.7.
+
+os.RWF_NOWAIT
+
+   Não aguarda por dados que não estão disponíveis imediatamente. Se
+   esse sinalizador for especificado, a chamada do sistema retorna
+   instantaneamente se for necessário ler dados do armazenamento de
+   backup ou aguardar um bloqueio.
+
+   Se alguns dados foram lidos com sucesso, ele retorna o número de
+   bytes lidos. Se nenhum bytes foi lido, ele retornará "-1" e
+   definirá errno como "errno.EAGAIN".
+
+   Disponibilidade: Linux >= 4.14.
+
+   Novo na versão 3.7.
+
+os.RWF_HIPRI
+
+   Alta prioridade de leitura/gravação. Permite sistemas de arquivos
+   baseados em blocos para usar a consulta do dispositivo, que fornece
+   latência inferior, mas pode usar recursos adicionais.
+
+   Atualmente, no Linux, esse recurso é usável apenas em um descritor
+   de arquivo aberto usando o sinalizador "O_DIRECT".
+
+   Disponibilidade: Linux >= 4.6.
+
+   Novo na versão 3.7.
+
+os.pwrite(fd, str, offset, /)
+
+   Escreve a bytestring in *str* no descritor de arquivo *fd* na
+   posição *offset*, mantendo o deslocamento do arquivo inalterado.
+
+   Retorna o número de bytes realmente escritos.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.pwritev(fd, buffers, offset, flags=0, /)
+
+   Escreve o conteúdo de *buffers* no descritor de arquivo *fd* em um
+   deslocamento *offset*, deixando o deslocamento do arquivo
+   inalterado. *buffers* deve ser uma sequência de *objetos byte ou
+   similar*. Os buffers são processados em ordem de vetor. Todo o
+   conteúdo do primeiro buffer é gravado antes de prosseguir para o
+   segundo, e assim por diante.
+
+   O argumento *flags* contém um OR bit a bit de zero ou mais dos
+   seguintes sinalizadores:
+
+   * "RWF_DSYNC"
+
+   * "RWF_SYNC"
+
+   * "RWF_APPEND"
+
+   Retorna o número total de bytes realmente escritos.
+
+   O sistema operacional pode definir um limite ("sysconf()" valor
+   "'SC_IOV_MAX'") no número de buffers que podem ser usados.
+
+   Combina a funcionalidade de "os.writev()" e "os.pwrite()".
+
+   Disponibilidade: Linux >= 2.6.30, FreeBSD >= 6.0, OpenBSD >= 2.7,
+   AIX >= 7.1.
+
+   O uso de sinalizadores requer Linux >= 4.6.
+
+   Novo na versão 3.7.
+
+os.RWF_DSYNC
+
+   Fornece um equivalente, por gravação, do sinalizador "O_DSYNC" da
+   função "os.open()". Este efeito de sinalizador se aplica apenas ao
+   intervalo de dados escrito pela chamada de sistema.
+
+   Disponibilidade: Linux >= 4.7.
+
+   Novo na versão 3.7.
+
+os.RWF_SYNC
+
+   Fornece um equivalente, por gravação, do sinalizador "O_SYNC" da
+   função "os.open()". Este efeito de sinalizador se aplica apenas ao
+   intervalo de dados escrito pela chamada de sistema.
+
+   Disponibilidade: Linux >= 4.7.
+
+   Novo na versão 3.7.
+
+os.RWF_APPEND
+
+   Fornece um equivalente, por gravação, do sinalizador "O_APPEND" da
+   função "os.open()". Esse sinalizador é significante apenas para
+   "os.pwritev()", e seu efeito se aplica apenas ao intervalo de dados
+   escrito pela chamada de sistema. O argumento *offset* não afeta a
+   operação de escrita; o dado é sempre adicionado ao fim do arquivo.
+   Contudo, se o argumento *offset* for "-1", o *offset* do arquivo
+   atual é atualizado.
+
+   Disponibilidade: Linux >= 4.16.
+
+   Novo na versão 3.10.
+
+os.read(fd, n, /)
+
+   Lê no máximo *n* bytes do descritor de arquivos *fd*.
+
+   Retorna uma bytestring contendo os bytes lidos. Se o final do
+   arquivo referido por *fd* for atingido, um objeto de bytes vazio
+   será retornado.
+
+   Nota:
+
+     Esta função destina-se a E/S de baixo nível e deve ser aplicada a
+     um descritor de arquivo retornado por "os.open()" ou "pipe()".
+     Para ler um "objeto arquivo" retornado pela função embutida
+     "open()" ou por "popen()" ou "fdopen()", ou "sys.stdin", use seus
+     métodos "read()" ou "readline()".
+
+   Alterado na versão 3.5: Se a chamada de sistema é interrompida e o
+   tratador de sinal não levanta uma exceção, a função agora tenta
+   novamente a chamada de sistema em vez de levantar uma exceção
+   "InterruptedError" (consulte **PEP 475** para entender a
+   justificativa).
+
+os.sendfile(out_fd, in_fd, offset, count)
+os.sendfile(out_fd, in_fd, offset, count, headers=(), trailers=(), flags=0)
+
+   Copia *count* bytes do descritor de arquivo *in_fd* para o
+   descritor de arquivo *out_fd* começando em *offset*. Retorna o
+   número de bytes enviados. Quando o EOF é alcançado, retorna "0".
+
+   A primeira notação da função é suportada por todas as plataformas
+   que definem "sendfile()".
+
+   No Linux, se *offset* for fornecido como "None", os bytes são lidos
+   da posição atual de *in_fd* e a posição de *in_fd* é atualizada.
+
+   O segundo caso pode ser usado no macOS e FreeBSD onde *headers* e
+   *trailers* são sequências arbitrárias de buffers que são escritos
+   antes e depois dos dados de *in_fd* ser escrito. Retorna o mesmo
+   que no primeiro caso.
+
+   No macOS e FreeBSD, um valor de "0" para *count* especifica enviar
+   até o fim de *in_fd* ser alcançado.
+
+   Todas as plataformas tem suporte a soquetes como descritor de
+   arquivo *out_fd*, e algumas plataformas permitem outros tipos (por
+   exemplo, arquivo regular, encadeamento) também.
+
+   Aplicativos de plataforma cruzada não devem usar os argumentos
+   *headers*, *trailers* e *flags*.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Nota:
+
+     Para um invólucro de nível mais alto de "sendfile()", consulte
+     "socket.socket.sendfile()".
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.9: Os parâmetros *out* e *in* foram renomeados
+   para *out_fd* e *in_fd*.
+
+os.SF_NODISKIO
+os.SF_MNOWAIT
+os.SF_SYNC
+
+   Parâmetros para a função "sendfile()", se a implementação tiver
+   suporte a eles.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.SF_NOCACHE
+
+   Parâmetro para a função "sendfile()", se a implementação tiver
+   suporte a isso. Os dados não serão armazenados em cache na memória
+   virtual e serão liberados posteriormente.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.11.
+
+os.set_blocking(fd, blocking, /)
+
+   Define o modo de bloqueio do descritor de arquivo especificado.
+   Define o sinalizador "O_NONBLOCK" se blocking for "False"; do
+   contrário, limpa o sinalizador.
+
+   Veja também "get_blocking()" e "socket.socket.setblocking()".
+
+   Disponibilidade: Unix, Windows.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+   No Windows, esta função é limitada a encadeamentos.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.12: Adicionado suporte a encadeamentos no
+   Windows.
+
+os.splice(src, dst, count, offset_src=None, offset_dst=None)
+
+   Transfere *count* bytes do descritor de arquivo *src*, começando do
+   *offset_src*, para o descritor de arquivo *dst*, começando do
+   *offset_dst*. Pelo menos um dos descritores de arquivo deve se
+   referir a um encadeamento. Se *offset_src* é None, então *src* é
+   lido a partir da posição atual; o mesmo para *offset_dst*. O
+   deslocamento associado a um descritor de arquivo que se refere a um
+   encadeamento deve ser "None". Os arquivos apontados por *src* e
+   *dst* devem residir no mesmo sistema de arquivos, de outra forma
+   uma "OSError" é levantada com "errno" definido para "errno.EXDEV".
+
+   Essa cópia é feita sem o custo adicional de transferência de dados
+   do kernel para o espaço do usuário e, em seguida, volta para o
+   kernel. Além disso, alguns sistemas de arquivos poderiam
+   implementar otimizações extras. A cópia é feita como se ambos os
+   arquivos estivessem abertos como binários.
+
+   Após a conclusão bem-sucedida, retorna o número de bytes  unidos ao
+   encadeamento ou a partir dele. Um valor de retorno de 0 significa o
+   fim da entrada. Se *src* se refere a um encadeamento, isso
+   significa que não havia dados para transferir, e não faria sentido
+   bloquear porque não há escritores conectados ao fim da escrita do
+   encadeamento.
+
+   Disponibilidade: Linux >= 2.6.17 com glibc >= 2.5
+
+   Novo na versão 3.10.
+
+os.SPLICE_F_MOVE
+os.SPLICE_F_NONBLOCK
+os.SPLICE_F_MORE
+
+   Novo na versão 3.10.
+
+os.readv(fd, buffers, /)
+
+   Lê de um descritor de arquivo *fd* em um número de *buffers*
+   *objetos byte ou similar* mutáveis. Transfere os dados para cada
+   buffer até que esteja cheio e, a seguir, vai para o próximo buffer
+   na sequência para armazenar o restante dos dados.
+
+   Retorna o número total de bytes realmente lidos, que pode ser menor
+   que a capacidade total de todos os objetos.
+
+   O sistema operacional pode definir um limite ("sysconf()" valor
+   "'SC_IOV_MAX'") no número de buffers que podem ser usados.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.tcgetpgrp(fd, /)
+
+   Retorna o grupo de processos associado ao terminal fornecido por
+   *fd* (um descritor de arquivo aberto retornado por "os.open()").
+
+   Disponibilidade: Unix, não WASI.
+
+os.tcsetpgrp(fd, pg, /)
+
+   Define o grupo de processos associado ao terminal fornecido por
+   *fd* (um descritor de arquivo aberto retornado por "os.open()")
+   para *pg*.
+
+   Disponibilidade: Unix, não WASI.
+
+os.ttyname(fd, /)
+
+   Retorna uma string que especifica o dispositivo de terminal
+   associado ao descritor de arquivo *fd*. Se *fd* não estiver
+   associado a um dispositivo de terminal, uma exceção é levantada.
+
+   Disponibilidade: Unix.
+
+os.write(fd, str, /)
+
+   Escreve a bytestring em *str* no descritor de arquivo *fd*.
+
+   Retorna o número de bytes realmente escritos.
+
+   Nota:
+
+     Esta função destina-se a E/S de baixo nível e deve ser aplicada a
+     um descritor de arquivo retornado por "os.open()" ou "pipe()".
+     Para escrever um "objeto arquivo" retornado pela função embutida
+     "open()" ou por "popen()" ou "fdopen()", ou "sys.stdout" ou
+     "sys.stderr", use seu método "write()".
+
+   Alterado na versão 3.5: Se a chamada de sistema é interrompida e o
+   tratador de sinal não levanta uma exceção, a função agora tenta
+   novamente a chamada de sistema em vez de levantar uma exceção
+   "InterruptedError" (consulte **PEP 475** para entender a
+   justificativa).
+
+os.writev(fd, buffers, /)
+
+   Escreve o conteúdo de *buffers* no descritor de arquivo *fd*.
+   *buffers* deve ser uma sequência de *objetos byte ou similar*. Os
+   buffers são processados na ordem em que estão. Todo o conteúdo do
+   primeiro buffer é gravado antes de prosseguir para o segundo, e
+   assim por diante.
+
+   Retorna o número total de bytes realmente escritos.
+
+   O sistema operacional pode definir um limite ("sysconf()" valor
+   "'SC_IOV_MAX'") no número de buffers que podem ser usados.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+
+Consultando o tamanho de um terminal
+------------------------------------
+
+Novo na versão 3.3.
+
+os.get_terminal_size(fd=STDOUT_FILENO, /)
+
+   Retorna o tamanho da janela do terminal como "(columns, lines)",
+   tupla do tipo "terminal_size".
+
+   O argumento opcional "fd" (padrão "STDOUT_FILENO", ou saída padrão)
+   especifica qual descritor de arquivo deve ser consultado.
+
+   Se o descritor de arquivo não estiver conectado a um terminal, uma
+   exceção "OSError" é levantada.
+
+   "shutil.get_terminal_size()" é a função de alto nível que
+   normalmente deve ser usada, "os.get_terminal_size" é a
+   implementação de baixo nível.
+
+   Disponibilidade: Unix, Windows.
+
+class os.terminal_size
+
+   Uma subclasse de tupla, contendo "(columns, lines)" do tamanho da
+   janela do terminal.
+
+   columns
+
+      Largura da janela do terminal em caracteres.
+
+   lines
+
+      Altura da janela do terminal em caracteres.
+
+
+Herança de descritores de arquivos
+----------------------------------
+
+Novo na versão 3.4.
+
+Um descritor de arquivo tem um sinalizador "herdável" que indica se o
+descritor de arquivo pode ser herdado por processos filho. Desde o
+Python 3.4, os descritores de arquivo criados pelo Python não são
+herdáveis por padrão.
+
+No UNIX, os descritores de arquivo não herdáveis são fechados em
+processos filho na execução de um novo programa, outros descritores de
+arquivo são herdados.
+
+No Windows, identificadores não herdáveis e descritores de arquivo são
+fechados em processos filho, exceto para fluxos padrão (descritores de
+arquivo 0, 1 e 2: stdin, stdout e stderr), que são sempre herdados.
+Usando as funções "spawn*", todos os identificadores herdáveis e todos
+os descritores de arquivo herdáveis são herdados. Usando o módulo
+"subprocess", todos os descritores de arquivo, exceto fluxos padrão,
+são fechados, e os manipuladores herdáveis são herdados apenas se o
+parâmetro *close_fds* for "False".
+
+Nas plataformas WebAssembly "wasm32-emscripten" e "wasm32-wasi", o
+descritor de arquivo não pode ser modificado.
+
+os.get_inheritable(fd, /)
+
+   Obtém o sinalizador "herdável" do descritor de arquivo especificado
+   (um booleano).
+
+os.set_inheritable(fd, inheritable, /)
+
+   Define o sinalizador "herdável" do descritor de arquivo
+   especificado.
+
+os.get_handle_inheritable(handle, /)
+
+   Obtém o sinalizador "herdável" do manipulador especificado (um
+   booleano).
+
+   Disponibilidade: Windows.
+
+os.set_handle_inheritable(handle, inheritable, /)
+
+   Define o sinalizador "herdável" do manipulador especificado.
+
+   Disponibilidade: Windows.
+
+
+Arquivos e diretórios
+=====================
+
+Em algumas plataformas Unix, muitas dessas funções oferecem suporte
+para um ou mais destes recursos:
+
+* **especificar um descritor de arquivo:** normalmente o argumento
+  *path* fornecido para funções no módulo "os" deve ser uma string
+  especificando um caminho de arquivo. No entanto, algumas funções
+  agora aceitam alternativamente um descritor de arquivo aberto para
+  seu argumento *path*. A função então operará no arquivo referido
+  pelo descritor. (Para sistemas POSIX, Python irá chamar a variante
+  da função prefixada com "f" (por exemplo, chamar "fchdir" em vez de
+  "chdir").)
+
+  Você pode verificar se *path* pode ser especificado ou não como um
+  descritor de arquivo para uma função particular em sua plataforma
+  usando "os.supports_fd". Se esta funcionalidade não estiver
+  disponível, usá-la levantará uma "NotImplementedError".
+
+  Se a função também oferecer suporte para os argumentos *dir_fd* ou
+  *follow_symlinks*, é um erro especificar um deles ao fornecer *path*
+  como um descritor de arquivo.
+
+* **caminhos relativos aos descritores de diretório:** se *dir_fd* não
+  for "None", deve ser um descritor de arquivo referindo-se a um
+  diretório, e o caminho para operar deve ser relativo; o caminho será
+  relativo a esse diretório. Se o caminho for absoluto, *dir_fd* será
+  ignorado. (Para sistemas POSIX, Python irá chamar a variante da
+  função com um sufixo "at" e possivelmente prefixado com "f" (por
+  exemplo, chamar "faccessat" ao invés de "access").
+
+  Você pode verificar se há ou não suporte para *dir_fd*  em uma
+  função particular em sua plataforma usando "os.supports_dir_fd". Se
+  não estiver disponível, usá-lo levantará uma "NotImplementedError".
+
+* **não seguir links simbólicos:** se *follow_symlinks* for "False", e
+  o último elemento do caminho para operar for um link simbólico, a
+  função irá operar no próprio link simbólico ao invés do arquivo
+  apontado pelo link. (Para sistemas POSIX, Python irá chamar a
+  variante "l..." da função.)
+
+  Você pode verificar se há ou não suporte para *follow_symlinks* em
+  uma função particular em sua plataforma usando
+  "os.supports_follow_symlinks". Se não estiver disponível, usá-lo
+  levantará uma "NotImplementedError".
+
+os.access(path, mode, *, dir_fd=None, effective_ids=False, follow_symlinks=True)
+
+   Usa o uid/gid real para testar o acesso ao *path*. Observe que a
+   maioria das operações usará o uid/gid efetivo, portanto, essa
+   rotina pode ser usada em um ambiente suid/sgid para testar se o
+   usuário da chamada tem o acesso especificado ao *path*. *mode* deve
+   ser "F_OK" para testar a existência de *path*, ou pode ser o OU
+   inclusivo de um ou mais dos "R_OK", "W_OK", e "X_OK" para testar as
+   permissões. Retorna "True" se o acesso for permitido, "False" se
+   não for. Veja a página man do Unix *access(2)* para mais
+   informações.
+
+   Esta função pode oferecer suporte a especificação de caminhos
+   relativos aos descritores de diretório e não seguir os links
+   simbólicos.
+
+   Se *effective_ids* for "True", "access()" irá realizar suas
+   verificações de acesso usando o uid/gid efetivo ao invés do uid/gid
+   real. *effective_ids* pode não ser compatível com sua plataforma;
+   você pode verificar se está ou não disponível usando
+   "os.supports_effective_ids". Se não estiver disponível, usá-lo
+   levantará uma "NotImplementedError".
+
+   Nota:
+
+     Usar "access()" para verificar se um usuário está autorizado a,
+     por exemplo, abrir um arquivo antes de realmente fazer isso
+     usando "open()" cria uma brecha de segurança, porque o usuário
+     pode explorar o curto intervalo de tempo entre a verificação e a
+     abertura do arquivo para manipulá-lo. É preferível usar as
+     técnicas *EAFP*. Por exemplo:
+
+        if os.access("myfile", os.R_OK):
+            with open("myfile") as fp:
+                return fp.read()
+        return "some default data"
+
+     é melhor escrito como:
+
+        try:
+            fp = open("myfile")
+        except PermissionError:
+            return "some default data"
+        else:
+            with fp:
+                return fp.read()
+
+   Nota:
+
+     As operações de E/S podem falhar mesmo quando "access()" indica
+     que elas teriam sucesso, particularmente para operações em
+     sistemas de arquivos de rede que podem ter semântica de
+     permissões além do modelo de bits de permissão POSIX usual.
+
+   Alterado na versão 3.3: Adicionados os parâmetros *dir_fd*,
+   *effective_ids* e *follow_symlinks*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.F_OK
+os.R_OK
+os.W_OK
+os.X_OK
+
+   Valores a serem passados como o parâmetro *mode* de "access()" para
+   testar a existência, legibilidade, capacidade de escrita e
+   executabilidade de *path*, respectivamente.
+
+os.chdir(path)
+
+   Altera o diretório de trabalho atual para *path*.
+
+   Esta função pode oferecer suporte a especificar um descritor de
+   arquivo. O descritor deve fazer referência a um diretório aberto,
+   não a um arquivo aberto.
+
+   Esta função pode levantar "OSError" e subclasses como
+   "FileNotFoundError", "PermissionError" e "NotADirectoryError".
+
+   Levanta um evento de auditoria "os.chdir" com o argumento "path".
+
+   Alterado na versão 3.3: Adicionado suporte para especificar *path*
+   como um descritor de arquivo em algumas plataformas.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.chflags(path, flags, *, follow_symlinks=True)
+
+   Define os sinalizadores de *path* para os *flags* numéricos.
+   *flags* podem assumir uma combinação (OU bit a bit) dos seguintes
+   valores (conforme definido no módulo "stat"):
+
+   * "stat.UF_NODUMP"
+
+   * "stat.UF_IMMUTABLE"
+
+   * "stat.UF_APPEND"
+
+   * "stat.UF_OPAQUE"
+
+   * "stat.UF_NOUNLINK"
+
+   * "stat.UF_COMPRESSED"
+
+   * "stat.UF_HIDDEN"
+
+   * "stat.SF_ARCHIVED"
+
+   * "stat.SF_IMMUTABLE"
+
+   * "stat.SF_APPEND"
+
+   * "stat.SF_NOUNLINK"
+
+   * "stat.SF_SNAPSHOT"
+
+   Esta função pode oferecer suporte a não seguir links simbólicos.
+
+   Levanta um evento de auditoria "os.chflags" com os argumentos
+   "path", "flags".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.3: Adicionado o parâmetro *follow_symlinks*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.chmod(path, mode, *, dir_fd=None, follow_symlinks=True)
+
+   Altera o modo de *path* para o *mode* numérico. *mode* pode assumir
+   um dos seguintes valores (conforme definido no módulo "stat") ou
+   combinações de OU bit a bit deles:
+
+   * "stat.S_ISUID"
+
+   * "stat.S_ISGID"
+
+   * "stat.S_ENFMT"
+
+   * "stat.S_ISVTX"
+
+   * "stat.S_IREAD"
+
+   * "stat.S_IWRITE"
+
+   * "stat.S_IEXEC"
+
+   * "stat.S_IRWXU"
+
+   * "stat.S_IRUSR"
+
+   * "stat.S_IWUSR"
+
+   * "stat.S_IXUSR"
+
+   * "stat.S_IRWXG"
+
+   * "stat.S_IRGRP"
+
+   * "stat.S_IWGRP"
+
+   * "stat.S_IXGRP"
+
+   * "stat.S_IRWXO"
+
+   * "stat.S_IROTH"
+
+   * "stat.S_IWOTH"
+
+   * "stat.S_IXOTH"
+
+   Esta função pode oferecer suporte a especificar um descritor de
+   arquivo, caminhos relativos aos descritores de diretório e não
+   seguir os links simbólicos.
+
+   Nota:
+
+     Embora o Windows ofereça suporte ao "chmod()", você só pode
+     definir o sinalizador de somente leitura do arquivo (através das
+     constantes "stat.S_IWRITE" e "stat.S_IREAD" ou um valor inteiro
+     correspondente). Todos os outros bits são ignorados.A função é
+     limitada em Emscripten e WASI, veja Plataformas WebAssembly para
+     mais informações.
+
+   Levanta um evento de auditoria "os.chmod" com os argumentos "path",
+   "mode", "dir_fd".
+
+   Novo na versão 3.3: Adicionado suporte para especificar *path* como
+   um descritor de arquivo aberto e os argumentos *dir_fd* e
+   *follow_symlinks*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.chown(path, uid, gid, *, dir_fd=None, follow_symlinks=True)
+
+   Altera o proprietário e o id de grupo de *path* para *uid* e *gid*
+   numéricos. Para deixar um dos ids inalterado, defina-o como -1.
+
+   Esta função pode oferecer suporte a especificar um descritor de
+   arquivo, caminhos relativos aos descritores de diretório e não
+   seguir os links simbólicos.
+
+   Consulte "shutil.chown()" para uma função de alto nível que aceita
+   nomes além de ids numéricos.
+
+   Levanta um evento de auditoria "os.chown" com os argumentos "path",
+   "uid", "gid", "dir_fd".
+
+   Disponibilidade: Unix.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+   Novo na versão 3.3: Adicionado suporte para especificar *path* como
+   um descritor de arquivo aberto e os argumentos *dir_fd* e
+   *follow_symlinks*.
+
+   Alterado na versão 3.6: Oferece suporte para um *objeto caminho ou
+   similar*.
+
+os.chroot(path)
+
+   Altera o diretório raiz do processo atual para *path*
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.fchdir(fd)
+
+   Altera o diretório de trabalho atual para o diretório representado
+   pelo descritor de arquivo *fd*. O descritor deve se referir a um
+   diretório aberto, não a um arquivo aberto. No Python 3.3, isso é
+   equivalente a "os.chdir(fd)".
+
+   Levanta um evento de auditoria "os.chdir" com o argumento "path".
+
+   Disponibilidade: Unix.
+
+os.getcwd()
+
+   Retorna uma string representando o diretório de trabalho atual.
+
+os.getcwdb()
+
+   Retorna uma bytestring representando o diretório de trabalho atual.
+
+   Alterado na versão 3.8: A função agora usa a codificação UTF-8 no
+   Windows, em vez da página de código ANSI: consulte a **PEP 529**
+   para a justificativa. A função não está mais descontinuada no
+   Windows.
+
+os.lchflags(path, flags)
+
+   Define os sinalizadores de *path* para os *flags* numéricos, como
+   "chflags()", mas não segue links simbólicos. No Python 3.3, isso é
+   equivalente a "os.chflags(path, flags, follow_symlinks=False)".
+
+   Levanta um evento de auditoria "os.chflags" com os argumentos
+   "path", "flags".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.lchmod(path, mode)
+
+   Altera o modo de *path* para o *mode* numérico. Se o caminho for um
+   link simbólico, isso afetará o link simbólico em vez do destino.
+   Veja a documentação de "chmod()" para valores possíveis de *mode*.
+   No Python 3.3, isso é equivalente a "os.chmod(path, mode,
+   follow_symlinks=False)".
+
+   "lchmod()" não faz parte do POSIX, mas as implementações Unix podem
+   tê-lo se houver suporte para alterar o modo de links simbólicos.
+
+   Levanta um evento de auditoria "os.chmod" com os argumentos "path",
+   "mode", "dir_fd".
+
+   Disponibilidade: Unix, não Linux, FreeBSD >= 1.3, NetBSD >= 1.3,
+   não OpenBSD
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.lchown(path, uid, gid)
+
+   Altera o proprietário e o id de grupo de *path* para *uid* e *gid*
+   numéricos. Esta função não seguirá links simbólicos. No Python 3.3,
+   isso é equivalente a "os.chown(path, uid, gid,
+   follow_symlinks=False)".
+
+   Levanta um evento de auditoria "os.chown" com os argumentos "path",
+   "uid", "gid", "dir_fd".
+
+   Disponibilidade: Unix.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.link(src, dst, *, src_dir_fd=None, dst_dir_fd=None, follow_symlinks=True)
+
+   Cria um link físico apontando para *src* chamado *dst*.
+
+   Esta função pode permitir a especificação de *src_dir_fd* e/ou
+   *dst_dir_fd* para fornecer caminhos relativos a descritores de
+   diretório e não seguir links simbólicos.
+
+   Levanta um evento de auditoria "os.link" com argumentos "src",
+   "dst", "src_dir_fd", "dst_dir_fd".
+
+   Disponibilidade: Unix, Windows, não Emscripten.
+
+   Alterado na versão 3.2: Adicionado suporte ao Windows.
+
+   Alterado na versão 3.3: Adicionados os parâmetros *src_dir_fd*,
+   *dst_dir_fd* e *follow_symlinks*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *src* e *dst*.
+
+os.listdir(path='.')
+
+   Retorna uma lista contendo os nomes das entradas no diretório
+   fornecido por *path*. A lista está em ordem arbitrária e não inclui
+   as entradas especiais "'.'" e "'..'" mesmo se estiverem presentes
+   no diretório. Se um arquivo for removido ou adicionado ao diretório
+   durante a chamada desta função, não é especificado se um nome para
+   esse arquivo deve ser incluído.
+
+   *path* pode ser um *objeto caminho ou similar*. Se *path* for do
+   tipo "bytes" (direta ou indiretamente por meio da interface
+   "PathLike"), os nomes de arquivo retornados também serão do tipo
+   "bytes"; em todas as outras circunstâncias, eles serão do tipo
+   "str".
+
+   Esta função também pode ter suporte a especificar um descritor de
+   arquivo; o descritor de arquivo deve fazer referência a um
+   diretório.
+
+   Levanta um evento de auditoria "os.listdir" com o argumento "path".
+
+   Nota:
+
+     Para codificar nomes de arquivos "str" para "bytes", use
+     "fsencode()".
+
+   Ver também:
+
+     A função "scandir()" retorna entradas de diretório junto com
+     informações de atributo de arquivo, dando melhor desempenho para
+     muitos casos de uso comuns.
+
+   Alterado na versão 3.2: O parâmetro *path* tornou-se opcional.
+
+   Novo na versão 3.3: Adicionado suporte para especificar *path* como
+   um descritor de arquivo aberto.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.listdrives()
+
+   Retorna uma lista contendo os nomes das unidades em um sistema
+   Windows.
+
+   Um nome de unidade geralmente se parece com "'C:\\'". Nem todo nome
+   de unidade estará associado a um volume e alguns podem estar
+   inacessíveis por vários motivos, incluindo permissões,
+   conectividade de rede ou mídia ausente. Esta função não testa o
+   acesso.
+
+   Pode levantar "OSError" se ocorrer um erro ao coletar os nomes das
+   unidades.
+
+   Levanta um evento de auditoria "os.listdrives" com nenhum
+   argumento.
+
+   Disponibilidade: Windows
+
+   Novo na versão 3.12.
+
+os.listmounts(volume)
+
+   Retorna uma lista contendo os pontos de montagem para um volume em
+   um sistema Windows.
+
+   *volume* deve ser representado como um caminho GUID, como aqueles
+   retornados por "os.listvolumes()". Os volumes podem ser montados em
+   vários locais ou não. No último caso, a lista estará vazia. Os
+   pontos de montagem que não estão associados a um volume não serão
+   retornados por esta função.
+
+   Os pontos de montagem retornados por esta função serão caminhos
+   absolutos e podem ser mais longos que o nome da unidade.
+
+   Levanta "OSError" se o volume não for reconhecido ou se ocorrer um
+   erro ao coletar os caminhos.
+
+   Levanta um evento de auditoria "os.listmounts" com o argumento
+   "volume".
+
+   Disponibilidade: Windows
+
+   Novo na versão 3.12.
+
+os.listvolumes()
+
+   Retorna uma lista contendo os volumes no sistema.
+
+   Volumes são normalmente representados como um caminho GUID que se
+   parece com "\\?\Volume{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}\". Os
+   arquivos geralmente podem ser acessados por meio de um caminho
+   GUID, permitindo permissões. No entanto, os usuários geralmente não
+   estão familiarizados com eles e, portanto, o uso recomendado desta
+   função é recuperar pontos de montagem usando "os.listmounts()".
+
+   Pode levantar "OSError" se ocorrer um erro ao coletar os volumes.
+
+   Levanta um evento de auditoria "os.listvolumes" com nenhum
+   argumento.
+
+   Disponibilidade: Windows
+
+   Novo na versão 3.12.
+
+os.lstat(path, *, dir_fd=None)
+
+   Executa o equivalente a uma chamada de sistema "lstat()" no caminho
+   fornecido. Semelhante a "stat()", mas não segue links simbólicos.
+   Retorna um objeto "stat_result".
+
+   Em plataformas que não têm suporte a links simbólicos, este é um
+   apelido para "stat()".
+
+   No Python 3.3, isso é equivalente a "os.stat(path, dir_fd=dir_fd,
+   follow_symlinks=False)".
+
+   Esta função também pode ter suporte a caminhos relativos a
+   descritores de diretório.
+
+   Ver também: A função "stat()".
+
+   Alterado na versão 3.2: Adicionado suporte para links simbólicos do
+   Windows 6.0 (Vista).
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.8: No Windows, agora abre pontos de nova
+   análise que representam outro caminho (substitutos de nome),
+   incluindo links simbólicos e junções de diretório. Outros tipos de
+   pontos de nova análise são resolvidos pelo sistema operacional como
+   para "stat()".
+
+os.mkdir(path, mode=0o777, *, dir_fd=None)
+
+   Cria um diretório chamado *path* com o modo numérico *mode*.
+
+   Se o diretório já existe, uma exceção "FileExistsError" é
+   levantada. Se um diretório pai no caminho não existir, uma exceção
+   "FileNotFoundError" será levantada.
+
+   Em alguns sistemas, *mode* é ignorado. Onde ele é usado, o valor
+   atual do umask é primeiro mascarado. Se bits diferentes dos últimos
+   9 (ou seja, os últimos 3 dígitos da representação octal do *mode*)
+   são definidos, seu significado depende da plataforma. Em algumas
+   plataformas, eles são ignorados e você deve chamar "chmod()"
+   explicitamente para defini-los.
+
+   Esta função também pode ter suporte a caminhos relativos a
+   descritores de diretório.
+
+   Também é possível criar diretórios temporários; veja a função
+   "tempfile.mkdtemp()" do módulo "tempfile".
+
+   Levanta um evento de auditoria "os.mkdir" com os argumentos "path",
+   "mode", "dir_fd".
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.makedirs(name, mode=0o777, exist_ok=False)
+
+   Função de criação recursiva de diretório. Como "mkdir()", mas torna
+   todos os diretórios de nível intermediário necessários para conter
+   o diretório folha.
+
+   O parâmetro *mode* é passado para "mkdir()" para criar o diretório
+   folha; veja a descrição do mkdir() para como é interpretado. Para
+   definir os bits de permissão de arquivo de qualquer diretório pai
+   recém-criado, você pode definir o umask antes de invocar
+   "makedirs()". Os bits de permissão de arquivo dos diretórios pais
+   existentes não são alterados.
+
+   Se *exist_ok* for "False" (o padrão), uma "FileExistsError" é
+   levantada se o diretório alvo já existir.
+
+   Nota:
+
+     "makedirs()" ficará confuso se os elementos do caminho a serem
+     criados incluírem "pardir" (por exemplo, ".." em sistemas UNIX).
+
+   Esta função trata os caminhos UNC corretamente.
+
+   Levanta um evento de auditoria "os.mkdir" com os argumentos "path",
+   "mode", "dir_fd".
+
+   Alterado na versão 3.2: Adicionado o parâmetro *exist_ok*.
+
+   Alterado na versão 3.4.1: Antes do Python 3.4.1, se *exist_ok*
+   fosse "True" e o diretório existisse, "makedirs()" ainda levantaria
+   um erro se *mode* não correspondesse ao modo do diretório
+   existente. Como esse comportamento era impossível de implementar
+   com segurança, ele foi removido no Python 3.4.1. Consulte
+   bpo-21082.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.7: O argumento *mode* não afeta mais os bits
+   de permissão de arquivo de diretórios de nível intermediário recém-
+   criados.
+
+os.mkfifo(path, mode=0o666, *, dir_fd=None)
+
+   Cria um FIFO (um encadeamento nomeado) chamado *path* com o modo
+   numérico *mode*. O valor atual de umask é primeiro mascarado do
+   modo.
+
+   Esta função também pode ter suporte a caminhos relativos a
+   descritores de diretório.
+
+   FIFOs são canais que podem ser acessados como arquivos regulares.
+   FIFOs existem até que sejam excluídos (por exemplo, com
+   "os.unlink()"). Geralmente, os FIFOs são usados como ponto de
+   encontro entre os processos do tipo "cliente" e "servidor": o
+   servidor abre o FIFO para leitura e o cliente para escrita. Observe
+   que "mkfifo()" não abre o FIFO -- apenas cria o ponto de encontro.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.mknod(path, mode=0o600, device=0, *, dir_fd=None)
+
+   Cria um nó de sistema de arquivos (arquivo, arquivo especial de
+   dispositivo ou canal nomeado) chamado *path*. *mode* especifica as
+   permissões de uso e o tipo de nó a ser criado, sendo combinado (OU
+   bit a bit) com um de "stat.S_IFREG", "stat.S_IFCHR", "stat.S_IFBLK"
+   , e "stat.S_IFIFO" (essas constantes estão disponíveis em "stat").
+   Para "stat.S_IFCHR" e "stat.S_IFBLK", *device* define o arquivo
+   especial do dispositivo recém-criado (provavelmente usando
+   "os.makedev()"), caso contrário, ele será ignorado.
+
+   Esta função também pode ter suporte a caminhos relativos a
+   descritores de diretório.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.major(device, /)
+
+   Extrai o número principal de dispositivo de um número bruto de
+   dispositivo (normalmente o campo "st_dev" ou "st_rdev" de "stat").
+
+os.minor(device, /)
+
+   Extrai o número menor de dispositivo de um número bruto de
+   dispositivo (normalmente o campo "st_dev" ou "st_rdev" de "stat").
+
+os.makedev(major, minor, /)
+
+   Compõe um número de dispositivo bruto a partir dos números de
+   dispositivo principais e secundários.
+
+os.pathconf(path, name)
+
+   Retorna informações de configuração do sistema relevantes para um
+   arquivo nomeado. *name* especifica o valor de configuração a ser
+   recuperado; pode ser uma string que é o nome de um valor de sistema
+   definido; esses nomes são especificados em vários padrões (POSIX.1,
+   Unix 95, Unix 98 e outros). Algumas plataformas também definem
+   nomes adicionais. Os nomes conhecidos do sistema operacional do
+   host são fornecidos no dicionário "pathconf_names". Para variáveis
+   de configuração não incluídas nesse mapeamento, passar um número
+   inteiro para *name* também é aceito.
+
+   Se *name* for uma string e não for conhecida, exceção "ValueError"
+   é levantada. Se um valor específico para *name* não for compatível
+   com o sistema hospedeiro, mesmo que seja incluído no
+   "pathconf_names", uma exceção "OSError" é levantada com
+   "errno.EINVAL" como número do erro.
+
+   Esta função tem suporte a especificar um descritor de arquivo.
+
+   Disponibilidade: Unix.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.pathconf_names
+
+   Nomes de mapeamento de dicionário aceitos por "pathconf()" e
+   "fpathconf()" para os valores inteiros definidos para esses nomes
+   pelo sistema operacional do host. Isso pode ser usado para
+   determinar o conjunto de nomes conhecidos pelo sistema.
+
+   Disponibilidade: Unix.
+
+os.readlink(path, *, dir_fd=None)
+
+   Retorna uma string representando o caminho para o qual o link
+   simbólico aponta. O resultado pode ser um nome de caminho absoluto
+   ou relativo; se for relativo, pode ser convertido para um caminho
+   absoluto usando "os.path.join(os.path.dirname(path), result)".
+
+   Se o *path* for um objeto string (direta ou indiretamente por meio
+   de uma interface "PathLike"), o resultado também será um objeto
+   string e a chamada pode levantará um UnicodeDecodeError. Se o
+   *path* for um objeto de bytes (direto ou indireto), o resultado
+   será um objeto de bytes.
+
+   Esta função também pode ter suporte a caminhos relativos a
+   descritores de diretório.
+
+   Ao tentar resolver um caminho que pode conter links, use
+   "realpath()" para lidar corretamente com a recursão e as diferenças
+   de plataforma.
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.2: Adicionado suporte para links simbólicos do
+   Windows 6.0 (Vista).
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* no
+   Unix.
+
+   Alterado na versão 3.8: Aceita um *objeto caminho ou similar* e um
+   objeto bytes no Windows.Adicionado suporte para junções de
+   diretório e alterado para retornar o caminho de substituição (que
+   normalmente inclui o prefixo "\\?\") ao invés do campo opcional
+   "print name" que era retornado anteriormente.
+
+os.remove(path, *, dir_fd=None)
+
+   Remove (exclui) o arquivo *path*. Se *path* for um diretório, uma
+   "OSError" é levantada. Use "rmdir()" para remover diretórios. Se o
+   arquivo não existir, uma "FileNotFoundError" é levantada.
+
+   Esta função tem suporte a caminhos relativos para descritores de
+   diretório.
+
+   No Windows, a tentativa de remover um arquivo que está em uso causa
+   o surgimento de uma exceção; no Unix, a entrada do diretório é
+   removida, mas o armazenamento alocado para o arquivo não é
+   disponibilizado até que o arquivo original não esteja mais em uso.
+
+   Esta função é semanticamente idêntica a "unlink()".
+
+   Levanta um evento de auditoria "os.remove" com argumentos "path",
+   "dir_fd".
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.removedirs(name)
+
+   Remove os diretórios recursivamente. Funciona como "rmdir()",
+   exceto que, se o diretório folha for removido com sucesso,
+   "removedirs()" tenta remover sucessivamente todos os diretórios pai
+   mencionados em *path* até que um erro seja levantado (que é
+   ignorado, porque geralmente significa que um diretório pai não está
+   vazio). Por exemplo, "os.removedirs('foo/bar/baz')" primeiro
+   removerá o diretório "'foo/bar/baz'", e então removerá "'foo/bar'"
+   e "'foo'" se estiverem vazios. Levanta "OSError" se o diretório
+   folha não pôde ser removido com sucesso.
+
+   Levanta um evento de auditoria "os.remove" com argumentos "path",
+   "dir_fd".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None)
+
+   Renomeia o arquivo ou diretório *src* para *dst*. Se *dst* existir,
+   a operação falhará com uma subclasse "OSError" em vários casos:
+
+   No Windows, se *dst* existe então uma exceção "FileExistsError"
+   será levantada. A operação pode falar se *src* e *dst* são de
+   sistemas de arquivos diferentes. Use "shutil.move()" para mover
+   arquivos entre sistemas de arquivos diferentes.
+
+   No Unix, se *src* é um arquivo e *dst* é um diretório ou vice-
+   versa, uma "IsADirectoryError" ou uma "NotADirectoryError" será
+   levantada respectivamente. Se ambos forem diretórios e *dst*
+   estiver vazio, *dst* será substituído silenciosamente. Se *dst* for
+   um diretório não vazio, uma "OSError" é levantada. Se ambos forem
+   arquivos, *dst* será substituído silenciosamente se o usuário tiver
+   permissão. A operação pode falhar em alguns tipos de Unix se *src*
+   e *dst* estiverem em sistemas de arquivos diferentes. Se for bem-
+   sucedido, a renomeação será uma operação atômica (este é um
+   requisito POSIX).
+
+   Esta função pode suportar a especificação de *src_dir_fd* e/ou
+   *dst_dir_fd* para fornecer caminhos relativos a descritores de
+   diretório.
+
+   Se você quiser sobrescrita multiplataforma do destino, use
+   "replace()".
+
+   Levanta um evento de auditoria "os.rename" com argumentos "src",
+   "dst", "src_dir_fd", "dst_dir_fd".
+
+   Alterado na versão 3.3: Adicionados os parâmetros *src_dir_fd* e
+   *dst_dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *src* e *dst*.
+
+os.renames(old, new)
+
+   Diretório recursivo ou função de renomeação de arquivo. Funciona
+   como "rename()", exceto que a criação de qualquer diretório
+   intermediário necessário para tornar o novo nome de caminho bom é
+   tentada primeiro. Após a renomeação, os diretórios correspondentes
+   aos segmentos de caminho mais à direita do nome antigo serão
+   removidos usando "removedirs()".
+
+   Nota:
+
+     Esta função pode falhar com a nova estrutura de diretório criada
+     se você não tiver as permissões necessárias para remover o
+     arquivo ou diretório folha.
+
+   Levanta um evento de auditoria "os.rename" com argumentos "src",
+   "dst", "src_dir_fd", "dst_dir_fd".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *old* e *new*.
+
+os.replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)
+
+   Renomeia o arquivo ou diretório *src* para *dst*. Se *dst* for um
+   diretório não vazio, "OSError" será levantada. Se *dst* existir e
+   for um arquivo, ele será substituído silenciosamente se o usuário
+   tiver permissão. A operação pode falhar se *src* e *dst* estiverem
+   em sistemas de arquivos diferentes. Se for bem-sucedido, a
+   renomeação será uma operação atômica (este é um requisito POSIX).
+
+   Esta função pode suportar a especificação de *src_dir_fd* e/ou
+   *dst_dir_fd* para fornecer caminhos relativos a descritores de
+   diretório.
+
+   Levanta um evento de auditoria "os.rename" com argumentos "src",
+   "dst", "src_dir_fd", "dst_dir_fd".
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *src* e *dst*.
+
+os.rmdir(path, *, dir_fd=None)
+
+   Remove (exclui) o diretório *path*. Se o diretório não existe ou
+   não está vazio, uma "FileNotFoundError" ou uma "OSError" é
+   levantada respectivamente. Para remover árvores de diretório
+   inteiras, pode ser usada "shutil.rmtree()".
+
+   Esta função tem suporte a caminhos relativos para descritores de
+   diretório.
+
+   Levanta um evento de auditoria "os.rmdir" com argumentos "path",
+   "dir_fd".
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.scandir(path='.')
+
+   Retorna um iterador de objetos "os.DirEntry" correspondentes às
+   entradas no diretório fornecido por *path*. As entradas são
+   produzidas em ordem arbitrária, e as entradas especiais "'.'" e
+   "'..'" não são incluídas. Se um arquivo for removido ou adicionado
+   ao diretório após a criação do iterador, não é especificado se uma
+   entrada para esse arquivo deve ser incluída.
+
+   Usar "scandir()" em vez de "listdir()" pode aumentar
+   significativamente o desempenho do código que também precisa de
+   tipo de arquivo ou informações de atributo de arquivo, porque os
+   objetos "os.DirEntry" expõem essas informações se o sistema
+   operacional fornecer ao digitalizar um diretório. Todos os métodos
+   de "os.DirEntry" podem realizar uma chamada de sistema, mas
+   "is_dir()" e "is_file()" normalmente requerem apenas uma chamada de
+   sistema para links simbólicos; "os.DirEntry.stat()" sempre requer
+   uma chamada de sistema no Unix, mas requer apenas uma para links
+   simbólicos no Windows.
+
+   *path* pode ser um *objeto caminho ou similar*. Se *path* for do
+   tipo "bytes" (direta ou indiretamente por meio da interface
+   "PathLike"), o tipo do atributo "name" e "path" de cada
+   "os.DirEntry" serão "bytes"; em todas as outras circunstâncias,
+   eles serão do tipo "str".
+
+   Esta função também pode ter suporte a especificar um descritor de
+   arquivo; o descritor de arquivo deve fazer referência a um
+   diretório.
+
+   Levanta um evento de auditoria "os.scandir" com o argumento "path".
+
+   O iterador "scandir()" suporta o protocolo *gerenciador de
+   contexto* e tem o seguinte método:
+
+   scandir.close()
+
+      Fecha o iterador e libera os recursos adquiridos.
+
+      Isso é chamado automaticamente quando o iterador se esgota ou é
+      coletado como lixo, ou quando ocorre um erro durante a iteração.
+      No entanto, é aconselhável chamá-lo explicitamente ou usar a
+      instrução "with".
+
+      Novo na versão 3.6.
+
+   O exemplo a seguir mostra um uso simples de "scandir()" para exibir
+   todos os arquivos (excluindo diretórios) no *path* fornecido que
+   não começa com "'.'". A chamada "entry.is_file()" geralmente não
+   fará uma chamada de sistema adicional:
+
+      with os.scandir(path) as it:
+          for entry in it:
+              if not entry.name.startswith('.') and entry.is_file():
+                  print(entry.name)
+
+   Nota:
+
+     Em sistemas baseados no Unix, "scandir()" usa o sistema opendir()
+     e as funções readdir(). No Windows, ela usa os funções
+     FindFirstFileW e FindNextFileW do Win32.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.6: Adicionado suporte para o protocolo
+   *gerenciador de contexto* e o método "close()". Se um iterador
+   "scandir()" não estiver esgotado nem explicitamente fechado, uma
+   "ResourceWarning" será emitida em seu destruidor.A função aceita um
+   *objeto caminho ou similar*.
+
+   Alterado na versão 3.7: Adicionado suporte para descritores de
+   arquivo no Unix.
+
+class os.DirEntry
+
+   Objeto produzido por "scandir()" para expor o caminho do arquivo e
+   outros atributos de arquivo de uma entrada de diretório.
+
+   "scandir()" fornecerá o máximo possível dessas informações sem
+   fazer chamadas de sistema adicionais. Quando uma chamada de sistema
+   "stat()" ou "lstat()" é feita, o objeto "os.DirEntry" irá armazenar
+   o resultado em cache.
+
+   As instâncias de "os.DirEntry" não devem ser armazenadas em
+   estruturas de dados de longa duração; se você sabe que os metadados
+   do arquivo foram alterados ou se passou muito tempo desde a chamada
+   de "scandir()", chame "os.stat(entry.path)" para obter informações
+   atualizadas.
+
+   Como os métodos "os.DirEntry" podem fazer chamadas ao sistema
+   operacional, eles também podem levantar "OSError". Se você precisa
+   de um controle muito refinado sobre os erros, você pode pegar
+   "OSError" ao chamar um dos métodos "os.DirEntry" e manipular
+   conforme apropriado.
+
+   Para ser diretamente utilizável como um *objeto caminho ou
+   similar*, "os.DirEntry" implementa a interface "PathLike".
+
+   Atributos e métodos em uma instância de "os.DirEntry" são os
+   seguintes:
+
+   name
+
+      O nome do arquivo base da entrada, relativo ao argumento *path*
+      de "scandir()".
+
+      O atributo "name" será "bytes" se o argumento *path* de
+      "scandir()" for do tipo "bytes" e, caso contrário, "str". Usa
+      "fsdecode()" para decodificar nomes de arquivos de bytes.
+
+   path
+
+      O nome do caminho completo da entrada: equivalente a
+      "os.path.join(scandir_path, entry.name)" onde *scandir_path* é o
+      argumento *path* de "scandir()". O caminho só é absoluto se o
+      argumento *path* de "scandir()" for absoluto. Se o argumento
+      *path* de "scandir()" era um descritor de arquivo, o atributo
+      "path" é o mesmo que o atributo "name".
+
+      O atributo "path" será "bytes" se o argumento *path* de
+      "scandir()" for do tipo "bytes" e, caso contrário, "str". Usa
+      "fsdecode()" para decodificar nomes de arquivos de bytes.
+
+   inode()
+
+      Retorna o número de nó-i da entrada.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry". Use
+      "os.stat(entry.path, follow_symlinks=False).st_ino" para obter
+      informações atualizadas.
+
+      Na primeira chamada sem cache, uma chamada de sistema é
+      necessária no Windows, mas não no Unix.
+
+   is_dir(*, follow_symlinks=True)
+
+      Retorna "True" se esta entrada for um diretório ou um link
+      simbólico apontando para um diretório; retorna "False" se a
+      entrada é ou aponta para qualquer outro tipo de arquivo, ou se
+      ele não existe mais.
+
+      Se *follow_symlinks* for "False", retorna "True" apenas se esta
+      entrada for um diretório (sem seguir os links simbólicos);
+      retorna "False" se a entrada for qualquer outro tipo de arquivo
+      ou se ele não existe mais.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry", com
+      um cache separado para *follow_symlinks* "True" e "False". Chama
+      "os.stat()" junto com "stat.S_ISDIR()" para buscar informações
+      atualizadas.
+
+      Na primeira chamada sem cache, nenhuma chamada do sistema é
+      necessária na maioria dos casos. Especificamente, para links não
+      simbólicos, nem o Windows nem o Unix requerem uma chamada de
+      sistema, exceto em certos sistemas de arquivos Unix, como
+      sistemas de arquivos de rede, que retornam "dirent.d_type ==
+      DT_UNKNOWN". Se a entrada for um link simbólico, uma chamada de
+      sistema será necessária para seguir o link simbólico, a menos
+      que *follow_symlinks* seja "False".
+
+      Este método pode levantar "OSError", tal como "PermissionError",
+      mas "FileNotFoundError" é capturada e não levantada.
+
+   is_file(*, follow_symlinks=True)
+
+      Retorna "True" se esta entrada for um arquivo ou um link
+      simbólico apontando para um arquivo; retorna "False" se a
+      entrada é ou aponta para um diretório ou outra entrada que não
+      seja de arquivo, ou se ela não existe mais.
+
+      Se *follow_symlinks* for "False", retorna "True" apenas se esta
+      entrada for um arquivo (sem seguir os links simbólicos); retorna
+      "False" se a entrada for um diretório ou outra entrada que não
+      seja um arquivo, ou se ela não existir mais.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry".
+      Chamadas de sistema em cache feitas e exceções levantadas são
+      conforme "is_dir()".
+
+   is_symlink()
+
+      Retorna "True" se esta entrada for um link simbólico (mesmo se
+      quebrado); retorna "False" se a entrada apontar para um
+      diretório ou qualquer tipo de arquivo, ou se ele não existir
+      mais.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry". Chama
+      "os.path.islink()" para buscar informações atualizadas.
+
+      Na primeira chamada sem cache, nenhuma chamada do sistema é
+      necessária na maioria dos casos. Especificamente, nem o Windows
+      nem o Unix exigem uma chamada de sistema, exceto em certos
+      sistemas de arquivos Unix, como sistemas de arquivos de rede,
+      que retornam "dirent.d_type == DT_UNKNOWN".
+
+      Este método pode levantar "OSError", tal como "PermissionError",
+      mas "FileNotFoundError" é capturada e não levantada.
+
+   is_junction()
+
+      Retorna "True" se esta entrada for uma junção (mesmo se
+      quebrado); retorna "False" se a entrada apontar para um
+      diretório regular, ou qualquer tipo de arquivo, um link
+      simbólico ou se ele não existir mais.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry". Chama
+      "os.path.isjunction()" para buscar informações atualizadas.
+
+      Novo na versão 3.12.
+
+   stat(*, follow_symlinks=True)
+
+      Retorna um objeto "stat_result" para esta entrada. Este método
+      segue links simbólicos por padrão; para estabelecer um link
+      simbólico, adicione o argumento "follow_symlinks=False".
+
+      No Unix, esse método sempre requer uma chamada de sistema. No
+      Windows, ele só requer uma chamada de sistema se
+      *follow_symlinks* for "True" e a entrada for um ponto de nova
+      análise (por exemplo, um link simbólico ou junção de diretório).
+
+      No Windows, os atributos "st_ino", "st_dev" e "st_nlink" da
+      "stat_result" são sempre definidos como zero. Chame "os.stat()"
+      para obter esses atributos.
+
+      O resultado é armazenado em cache no objeto "os.DirEntry", com
+      um cache separado para *follow_symlinks* "True" e "False". Chama
+      "os.stat()" para buscar informações atualizadas.
+
+   Note que há uma boa correspondência entre vários atributos e
+   métodos de "os.DirEntry" e de "pathlib.Path". Em particular, o
+   atributo "name" tem o mesmo significado, assim como os métodos
+   "is_dir()", "is_file()", "is_junction()" e "stat()".
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.6: Adicionado suporte para a interface
+   "PathLike". Adicionado suporte para caminhos "bytes" no Windows.
+
+   Alterado na versão 3.12: O atributo "st_ctime" de um resultado
+   estatístico foi descontinuado no Windows. A hora de criação do
+   arquivo está devidamente disponível como "st_birthtime", e no
+   futuro "st_ctime" pode ser alterada para retornar zero ou a hora de
+   alteração dos metadados, se disponível.
+
+os.stat(path, *, dir_fd=None, follow_symlinks=True)
+
+   Obtém o status de um arquivo ou um descritor de arquivo. Executa o
+   equivalente a uma chamada de sistema "stat()" no caminho fornecido.
+   *path* pode ser especificado como uma string ou bytes -- direta ou
+   indiretamente através da interface "PathLike" -- ou como um
+   descritor de arquivo aberto. Retorna um objeto "stat_result".
+
+   Esta função normalmente segue links simbólicos; para efetuar stat
+   em um link simbólico, adicione o argumento "follow_symlinks=False",
+   ou use "lstat()".
+
+   Esta função tem suporte a especificar um descritor de arquivo e não
+   seguir links simbólicos.
+
+   No Windows, passar "follow_symlinks=False" irá desabilitar o
+   seguimento de todos os pontos de nova análise substitutos de nomes,
+   que incluem links simbólicos e junções de diretório. Outros tipos
+   de pontos de nova análise que não se parecem com links ou que o
+   sistema operacional não pode seguir serão abertos diretamente. Ao
+   seguir uma cadeia de vários links, isso pode resultar no retorno do
+   link original em vez do não-link que impediu o percurso completo.
+   Para obter resultados estatísticos para o caminho final neste caso,
+   use a função "os.path.realpath()" para resolver o nome do caminho
+   tanto quanto possível e chame "lstat()" no resultado. Isso não se
+   aplica a links simbólicos pendentes ou pontos de junção, que
+   levantam as exceções usuais.
+
+   Exemplo:
+
+      >>> import os
+      >>> statinfo = os.stat('somefile.txt')
+      >>> statinfo
+      os.stat_result(st_mode=33188, st_ino=7876932, st_dev=234881026,
+      st_nlink=1, st_uid=501, st_gid=501, st_size=264, st_atime=1297230295,
+      st_mtime=1297230027, st_ctime=1297230027)
+      >>> statinfo.st_size
+      264
+
+   Ver também: As funções "fstat()" e "lstat()".
+
+   Alterado na versão 3.3: Adicionados os parâmetros *dir_fd* e
+   *follow_symlinks*, especificando um descritor de arquivo em vez de
+   um caminho.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.8: No Windows, todos os pontos de nova análise
+   que podem ser resolvidos pelo sistema operacional agora são
+   seguidos, e passar "follow_symlinks=False" desativa após todos os
+   pontos de nova análise substitutos de nome. Se o sistema
+   operacional atingir um ponto de nova análise que não é capaz de
+   seguir, *stat* agora retorna as informações do caminho original
+   como se "follow_symlinks=False" tivesse sido especificado em vez de
+   levantar um erro.
+
+class os.stat_result
+
+   Objeto cujos atributos correspondem aproximadamente aos membros da
+   estrutura "stat". É usado para o resultado de "os.stat()",
+   "os.fstat()" e "os.lstat()".
+
+   Atributos:
+
+   st_mode
+
+      Modo de arquivo: tipo de arquivo e bits de modo de arquivo
+      (permissões).
+
+   st_ino
+
+      Dependente da plataforma, mas se diferente de zero, identifica
+      exclusivamente o arquivo para um determinado valor de "st_dev".
+      Tipicamente:
+
+      * o número do nó-i no Unix,
+
+      * o índice de arquivo no Windows
+
+   st_dev
+
+      Identificador do dispositivo no qual este arquivo reside.
+
+   st_nlink
+
+      Número de links físicos.
+
+   st_uid
+
+      Identificador de usuário do proprietário do arquivo.
+
+   st_gid
+
+      Identificador de grupo do proprietário do arquivo.
+
+   st_size
+
+      Tamanho do arquivo em bytes, se for um arquivo normal ou um link
+      simbólico. O tamanho de um link simbólico é o comprimento do
+      nome do caminho que ele contém, sem um byte nulo final.
+
+   Timestamps:
+
+   st_atime
+
+      Tempo do acesso mais recente expresso em segundos.
+
+   st_mtime
+
+      Tempo da modificação de conteúdo mais recente expresso em
+      segundos.
+
+   st_ctime
+
+      Tempo da alteração de metadados mais recente expresso em
+      segundos.
+
+      Alterado na versão 3.12: "st_ctime" foi descontinuado no
+      Windows. Use "st_birthtime" para o tempo de criação do arquivo.
+      No futuro, "st_ctime" conterá a hora da alteração de metadados
+      mais recente, como em outras plataformas.
+
+   st_atime_ns
+
+      Hora do acesso mais recente expresso em nanossegundos como um
+      número inteiro.
+
+      Novo na versão 3.3.
+
+   st_mtime_ns
+
+      Hora da modificação de conteúdo mais recente expressa em
+      nanossegundos como um número inteiro.
+
+      Novo na versão 3.3.
+
+   st_ctime_ns
+
+      Hora do alteração de metadados mais recente expresso em
+      nanossegundos como um número inteiro.
+
+      Novo na versão 3.3.
+
+      Alterado na versão 3.12: "st_ctime_ns" foi descontinuado no
+      Windows. Use "st_birthtime_ns" para o tempo de criação do
+      arquivo. No futuro, "st_ctime" conterá a hora da alteração de
+      metadados mais recente, como em outras plataformas.
+
+   st_birthtime
+
+      Tempo de criação do arquivo expresso em segundos. Este atributo
+      nem sempre está disponível e pode levantar "AttributeError".
+
+      Alterado na versão 3.12: "st_birthtime" está agora disponível no
+      Windows.
+
+   st_birthtime_ns
+
+      Tempo de criação do arquivo expresso em nanossegundos em um
+      inteiro. Este atributo nem sempre está disponível e pode
+      levantar "AttributeError".
+
+      Novo na versão 3.12.
+
+   Nota:
+
+     O significado e resolução exatos dos atributos "st_atime",
+     "st_mtime", "st_ctime" e "st_birthtime" dependem do sistema
+     operacional e do sistema de arquivos. Por exemplo, em sistemas
+     Windows que usam os sistemas de arquivos FAT32, "st_mtime" tem
+     resolução de 2 segundos, e "st_atime" tem resolução de apenas 1
+     dia. Consulte a documentação do sistema operacional para obter
+     detalhes.Da mesma forma, embora "st_atime_ns", "st_mtime_ns",
+     "st_ctime_ns" e "st_birthtime_ns" sejam sempre expressos em
+     nanossegundos, muitos sistemas não fornecem precisão de
+     nanossegundos. Em sistemas que fornecem precisão de
+     nanossegundos, o objeto de ponto flutuante usado para armazenar
+     "st_atime", "st_mtime", "st_ctime" e "st_birthtime" não pode
+     preservar tudo, e como tal será ligeiramente inexato . Se você
+     precisa dos carimbos de data/hora exatos, sempre deve usar
+     "st_atime_ns", "st_mtime_ns", "st_ctime_ns" e "st_birthtime_ns".
+
+   Em alguns sistemas Unix (como Linux), os seguintes atributos também
+   podem estar disponíveis:
+
+   st_blocks
+
+      Número de blocos de 512 bytes alocados para o arquivo. Isso pode
+      ser menor que "st_size"/512 quando o arquivo possuir lacunas.
+
+   st_blksize
+
+      Tamanho de bloco "preferido" para E/S eficiente do sistema de
+      arquivos. Gravar em um arquivo em partes menores pode causar uma
+      leitura-modificação-reescrita ineficiente.
+
+   st_rdev
+
+      Tipo de dispositivo, se for um dispositivo nó-i.
+
+   st_flags
+
+      Sinalizadores definidos pelo usuário para arquivo.
+
+   Em outros sistemas Unix (como o FreeBSD), os seguintes atributos
+   podem estar disponíveis (mas só podem ser preenchidos se o root
+   tentar usá-los):
+
+   st_gen
+
+      Número de geração do arquivo.
+
+   No Solaris e derivados, os seguintes atributos também podem estar
+   disponíveis:
+
+   st_fstype
+
+      String que identifica exclusivamente o tipo de sistema de
+      arquivos que contém o arquivo.
+
+   Em sistemas macOS, os seguintes atributos também podem estar
+   disponíveis:
+
+   st_rsize
+
+      Tamanho real do arquivo.
+
+   st_creator
+
+      Criador do arquivo.
+
+   st_type
+
+      Tipo de arquivo.
+
+   Em sistemas Windows, os seguintes atributos também estão
+   disponíveis:
+
+   st_file_attributes
+
+      Atributos de arquivos no Windows: membro "dwFileAttributes" da
+      estrutura "BY_HANDLE_FILE_INFORMATION" retornada por
+      "GetFileInformationByHandle()". Veja as constantes
+      "FILE_ATTRIBUTE_* <stat.FILE_ATTRIBUTE_ARCHIVE>" no módulo
+      "stat".
+
+      Novo na versão 3.5.
+
+   st_reparse_tag
+
+      Quando "st_file_attributes" tem "FILE_ATTRIBUTE_REPARSE_POINT"
+      definido, este campo contém uma tag identificando o tipo do
+      ponto de reanálise. Veja as constantes "IO_REPARSE_TAG_*" no
+      módulo "stat".
+
+   O módulo padrão "stat" define funções e constantes que são úteis
+   para extrair informações de uma estrutura "stat". (No Windows,
+   alguns itens são preenchidos com valores fictícios.)
+
+   Para compatibilidade com versões anteriores, uma instância de
+   "stat_result" também é acessível como uma tupla de pelo menos 10
+   inteiros, fornecendo os membros mais importantes (e portáveis) da
+   estrutura "stat", na ordem "st_mode", "st_ino", "st_dev",
+   "st_nlink", "st_uid", "st_gid", "st_size", "st_atime", "st_mtime",
+   "st_ctime". Mais itens podem ser adicionados no final por algumas
+   implementações. Para compatibilidade com versões mais antigas do
+   Python, acessar "stat_result" como uma tupla sempre retorna
+   inteiros.
+
+   Alterado na versão 3.5: Windows agora retorna o arquivo de índice
+   como "st_ino" quando disponível.
+
+   Alterado na versão 3.7: Adicionado o membro "st_fstype" ao
+   Solaris/derivados.
+
+   Alterado na versão 3.8: Adicionado o membro "st_reparse_tag" no
+   Windows.
+
+   Alterado na versão 3.8: No Windows, o membro "st_mode" agora
+   identifica arquivos especiais como "S_IFCHR", "S_IFIFO" ou
+   "S_IFBLK" conforme apropriado.
+
+   Alterado na versão 3.12: No Windows, "st_ctime" foi descontinuado.
+   Eventualmente, ele conterá a hora da última alteração de metadados,
+   para fins de consistência com outras plataformas, mas por enquanto
+   ainda contém a hora de criação. Use "st_birthtime" para a hora de
+   criação.No Windows, o "st_ino" agora pode ter até 128 bits,
+   dependendo do sistema de arquivos. Anteriormente, não era possível
+   ter mais de 64 bits, e arquivos maiores identificadores seriam
+   compactados arbitrariamente.No Windows, "st_rdev" não retorna mais
+   um valor. Anteriormente, ele continha o mesmo que "st_dev", o que
+   era incorreto.Adicionado o membro "st_birthtime" no Windows.
+
+os.statvfs(path)
+
+   Executa uma chamada de sistema "statvfs()" no caminho fornecido. O
+   valor de retorno é um objeto cujos atributos descrevem o sistema de
+   arquivos no caminho fornecido e correspondem aos membros da
+   estrutura "statvfs", a saber: "f_bsize", "f_frsize", "f_blocks",
+   "f_bfree", "f_bavail", "f_files", "f_ffree", "f_favail", "f_flag",
+   "f_namemax", "f_fsid".
+
+   Duas constantes de nível de módulo são definidas para os
+   sinalizadores de bit do atributo "f_flag": se "ST_RDONLY" for
+   definido, o sistema de arquivos é montado somente leitura, e se
+   "ST_NOSUID" estiver definido, a semântica dos bits setuid/setgid é
+   desabilitada ou não é suportada.
+
+   Constantes de nível de módulo adicionais são definidas para
+   sistemas baseados em GNU/glibc. São elas "ST_NODEV" (impede o
+   acesso aos arquivos especiais do dispositivo), "ST_NOEXEC" (não
+   permite a execução do programa), "ST_SYNCHRONOUS" (as escritas são
+   sincronizadas de uma vez), "ST_MANDLOCK" (permitir bloqueios
+   obrigatórios em um sistema de arquivos), "ST_WRITE" (escrever no
+   arquivo/diretório/symlink), "ST_APPEND" (arquivo somente anexado),
+   "ST_IMMUTABLE" (arquivo imutável), "ST_NOATIME" (não atualiza os
+   tempos de acesso), "ST_NODIRATIME" (não atualiza os tempos de
+   acesso ao diretório), "ST_RELATIME" (atualiza o atime relativo ao
+   mtime/ctime).
+
+   Esta função tem suporte a especificar um descritor de arquivo.
+
+   Disponibilidade: Unix.
+
+   Alterado na versão 3.2: As constantes "ST_RDONLY" e "ST_NOSUID"
+   foram adicionadas.
+
+   Alterado na versão 3.3: Adicionado suporte para especificar *path*
+   como um descritor de arquivo aberto.
+
+   Alterado na versão 3.4: As constantes "ST_NODEV", "ST_NOEXEC",
+   "ST_SYNCHRONOUS", "ST_MANDLOCK", "ST_WRITE", "ST_APPEND",
+   "ST_IMMUTABLE", "ST_NOATIME", "ST_NODIRATIME" e "ST_RELATIME" foram
+   adicionadas.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.7: Adicionado o atributo "f_fsid".
+
+os.supports_dir_fd
+
+   Um objeto "set" indicando quais funções no módulo "os" aceitam um
+   descritor de arquivo aberto para seu parâmetro *dir_fd*.
+   Plataformas diferentes fornecem recursos diferentes, e a
+   funcionalidade subjacente que o Python usa para implementar o
+   parâmetro *dir_fd* não está disponível em todas as plataformas que
+   o Python suporta. Para fins de consistência, as funções que podem
+   suportar *dir_fd* sempre permitem especificar o parâmetro, mas
+   lançarão uma exceção se a funcionalidade for usada quando não
+   estiver disponível localmente. (Especificar "None" para *dir_fd* é
+   sempre suportado em todas as plataformas.)
+
+   Para verificar se uma função particular aceita um descritor de
+   arquivo aberto para seu parâmetro *dir_fd*, use o operador "in" em
+   "supports_dir_fd". Como exemplo, esta expressão é avaliada como
+   "True" se "os.stat()" aceita descritores de arquivo abertos para
+   *dir_fd* na plataforma local:
+
+      os.stat in os.supports_dir_fd
+
+   Atualmente os parâmetros *dir_fd* funcionam apenas em plataformas
+   Unix; nenhum deles funciona no Windows.
+
+   Novo na versão 3.3.
+
+os.supports_effective_ids
+
+   Um objeto "set" que indica se "os.access()" permite especificar
+   "True" para seu parâmetro *effective_ids* na plataforma local.
+   (Especificar "False" para *effective_ids* é sempre suportado em
+   todas as plataformas.) Se a plataforma local suportar, a coleção
+   conterá "os.access()"; caso contrário, ficará vazio.
+
+   Esta expressão é avaliada como "True" se "os.access()" tiver
+   suporte a "effective_ids=True" na plataforma local:
+
+      os.access in os.supports_effective_ids
+
+   Atualmente, *effective_ids* é suportado apenas em plataformas Unix;
+   não funciona no Windows.
+
+   Novo na versão 3.3.
+
+os.supports_fd
+
+   Um objeto "set" que indica quais funções no módulo "os" permitem
+   especificar seu parâmetro *path* como um descritor de arquivo
+   aberto na plataforma local. Plataformas diferentes fornecem
+   recursos diferentes, e a funcionalidade subjacente que o Python usa
+   para aceitar descritores de arquivos abertos como argumentos *path*
+   não está disponível em todas as plataformas que o Python suporta.
+
+   Para determinar se uma função particular permite especificar um
+   descritor de arquivo aberto para seu parâmetro *path*, use o
+   operador "in" em "supports_fd". Como exemplo, esta expressão é
+   avaliada como "True" se "os.chdir()" aceita descritores de arquivo
+   abertos para *path* em sua plataforma local:
+
+      os.chdir in os.supports_fd
+
+   Novo na versão 3.3.
+
+os.supports_follow_symlinks
+
+   Um objeto "set" que indica quais funções no módulo "os" aceitam
+   "False" para seu parâmetro *follow_symlinks* na plataforma local.
+   Plataformas diferentes fornecem recursos diferentes, e a
+   funcionalidade subjacente que o Python usa para implementar
+   *follow_symlinks* não está disponível em todas as plataformas às
+   quais o Python tem suporte. Para fins de consistência, as funções
+   que podem ter suporte a *follow_symlinks* sempre permitem
+   especificar o parâmetro, mas irão lançar uma exceção se a
+   funcionalidade for usada quando não estiver disponível localmente.
+   (Especificar "True" para *follow_symlinks* é sempre aceito em todas
+   as plataformas.)
+
+   Para verificar se uma função em particular aceita "False" para seu
+   parâmetro *follow_symlinks*, use o operador "in" em
+   "supports_follow_symlinks". Como exemplo, esta expressão é avaliada
+   como "True" se você pode especificar "follow_symlinks=False" ao
+   chamar "os.stat()" na plataforma local:
+
+      os.stat in os.supports_follow_symlinks
+
+   Novo na versão 3.3.
+
+os.symlink(src, dst, target_is_directory=False, *, dir_fd=None)
+
+   Cria um link simbólico apontando para *src* chamado *dst*.
+
+   No Windows, um link simbólico representa um arquivo ou um diretório
+   e não se transforma no destino dinamicamente. Se o alvo estiver
+   presente, o tipo de link simbólico será criado para corresponder.
+   Caso contrário, o link simbólico será criado como um diretório se
+   *target_is_directory* for "True" ou um link simbólico de arquivo (o
+   padrão) caso contrário. Em plataformas não Windows,
+   *target_is_directory* é ignorado.
+
+   Esta função tem suporte a caminhos relativos para descritores de
+   diretório.
+
+   Nota:
+
+     Em versões mais recentes do Windows 10, contas sem privilégios
+     podem criar links simbólicos se o Modo de Desenvolvedor estiver
+     habilitado. Quando o modo de desenvolvedor não está
+     disponível/ativado, o privilégio *SeCreateSymbolicLinkPrivilege*
+     é necessário ou o processo deve ser executado como um
+     administrador.A exceção "OSError" é levantada quando a função é
+     chamada por um usuário sem privilégios.
+
+   Levanta um evento de auditoria "os.symlink" com argumentos "src",
+   "dst", "dir_fd".
+
+   Disponibilidade: Unix, Windows.
+
+   A função é limitada em Emscripten e WASI, veja Plataformas
+   WebAssembly para mais informações.
+
+   Alterado na versão 3.2: Adicionado suporte para links simbólicos do
+   Windows 6.0 (Vista).
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*, e agora
+   permite *target_is_directory* em plataformas não Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *src* e *dst*.
+
+   Alterado na versão 3.8: Adicionado suporte para links simbólicos
+   não elevados no Windows com Modo de Desenvolvedor.
+
+os.sync()
+
+   Força a escrita de tudo para o disco.
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+os.truncate(path, length)
+
+   Trunca o arquivo correspondente ao *path*, de modo que tenha no
+   máximo *length* bytes.
+
+   Esta função tem suporte a especificar um descritor de arquivo.
+
+   Levanta evento de auditoria "os.truncate" com os argumentos "path",
+   "length".
+
+   Disponibilidade: Unix, Windows.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.5: Adicionado suporte para o Windows.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.unlink(path, *, dir_fd=None)
+
+   Remove (exclui) o arquivo *path*. Esta função é semanticamente
+   idêntica à "remove()"; o nome "unlink" é seu nome Unix tradicional.
+   Por favor, veja a documentação de "remove()" para mais informações.
+
+   Levanta um evento de auditoria "os.remove" com argumentos "path",
+   "dir_fd".
+
+   Alterado na versão 3.3: Adicionado o parâmetro *dir_fd*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.utime(path, times=None, *, [ns, ]dir_fd=None, follow_symlinks=True)
+
+   Define os tempos de acesso e modificação do arquivo especificado
+   por *path*.
+
+   "utime()" aceita dois parâmetros opcionais, *times* e *ns*. Eles
+   especificam os horários definidos no *path* e são usados da
+   seguinte forma:
+
+   * Se *ns* for especificado, deve ser uma tupla de 2 elementos na
+     forma "(atime_ns, mtime_ns)" onde cada membro é um int
+     expressando nanossegundos.
+
+   * Se *times* não for "None", deve ser uma tupla de 2 elementos na
+     forma "(atime, mtime)" onde cada membro é um int ou ponto
+     flutuante expressando segundos.
+
+   * Se *times* for "None" e *ns* não for especificado, isso é
+     equivalente a especificar "ns=(atime_ns, mtime_ns)" onde ambos os
+     tempos são a hora atual.
+
+   É um erro especificar tuplas para ambos *times* e *ns*.
+
+   Observe que os tempos exatos que você definiu aqui podem não ser
+   retornados por uma chamada subsequente de "stat()", dependendo da
+   resolução com a qual seu sistema operacional registra os tempos de
+   acesso e modificação; veja "stat()". A melhor maneira de preservar
+   os tempos exatos é usar os campos *st_atime_ns* e *st_mtime_ns* do
+   objeto de resultado "os.stat()" com o parâmetro *ns* para
+   "utime()".
+
+   Esta função pode oferecer suporte a especificar um descritor de
+   arquivo, caminhos relativos aos descritores de diretório e não
+   seguir os links simbólicos.
+
+   Levanta um evento de auditoria "os.utime" com os argumentos "path",
+   "times", "ns", "dir_fd".
+
+   Alterado na versão 3.3: Adicionado suporte para especificar *path*
+   como um descritor de arquivo aberto e os parâmetros *dir_fd*,
+   *follow_symlinks* e *ns*.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.walk(top, topdown=True, onerror=None, followlinks=False)
+
+   Gera os nomes dos arquivos em uma árvore de diretório percorrendo a
+   árvore de cima para baixo ou de baixo para cima. Para cada
+   diretório na árvore com raiz no diretório *top* (incluindo o
+   próprio *top*), ele produz uma tupla de 3 elementos "(dirpath,
+   dirnames, filenames)".
+
+   *dirpath* é uma string, o caminho para o diretório. *dirnames* é
+   uma lista dos nomes dos subdiretórios em *dirpath* (incluindo links
+   simbólicos para diretórios e excluindo "'.'" e "'..'"). *filenames*
+   é uma lista dos nomes dos arquivos não pertencentes ao diretório em
+   *dirpath*. Observe que os nomes nas listas não contêm componentes
+   de caminho. Para obter um caminho completo (que começa com *top*)
+   para um arquivo ou diretório em *dirpath*, faça
+   "os.path.join(dirpath, name)". Se as listas são ou não
+   classificadas depende do sistema de arquivos. Se um arquivo for
+   removido ou adicionado ao diretório *dirpath* durante a geração das
+   listas, não é especificado se um nome para esse arquivo deve ser
+   incluído.
+
+   Se o argumento opcional *topdown* for "True" ou não especificado, o
+   triplo para um diretório é gerado antes dos triplos para qualquer
+   um de seus subdiretórios (os diretórios são gerados de cima para
+   baixo). Se *topdown* for "False", o triplo para um diretório é
+   gerado após os triplos para todos os seus subdiretórios (os
+   diretórios são gerados de baixo para cima). Não importa o valor de
+   *topdown*, a lista de subdiretórios é recuperada antes que as
+   tuplas para o diretório e seus subdiretórios sejam geradas.
+
+   Quando *topdown* é "True", o chamador pode modificar a lista de
+   *dirnames* internamente (talvez usando "del" ou atribuição de
+   fatia), e "walk()" só recursará nos subdiretórios cujos nomes
+   permanecem em *dirnames*; isso pode ser usado para podar a busca,
+   impor uma ordem específica de visita, ou mesmo informar à função
+   "walk()" sobre os diretórios que o chamador cria ou renomeia antes
+   de retomar "walk()" novamente. Modificar *dirnames* quando
+   *topdown* for "False" não tem efeito no comportamento da caminhada,
+   porque no modo de baixo para cima os diretórios em *dirnames* são
+   gerados antes do próprio *dirpath* ser gerado.
+
+   Por padrão, os erros da chamada de "scandir()" são ignorados. Se o
+   argumento opcional *onerror* for especificado, deve ser uma função;
+   ela será chamado com um argumento, uma instância da exceção
+   "OSError". Ele pode relatar o erro para continuar com a caminhada
+   ou levantar a exceção para abortar a caminhada. Observe que o nome
+   do arquivo está disponível como o atributo "filename" do objeto de
+   exceção.
+
+   Por padrão, a função "walk()" não vai seguir links simbólicos que
+   resolvem para diretórios. Defina *followlinks* como "True" para
+   visitar diretórios apontados por links simbólicos, em sistemas que
+   oferecem suporte a eles.
+
+   Nota:
+
+     Esteja ciente de que definir *followlinks* para "True" pode levar
+     a recursão infinita se um link apontar para um diretório pai de
+     si mesmo. "walk()" não mantém registro dos diretórios que já
+     visitou.
+
+   Nota:
+
+     Se você passar um nome de caminho relativo, não mude o diretório
+     de trabalho atual entre as continuações de "walk()". "walk()"
+     nunca muda o diretório atual, e presume que seu chamador também
+     não.
+
+   Este exemplo exibe o número de bytes obtidos por arquivos não
+   pertencentes ao diretório em cada diretório no diretório inicial,
+   exceto que ele não olha em nenhum subdiretório CVS:
+
+      import os
+      from os.path import join, getsize
+      for root, dirs, files in os.walk('python/Lib/email'):
+          print(root, "consumes", end=" ")
+          print(sum(getsize(join(root, name)) for name in files), end=" ")
+          print("bytes in", len(files), "non-directory files")
+          if 'CVS' in dirs:
+              dirs.remove('CVS')  # don't visit CVS directories
+
+   No próximo exemplo (implementação simples de "shutil.rmtree()"),
+   andar na árvore de baixo para cima é essencial, "rmdir()" não
+   permite excluir um diretório antes que o diretório esteja vazio:
+
+      # Delete everything reachable from the directory named in "top",
+      # assuming there are no symbolic links.
+      # CAUTION:  This is dangerous!  For example, if top == '/', it
+      # could delete all your disk files.
+      import os
+      for root, dirs, files in os.walk(top, topdown=False):
+          for name in files:
+              os.remove(os.path.join(root, name))
+          for name in dirs:
+              os.rmdir(os.path.join(root, name))
+
+   Levanta um evento de auditoria "os.walk" com argumentos "top",
+   "topdown", "onerror", "followlinks".
+
+   Alterado na versão 3.5: Esta função agora chama "os.scandir()" em
+   vez de "os.listdir()", tornando-a mais rápida reduzindo o número de
+   chamadas a "os.stat()".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.fwalk(top='.', topdown=True, onerror=None, *, follow_symlinks=False, dir_fd=None)
+
+   Se comporta exatamente como "walk()", exceto que produz um tupla de
+   4 elementos "(dirpath, dirnames, filenames, dirfd)", e tem suporte
+   a "dir_fd".
+
+   *dirpath*, *dirnames* e *filenames* são idênticos à saída de
+   "walk()" e *dirfd* é um descritor de arquivo que faz referência ao
+   diretório *dirpath*.
+
+   Esta função sempre tem suporte a caminhos relativos aos descritores
+   de diretório e não seguir links simbólicos. Observe, entretanto,
+   que, ao contrário de outras funções, o valor padrão "fwalk()" para
+   *follow_symlinks* é "False".
+
+   Nota:
+
+     Uma vez que "fwalk()" produz descritores de arquivo, eles só são
+     válidos até a próxima etapa de iteração, então você deve
+     duplicá-los (por exemplo, com "dup()") se quiser mantê-los por
+     mais tempo.
+
+   Este exemplo exibe o número de bytes obtidos por arquivos não
+   pertencentes ao diretório em cada diretório no diretório inicial,
+   exceto que ele não olha em nenhum subdiretório CVS:
+
+      import os
+      for root, dirs, files, rootfd in os.fwalk('python/Lib/email'):
+          print(root, "consumes", end="")
+          print(sum([os.stat(name, dir_fd=rootfd).st_size for name in files]),
+                end="")
+          print("bytes in", len(files), "non-directory files")
+          if 'CVS' in dirs:
+              dirs.remove('CVS')  # don't visit CVS directories
+
+   No próximo exemplo, percorrer a árvore de baixo para cima é
+   essencial: "rmdir()" não permite excluir um diretório antes que o
+   diretório esteja vazio:
+
+      # Delete everything reachable from the directory named in "top",
+      # assuming there are no symbolic links.
+      # CAUTION:  This is dangerous!  For example, if top == '/', it
+      # could delete all your disk files.
+      import os
+      for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
+          for name in files:
+              os.unlink(name, dir_fd=rootfd)
+          for name in dirs:
+              os.rmdir(name, dir_fd=rootfd)
+
+   Levanta um evento de auditoria "os.fwalk" com argumentos "top",
+   "topdown", "onerror", "follow_symlinks", "dir_fd".
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+   Alterado na versão 3.7: Adicionado suporte para caminhos em
+   "bytes".
+
+os.memfd_create(name[, flags=os.MFD_CLOEXEC])
+
+   Cria um arquivo anônimo e retorna um descritor de arquivo que faça
+   referência a ele. *flags* deve ser uma das constantes "os.MFD_*"
+   disponíveis no sistema (ou uma combinação ORed bit a bit delas).
+   Por padrão, o novo descritor de arquivo é não herdável.
+
+   O nome fornecido em *name* é usado como um nome de arquivo e será
+   exibido como o destino do link simbólico correspondente no
+   diretório "/proc/self/fd/". O nome exibido é sempre prefixado com
+   "memfd:" e serve apenas para fins de depuração. Os nomes não afetam
+   o comportamento do descritor de arquivo e, como tal, vários
+   arquivos podem ter o mesmo nome sem quaisquer efeitos colaterais.
+
+   Disponibilidade: Linux >= 3.17 com glibc >= 2.27.
+
+   Novo na versão 3.8.
+
+os.MFD_CLOEXEC
+os.MFD_ALLOW_SEALING
+os.MFD_HUGETLB
+os.MFD_HUGE_SHIFT
+os.MFD_HUGE_MASK
+os.MFD_HUGE_64KB
+os.MFD_HUGE_512KB
+os.MFD_HUGE_1MB
+os.MFD_HUGE_2MB
+os.MFD_HUGE_8MB
+os.MFD_HUGE_16MB
+os.MFD_HUGE_32MB
+os.MFD_HUGE_256MB
+os.MFD_HUGE_512MB
+os.MFD_HUGE_1GB
+os.MFD_HUGE_2GB
+os.MFD_HUGE_16GB
+
+   Essss sinalizadores podem ser passados para "memfd_create()".
+
+   Disponibilidade: Linux >= 3.17 com glibc >= 2.27
+
+   Os sinalizadores "MFD_HUGE*" estão disponíveis somente a partir do
+   Linux 4.14.
+
+   Novo na versão 3.8.
+
+os.eventfd(initval[, flags=os.EFD_CLOEXEC])
+
+   Cria e retorna um descritor de arquivo de evento. Os descritores de
+   arquivo suportam "read()" e "write()" brutos com um tamanho de
+   buffer de 8, "select()", "poll()" e similares. Veja a página man
+   *eventfd(2)* para mais informações.  Por padrão, o novo descritor
+   de arquivo é não herdável.
+
+   *initval* é o valor inicial do contador de evento. O valor inicial
+   deve ser um inteiro sem sinal de 32 bits. Observe que o valor
+   inicial é limitado a um inteiro sem sinal de 32 bits ainda que o
+   contador de evento seja um inteiro de 64 bits com um valor máximo
+   de 2^64-2.
+
+   *flags* podem ser construídas a partir de "EFD_CLOEXEC",
+   "EFD_NONBLOCK" e "EFD_SEMAPHORE".
+
+   Se "EFD_SEMAPHORE" for especificada e o contador de evento for
+   diferente de zero, "eventfd_read()" retorna 1 e decrementa o
+   contador em um.
+
+   Se "EFD_SEMAPHORE" não for especificado e o contador de evento for
+   diferente de zero, "eventfd_read()" retorna o valor atual do
+   contador de evento e zera o contador.
+
+   Se o contador de evento for zero e "EFD_NONBLOCK" não for
+   especificado, "eventfd_read()" bloqueia.
+
+   "eventfd_write()" incrementa o contador de evento. A escrita
+   bloqueia se a operação de escrita incrementar o contador para um
+   valor maior que 2^64-2.
+
+   Exemplo:
+
+      import os
+
+      # semaphore with start value '1'
+      fd = os.eventfd(1, os.EFD_SEMAPHORE | os.EFC_CLOEXEC)
+      try:
+          # acquire semaphore
+          v = os.eventfd_read(fd)
+          try:
+              do_work()
+          finally:
+              # release semaphore
+              os.eventfd_write(fd, v)
+      finally:
+          os.close(fd)
+
+   Disponibilidade: Linux >= 2.6.27 com glibc >= 2.8
+
+   Novo na versão 3.10.
+
+os.eventfd_read(fd)
+
+   Lê um valor de um descritor de arquivo "eventfd()" e retorna um
+   inteiro sem sinal de 64 bits. A função não verifica se *fd* é um
+   "eventfd()".
+
+   Disponibilidade: Linux >= 2.6.27
+
+   Novo na versão 3.10.
+
+os.eventfd_write(fd, value)
+
+   Adiciona *value* a um descritor de arquivo "eventfd()". *value*
+   deve ser um inteiro sem sinal de 64 bits. A função não verifica se
+   *fd* é um "eventfd()".
+
+   Disponibilidade: Linux >= 2.6.27
+
+   Novo na versão 3.10.
+
+os.EFD_CLOEXEC
+
+   Define sinalizador close-on-exec para o novo descritor de arquivo
+   "eventfd()"
+
+   Disponibilidade: Linux >= 2.6.27
+
+   Novo na versão 3.10.
+
+os.EFD_NONBLOCK
+
+   Define sinalizador de status "O_NONBLOCK" para um novo descritor de
+   arquivo "eventfd()".
+
+   Disponibilidade: Linux >= 2.6.27
+
+   Novo na versão 3.10.
+
+os.EFD_SEMAPHORE
+
+   Fornece semântica de semáforo ou similar para leitura de um
+   descritor de arquivo "eventfd()". Na leitura o contador interno é
+   decrementado em um.
+
+   Disponibilidade: Linux >= 2.6.30
+
+   Novo na versão 3.10.
+
+
+Atributos estendidos do Linux
+-----------------------------
+
+Novo na versão 3.3.
+
+Estas funções estão todas disponíveis apenas no Linux.
+
+os.getxattr(path, attribute, *, follow_symlinks=True)
+
+   Retorna o valor do atributo estendido do sistema de arquivos
+   *attribute* para *path*. *attribute* pode ser bytes ou str (direta
+   ou indiretamente por meio da interface "PathLike"). Se for str, ele
+   é codificado com a codificação do sistema de arquivos.
+
+   Esta função tem suporte a especificar um descritor de arquivo e não
+   seguir links simbólicos.
+
+   Levanta um evento de auditoria "os.getxattr" com os argumentos
+   "path", "attribute".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *path* e *attribute*.
+
+os.listxattr(path=None, *, follow_symlinks=True)
+
+   Retorna uma lista dos atributos estendidos do sistema de arquivos
+   em *path*. Os atributos na lista são representados como strings
+   decodificadas com a codificação do sistema de arquivos. Se *path*
+   for "None", "listxattr()" irá examinar o diretório atual.
+
+   Esta função tem suporte a especificar um descritor de arquivo e não
+   seguir links simbólicos.
+
+   Levanta um evento de auditoria "os.listxattr" com o argumento
+   "path".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.removexattr(path, attribute, *, follow_symlinks=True)
+
+   Remove o atributo *attribute* do sistema de arquivos estendido do
+   *path*. *attribute* deve ser bytes ou str (direta ou indiretamente
+   através da interface "PathLike"). Se for uma string, é codificada
+   com o *tratador de erros e codificação do sistema de arquivos*
+
+   Esta função tem suporte a especificar um descritor de arquivo e não
+   seguir links simbólicos.
+
+   Levanta um evento de auditoria "os.removexattr" com o argumento
+   "path", "attribute".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *path* e *attribute*.
+
+os.setxattr(path, attribute, value, flags=0, *, follow_symlinks=True)
+
+   Define o atributo de sistema de arquivos estendido *attribute* em
+   *path* como *value*. *attribute* deve ser um bytes ou str sem NULs
+   embutidos (direta ou indiretamente por meio da interface
+   "PathLike"). Se for um str, ele é codificado com *tratador de erros
+   e codificação do sistema de arquivos*. *flags* podem ser
+   "XATTR_REPLACE" ou "XATTR_CREATE". Se "XATTR_REPLACE" for fornecido
+   e o atributo não existe, "ENODATA" será levantada. Se
+   "XATTR_CREATE" for fornecido e o atributo já existir, o atributo
+   não será criado e "EEXISTS" será levantada.
+
+   Esta função tem suporte a especificar um descritor de arquivo e não
+   seguir links simbólicos.
+
+   Nota:
+
+     Um bug nas versões do kernel Linux inferiores a 2.6.39 fez com
+     que o argumento *flags* fosse ignorado em alguns sistemas de
+     arquivos.
+
+   Levanta um evento de auditoria "os.setxattr" com os argumentos
+   "path", "attribute", "value", "flags".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar* para
+   *path* e *attribute*.
+
+os.XATTR_SIZE_MAX
+
+   O tamanho máximo que o valor de um atributo estendido pode ter.
+   Atualmente, são 64 KiB no Linux.
+
+os.XATTR_CREATE
+
+   Este é um valor possível para o argumento *flags* em "setxattr()".
+   Indica que a operação deve criar um atributo.
+
+os.XATTR_REPLACE
+
+   Este é um valor possível para o argumento *flags* em "setxattr()".
+   Indica que a operação deve substituir um atributo existente.
+
+
+Gerenciamento de processo
+=========================
+
+Estas funções podem ser usadas para criar e gerenciar processos.
+
+As várias funções "exec*" pegam uma lista de argumentos para o novo
+programa carregado no processo. Em cada caso, o primeiro desses
+argumentos é passado para o novo programa como seu próprio nome, e não
+como um argumento que um usuário pode ter digitado em uma linha de
+comando. Para o programador C, este é o "argv[0]" passado para um
+programa "main()". Por exemplo, "os.execv('/bin/echo', ['foo',
+'bar'])" exibirá apenas "bar" na saída padrão; "foo" parecerá ser
+ignorado.
+
+os.abort()
+
+   Gera um sinal "SIGABRT" para o processo atual. No Unix, o
+   comportamento padrão é produzir um despejo de memória; no Windows,
+   o processo retorna imediatamente um código de saída "3". Esteja
+   ciente de que chamar esta função não chamará o manipulador de sinal
+   Python registrado para "SIGABRT" com "signal.signal()".
+
+os.add_dll_directory(path)
+
+   Adiciona um caminho ao caminho de pesquisa de DLL.
+
+   Este caminho de pesquisa é usado ao resolver dependências para
+   módulos de extensão importados (o próprio módulo é resolvido por
+   meio de "sys.path"), e também por "ctypes".
+
+   Remove o diretório chamando **close()** no objeto retornado ou
+   usando-o em uma instrução "with".
+
+   Consulte a documentação da Microsoft para obter mais informações
+   sobre como as DLLs são carregadas.
+
+   Levanta um evento de auditoria "os.add_dll_directory" com argumento
+   "path".
+
+   Disponibilidade: Windows.
+
+   Novo na versão 3.8: As versões anteriores do CPython resolveriam
+   DLLs usando o comportamento padrão para o processo atual. Isso
+   levou a inconsistências, como apenas às vezes pesquisar "PATH" ou o
+   diretório de trabalho atual, e funções do sistema operacional como
+   "AddDllDirectory" sem efeito.No 3.8, as duas maneiras principais de
+   carregar as DLLs agora substituem explicitamente o comportamento de
+   todo o processo para garantir a consistência. Veja as notas de
+   portabilidade para informações sobre atualização de bibliotecas.
+
+os.execl(path, arg0, arg1, ...)
+os.execle(path, arg0, arg1, ..., env)
+os.execlp(file, arg0, arg1, ...)
+os.execlpe(file, arg0, arg1, ..., env)
+os.execv(path, args)
+os.execve(path, args, env)
+os.execvp(file, args)
+os.execvpe(file, args, env)
+
+   Todas essas funções executam um novo programa, substituindo o
+   processo atual; eles não voltam. No Unix, o novo executável é
+   carregado no processo atual e terá a mesma identificação de
+   processo do chamador. Os erros serão relatados como exceções de
+   "OSError".
+
+   O processo atual é substituído imediatamente. Objetos de arquivos
+   abertos e descritores não são descarregados, então se houver dados
+   em buffer nesses arquivos abertos, você deve descarregá-los usando
+   "sys.stdout.flush()" ou "os.fsync()" antes de chamar uma função
+   "exec*".
+
+   As variantes "l" e "v" das funções "exec*" diferem em como os
+   argumentos da linha de comando são passados. As variantes "l" são
+   talvez as mais fáceis de trabalhar se o número de parâmetros for
+   fixo quando o código for escrito; os parâmetros individuais
+   simplesmente se tornam parâmetros adicionais para as funções
+   "execl*()". As variantes "v" são boas quando o número de parâmetros
+   é variável, com os argumentos sendo passados em uma lista ou tupla
+   como o parâmetro *args*. Em qualquer caso, os argumentos para o
+   processo filho devem começar com o nome do comando que está sendo
+   executado, mas isso não é obrigatório.
+
+   As variantes que incluem um "p" próximo ao final ("execlp()",
+   "execlpe()", "execvp()" e "execvpe()") usarão a variável de
+   ambiente "PATH" para localizar o programa *file*. Quando o ambiente
+   está sendo substituído (usando uma das variantes "exec*e",
+   discutidas no próximo parágrafo), o novo ambiente é usado como
+   fonte da variável "PATH" As outras variantes, "execl()",
+   "execle()", "execv()" e "execve()", não usarão a variável "PATH"
+   para localizar o executável; *path* deve conter um caminho absoluto
+   ou relativo apropriado. Caminhos relativos devem incluir pelo menos
+   uma barra, mesmo no Windows, pois nomes simples não serão
+   resolvidos.
+
+   Para "execle()", "execlpe()", "execve()" e "execvpe()" (observe que
+   todos eles terminam em "e"), o parâmetro *env* deve ser um
+   mapeamento que é usado para definir as variáveis de ambiente para o
+   novo processo (elas são usadas no lugar do ambiente do processo
+   atual); as funções "execl()", "execlp()", "execv()" e "execvp()"
+   fazem com que o novo processo herde o ambiente do processo atual.
+
+   Para "execve()" em algumas plataformas, *path* também pode ser
+   especificado como um descritor de arquivo aberto. Esta
+   funcionalidade pode não ser compatível com sua plataforma; você
+   pode verificar se está ou não disponível usando "os.supports_fd".
+   Se não estiver disponível, usá-lo vai levantar uma
+   "NotImplementedError".
+
+   Levanta um evento de auditoria "os.exec" com argumentos "path",
+   "args", "env".
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   Alterado na versão 3.3: Adicionado suporte para especificar *path*
+   como um descritor de arquivo aberto para "execve()".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os._exit(n)
+
+   Sai do processo com status *n*, sem chamar manipuladores de
+   limpeza, liberando buffers de stdio etc.
+
+   Nota:
+
+     A forma padrão de sair é "sys.exit(n) <sys.exit>.
+     :func:()"!_exit` normalmente só deve ser usado no processo filho
+     após uma função "fork()".
+
+Os seguintes códigos de saída são definidos e podem ser usados com
+"_exit()", embora não sejam obrigatórios. Eles são normalmente usados
+para programas de sistema escritos em Python, como um programa de
+entrega de comando externo de servidor de e-mail.
+
+Nota:
+
+  Alguns deles podem não estar disponíveis em todas as plataformas
+  Unix, pois há algumas variações. Essas constantes são definidas onde
+  são definidas pela plataforma subjacente.
+
+os.EX_OK
+
+   Código de saída que significa que não ocorreu nenhum erro. Pode ser
+   obtido do valor definido de "EXIT_SUCCESS" em algumas plataformas.
+   Geralmente tem um valor de zero.
+
+   Disponibilidade: Unix, Windows.
+
+os.EX_USAGE
+
+   Código de saída que significa que o comando foi usado
+   incorretamente, como quando o número errado de argumentos é
+   fornecido.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_DATAERR
+
+   Código de saída que significa que os dados inseridos estavam
+   incorretos.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_NOINPUT
+
+   Código de saída que significa que um arquivo de entrada não existe
+   ou não pôde ser lido.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_NOUSER
+
+   Código de saída que significa que um usuário especificado não
+   existe.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_NOHOST
+
+   Código de saída que significa que um host especificado não existe.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_UNAVAILABLE
+
+   Código de saída que significa que um serviço necessário está
+   indisponível.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_SOFTWARE
+
+   Código de saída que significa que um erro interno do software foi
+   detectado.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_OSERR
+
+   Código de saída que significa que um erro do sistema operacional
+   foi detectado, como a incapacidade de fazer fork ou criar um
+   encadeamento.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_OSFILE
+
+   Código de saída que significa que algum arquivo do sistema não
+   existia, não pôde ser aberto ou teve algum outro tipo de erro.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_CANTCREAT
+
+   Código de saída que significa que um arquivo de saída especificado
+   pelo usuário não pôde ser criado.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_IOERR
+
+   Código de saída que significa que ocorreu um erro ao fazer E/S em
+   algum arquivo.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_TEMPFAIL
+
+   Código de saída que significa que ocorreu uma falha temporária.
+   Isso indica algo que pode não ser realmente um erro, como uma
+   conexão de rede que não pôde ser feita durante uma operação de nova
+   tentativa.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_PROTOCOL
+
+   Código de saída que significa que uma troca de protocolo foi
+   ilegal, inválida ou não compreendida.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_NOPERM
+
+   Código de saída que significa que não havia permissões suficientes
+   para executar a operação (mas sem intenção de causar problemas do
+   sistema de arquivos).
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_CONFIG
+
+   Código de saída que significa que ocorreu algum tipo de erro de
+   configuração.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.EX_NOTFOUND
+
+   Código de saída que significa algo como "uma entrada não foi
+   encontrada".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.fork()
+
+   Faz um fork de um processo filho. Retorna "0" no filho e o ID de
+   processo do filho no pai. Se ocorrer um erro, uma "OSError" é
+   levantada.
+
+   Note que algumas plataformas incluindo FreeBSD <= 6.3 e Cygwin têm
+   problemas conhecidos ao usar "fork()" a partir de um thread.
+
+   Levanta um evento de auditoria "os.fork" com nenhum argumento.
+
+   Aviso:
+
+     Se você usa soquetes TLS em um aplicação chamando "fork()",
+     consulte alerta na documentação "ssl".
+
+   Aviso:
+
+     No macOS, o uso desta função é inseguro quando misturado com o
+     uso de APIs de sistema de nível superior, e isso inclui o uso de
+     "urllib.request".
+
+   Alterado na versão 3.8: Chamar "fork()" em um subinterpretador não
+   é mais suportado ("RuntimeError" é levantada).
+
+   Alterado na versão 3.12: Se o Python for capaz de detectar que o
+   seu processar tem vários threads, o "os.fork()" agora levanta um
+   "DeprecationWarning".Optamos por apresentar isso como um alerta,
+   quando detectável, para informar melhor os desenvolvedores sobre um
+   problema de design que a plataforma POSIX observa especificamente
+   como não suportado. Mesmo em códigos que *aparentem* funcionar,
+   nunca foi seguro misturar threading com "os.fork()" em plataformas
+   POSIX. O próprio tempo de execução do CPython sempre fez chamadas
+   API que não são seguras para uso no filho processar quando existiam
+   threads no pai (como "malloc" e "free").Os usuários do macOS ou
+   usuários de implementações de libc ou malloc diferentes daquelas
+   normalmente encontradas no glibc até o momento estão entre os que
+   já têm maior probabilidade de sofrer com impasses (*deadlocks*) ao
+   executar esse código.Consulte esta discussão sobre a
+   incompatibilidade do fazer um fork com threads para obter detalhes
+   técnicos sobre o motivo pelo qual estamos revelando esse problema
+   de longa data da plataforma compatibilidade aos desenvolvedores.
+
+   Disponibilidade: POSIX, não Emscripten, não WASI.
+
+os.forkpty()
+
+   Faz um fork de um processo filho, usando um novo pseudoterminal
+   como o terminal de controle do filho. Retorna um par de "(pid,
+   fd)", onde *pid* é "0" no filho, o novo ID de processo do filho no
+   pai e *fd* é o descritor de arquivo do lado mestre do
+   pseudoterminal. Para uma abordagem mais portátil, use o módulo
+   "pty". Se ocorrer um erro, "OSError" é levantada.
+
+   Levanta um evento de auditoria "os.forkpty" com nenhum argumento.
+
+   Aviso:
+
+     No macOS, o uso desta função é inseguro quando misturado com o
+     uso de APIs de sistema de nível superior, e isso inclui o uso de
+     "urllib.request".
+
+   Alterado na versão 3.8: Chamar "forkpty()" em um subinterpretador
+   não é mais suportado ("RuntimeError" é levantada).
+
+   Alterado na versão 3.12: Se o Python for capaz de detectar que o
+   seu processar tem vários threads, isso agora levanta um
+   "DeprecationWarning". Veja a explicação mais longa em "os.fork()".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.kill(pid, sig, /)
+
+   Envia o sinal *sig* para o processo *pid*. Constantes dos sinais
+   específicos disponíveis na plataforma host são definidas no módulo
+   "signal".
+
+   Windows: Os sinais "signal.CTRL_C_EVENT" e
+   "signal.CTRL_BREAK_EVENT" são sinais especiais que só podem ser
+   enviados para processos de console que compartilham uma janela de
+   console comum, por exemplo, alguns subprocessos. Qualquer outro
+   valor para *sig* fará com que o processo seja encerrado
+   incondicionalmente pela API TerminateProcess e o código de saída
+   será definido como *sig*. A versão Windows de "kill()"
+   adicionalmente leva identificadores de processo para ser morto.
+
+   Veja também "signal.pthread_kill()".
+
+   Levanta um evento de auditoria "os.kill" com argumentos "pid",
+   "sig".
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   Alterado na versão 3.2: Adicionado suporte ao Windows.
+
+os.killpg(pgid, sig, /)
+
+   Envia o sinal *sig* para o grupo de processos *pgid*.
+
+   Levanta um evento de auditoria "os.killpg" com argumentos "pgid",
+   "sig".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.nice(increment, /)
+
+   Adiciona *increment* ao nível de "nice" do processo. Retorna um
+   novo nível de "nice".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.pidfd_open(pid, flags=0)
+
+   Retorna um descritor de arquivo referente ao processo *pid* com as
+   *flags* definidas. Este descritor pode ser usado para gerenciar o
+   processo sem corridas e sinais.
+
+   Veja a página man *pidfd_open(2)* para mais detalhes.
+
+   Disponibilidade: Linux >= 5.3
+
+   Novo na versão 3.9.
+
+   os.PIDFD_NONBLOCK
+
+      Este sinalizador indica que o descritor de arquivo será não-
+      bloqueante. Se o processo referenciado pelo descritor de arquivo
+      ainda não tiver terminado, então uma tentativa de aguardar no
+      descritor de arquivo usando *waitid(2)* retornará imediatamente
+      o erro "EAGAIN" em vez de bloquear.
+
+   Disponibilidade: Linux >= 5.10
+
+   Novo na versão 3.12.
+
+os.plock(op, /)
+
+   Bloqueia os segmentos do programa na memória. O valor de *op*
+   (definido em "<sys/lock.h>") determina quais segmentos estão
+   bloqueados.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.popen(cmd, mode='r', buffering=-1)
+
+   Abre um encadeamento, também conhecido como "pipe", de ou para o
+   comando *cmd*. O valor de retorno é um objeto arquivo aberto
+   conectado ao encadeamento, que pode ser lido ou escrito dependendo
+   se *mode* é "'r'" (padrão) ou "'w'". O argumento *buffering* tem o
+   mesmo significado que o argumento correspondente para a função
+   embutida "open()". O objeto arquivo retornado lê ou escreve strings
+   de texto em vez de bytes.
+
+   O método "close" retorna "None" se o subprocesso foi encerrado com
+   sucesso, ou o código de retorno do subprocesso se houve um erro. Em
+   sistemas POSIX, se o código de retorno for positivo, ele representa
+   o valor de retorno do processo deslocado para a esquerda em um
+   byte. Se o código de retorno for negativo, o processo foi encerrado
+   pelo sinal dado pelo valor negado do código de retorno. (Por
+   exemplo, o valor de retorno pode ser "- signal.SIGKILL" se o
+   subprocesso foi eliminado.) Em sistemas Windows, o valor de retorno
+   contém o código de retorno inteiro com sinal do processo filho.
+
+   No Unix, "waitstatus_to_exitcode()" pode ser usado para converter o
+   resultado do método "close" (status de saída) em um código de saída
+   se não for "None". No Windows, o resultado do método "close" é
+   diretamente o código de saída (ou "None").
+
+   Isso é implementado usando "subprocess.Popen"; consulte a
+   documentação desta classe para maneiras mais poderosas de gerenciar
+   e se comunicar com subprocessos.
+
+   Disponibilidade: não Emscripten, não WASI.
+
+   Nota:
+
+     O Modo UTF-8 do Python afeta as codificações usadas para *cmd* e
+     conteúdo de encadeamento."popen()" é um wrapper simples em torno
+     de "subprocess.Popen". Use "subprocess.Popen" ou
+     "subprocess.run()" para controlar opções como codificações.
+
+os.posix_spawn(path, argv, env, *, file_actions=None, setpgroup=None, resetids=False, setsid=False, setsigmask=(), setsigdef=(), scheduler=None)
+
+   Envolve a API da biblioteca C "posix_spawn()" para uso em Python.
+
+   A maioria dos usuários deveria usar "subprocess.run()" em vez de
+   "posix_spawn()".
+
+   Os argumentos somente-posicional *path*, *args* e *env* são
+   similares a "execve()".
+
+   O parâmetro *path* é o caminho para o arquivo executável. O *path*
+   deve conter um diretório. Use "posix_spawnp()" para passar um
+   arquivo executável sem diretório.
+
+   O argumento *file_actions* pode ser uma sequência de tuplas
+   descrevendo ações a serem tomadas em descritores de arquivo
+   específicos no processo filho entre as etapas "fork()" e "exec()"
+   de implementação da biblioteca C. O primeiro item em cada tupla
+   deve ser um dos três indicadores de tipo listados abaixo,
+   descrevendo os elementos restantes da tupla:
+
+   os.POSIX_SPAWN_OPEN
+
+      ("os.POSIX_SPAWN_OPEN", *fd*, *path*, *flags*, *mode*)
+
+      Efetua "os.dup2(os.open(path, flags, mode), fd)".
+
+   os.POSIX_SPAWN_CLOSE
+
+      ("os.POSIX_SPAWN_CLOSE", *fd*)
+
+      Efetua "os.close(fd)".
+
+   os.POSIX_SPAWN_DUP2
+
+      ("os.POSIX_SPAWN_DUP2", *fd*, *new_fd*)
+
+      Efetua "os.dup2(fd, new_fd)".
+
+   Estas tuplas correspondem a chamadas de API da biblioteca C de
+   "posix_spawn_file_actions_addopen()",
+   "posix_spawn_file_actions_addclose()" e
+   "posix_spawn_file_actions_adddup2()" usadas para preparar para a
+   chamada de "posix_spawn()" em si.
+
+   O argumento *setpgroup* definirá o grupo de processos do filho para
+   o valor especificado. Se o valor especificado for 0, o ID do grupo
+   de processo da criança será igual ao seu ID de processo. Se o valor
+   de *setpgroup* não for definido, o filho herdará o ID do grupo de
+   processos do pai. Este argumento corresponde ao sinalizador
+   "POSIX_SPAWN_SETPGROUP" da biblioteca C.
+
+   Se o argumento *resetids* for "True", ele irá reconfigurar o UID e
+   GID efetivos do filho para o UID e GID reais do processo pai. Se o
+   argumento for "False", então o filho retém o UID e GID efetivos do
+   pai. Em ambos os casos, se os bits de permissão set-user-ID e set-
+   group-ID estiverem habilitados no arquivo executável, seu efeito
+   vai substituir a configuração do UID e GID efetivos. Este argumento
+   corresponde ao sinalizador "POSIX_SPAWN_RESETIDS" da biblioteca C.
+
+   Se o argumento *setsid* for "True", ele criará um novo ID de sessão
+   para "posix_spawn". *setsid* requer "POSIX_SPAWN_SETSID" ou
+   "POSIX_SPAWN_SETSID_NP". Caso contrário, "NotImplementedError" é
+   levantada.
+
+   O argumento *setsigmask* definirá a máscara de sinal para o
+   conjunto de sinais especificado. Se o parâmetro não for usado, o
+   filho herda a máscara de sinal do pai. Este argumento corresponde
+   ao sinalizador "POSIX_SPAWN_SETSIGMASK" da biblioteca C.
+
+   O argumento *sigdef* redefinirá a disposição de todos os sinais no
+   conjunto especificado. Este argumento corresponde ao sinalizador
+   "POSIX_SPAWN_SETSIGDEF" da biblioteca C.
+
+   O argumento *scheduler* deve ser uma tupla contendo a política do
+   agendador (opcional) e uma instância de "sched_param" com os
+   parâmetros do agendador. Um valor "None" no lugar da política do
+   planejador indica que não está sendo fornecido. Este argumento é
+   uma combinação dos sinalizadores "POSIX_SPAWN_SETSCHEDPARAM" e
+   "POSIX_SPAWN_SETSCHEDULER" da biblioteca C.
+
+   Levanta um evento de auditoria "os.posix_spawn" com argumentos
+   "path", "argv", "env".
+
+   Novo na versão 3.8.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.posix_spawnp(path, argv, env, *, file_actions=None, setpgroup=None, resetids=False, setsid=False, setsigmask=(), setsigdef=(), scheduler=None)
+
+   Envolve a API da biblioteca C "posix_spawnp()" para uso em Python.
+
+   Semelhante a "posix_spawn()" exceto que o sistema procura o arquivo
+   *executable* na lista de diretórios especificados pela variável de
+   ambiente "PATH" (da mesma forma que para "execvp(3)").
+
+   Levanta um evento de auditoria "os.posix_spawn" com argumentos
+   "path", "argv", "env".
+
+   Novo na versão 3.8.
+
+   Disponibilidade: POSIX, não Emscripten, não WASI.
+
+   Veja a documentação de "posix_spawn()".
+
+os.register_at_fork(*, before=None, after_in_parent=None, after_in_child=None)
+
+   Registra chamáveis a serem executados quando um novo processo filho
+   é criado usando "os.fork()" ou APIs de clonagem de processos
+   semelhantes. Os parâmetros são opcionais e somente-nomeados. Cada
+   um especifica um ponto de chamada diferente.
+
+   * *before* é uma função chamada antes de fazer um fork para um
+     processo filho.
+
+   * *after_in_parent* é uma função chamada a partir do processo pai
+     após fazer um fork para um processo filho.
+
+   * *after_in_child* é uma função chamada a partir do processo filho.
+
+   Essas chamadas são feitas apenas se o controle deve retornar ao
+   interpretador Python. Um lançamento típico de "subprocess" não irá
+   acioná-los, pois o filho não entrará novamente no interpretador.
+
+   As funções registradas para execução antes de fazer o fork são
+   chamadas na ordem de registro reversa. As funções registradas para
+   execução após o fork ser feito (no pai ou no filho) são chamadas na
+   ordem de registro.
+
+   Note que chamadas a "fork()" feitas por código C de terceiros pode
+   não chamar estas funções, a menos que ele explicitamente chame
+   "PyOS_BeforeFork()", "PyOS_AfterFork_Parent()" e
+   "PyOS_AfterFork_Child()".
+
+   Não há uma forma de desfazer o registro de uma função.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.7.
+
+os.spawnl(mode, path, ...)
+os.spawnle(mode, path, ..., env)
+os.spawnlp(mode, file, ...)
+os.spawnlpe(mode, file, ..., env)
+os.spawnv(mode, path, args)
+os.spawnve(mode, path, args, env)
+os.spawnvp(mode, file, args)
+os.spawnvpe(mode, file, args, env)
+
+   Executa o programa *path* em um novo processo.
+
+   (Observe que o módulo "subprocess" fornece recursos mais poderosos
+   para gerar novos processos e recuperar seus resultados; usar esse
+   módulo é preferível a usar essas funções. Verifique especialmente a
+   seção Replacing Older Functions with the subprocess Module.)
+
+   Se *mode* for "P_NOWAIT", esta função retorna o id do processo do
+   novo processo; se *mode* for "P_WAIT", retorna o código de saída do
+   processo se ele sair normalmente, ou "-signal", onde *signal* é o
+   sinal que matou o processo. No Windows, o id de processo será na
+   verdade o identificador do processo, portanto, pode ser usado com a
+   função "waitpid()".
+
+   Nota sobre VxWorks: esta função não retorna "-signal" quando o novo
+   processo é encerrado. Em vez disso, ele levanta a exceção OSError.
+
+   As variantes "l" e "v" das funções "spawn*" diferem em como os
+   argumentos de linha de comando são passados. As variantes "l" são
+   talvez as mais fáceis de trabalhar se o número de parâmetros for
+   fixo quando o código for escrito; os parâmetros individuais
+   simplesmente se tornam parâmetros adicionais para as funções
+   "spawnl*()". As variantes "v" são boas quando o número de
+   parâmetros é variável, com os argumentos sendo passados em uma
+   lista ou tupla como o parâmetro *args*. Em ambos os casos, os
+   argumentos para o processo filho devem começar com o nome do
+   comando que está sendo executado.
+
+   As variantes que incluem um segundo "p" próximo ao final
+   ("spawnlp()", "spawnlpe()", "spawnvp()" e "spawnvpe()") usarão a
+   variável de ambiente "PATH" para localizar o programa *file*.
+   Quando o ambiente está sendo substituído (usando uma das variantes
+   "spawn*e", discutidas no próximo parágrafo), o novo ambiente é
+   usado como fonte da variável "PATH" As outras variantes,
+   "spawnl()", "spawnle()", "spawnv()" e "spawnve()", não usarão a
+   variável "PATH" para localizar o executável; *path* deve conter um
+   caminho absoluto ou relativo apropriado.
+
+   Para "spawnle()", "spawnlpe()", "spawnve()" e "spawnvpe()" (observe
+   que todos eles terminam em "e"), o parâmetro *env* deve ser um
+   mapeamento que é usado para definir as variáveis de ambiente para o
+   novo processo (elas são usadas no lugar do ambiente do processo
+   atual); as funções "spawnl()", "spawnlp()", "spawnv()" e
+   "spawnvp()" fazem com que o novo processo herde o ambiente do
+   processo atual. Note que as chaves e os valores no dicionário *env*
+   devem ser strings; chaves ou valores inválidos farão com que a
+   função falhe, com um valor de retorno de "127".
+
+   Como exemplo, as seguintes chamadas a "spawnlp()" e "spawnvpe()"
+   são equivalentes:
+
+      import os
+      os.spawnlp(os.P_WAIT, 'cp', 'cp', 'index.html', '/dev/null')
+
+      L = ['cp', 'index.html', '/dev/null']
+      os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
+
+   Levanta um evento de auditoria "os.spawn" com argumentos "mode",
+   "path", "args", "env".
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   "spawnlp()", "spawnlpe()", "spawnvp()" e "spawnvpe()" não estão
+   disponíveis no Windows. "spawnle()" e "spawnve()" não são seguros
+   para thread no Windows; recomendamos que você use o módulo
+   "subprocess".
+
+   Alterado na versão 3.6: Aceita um *objeto caminho ou similar*.
+
+os.P_NOWAIT
+os.P_NOWAITO
+
+   Valores possíveis para o parâmetro *mode* para a família de funções
+   "spawn*". Se qualquer um desses valores for fornecido, as funções
+   "spawn". retornarão assim que o novo processo for criado, com o id
+   do processo como o valor de retorno.
+
+   Disponibilidade: Unix, Windows.
+
+os.P_WAIT
+
+   Valor possível para o parâmetro *mode* para a família de funções
+   "spawn*". Se for fornecido como *mode*, as funções "spawn*" não
+   retornarão até que o novo processo seja executado até a conclusão e
+   retornará o código de saída do processo em que a execução foi bem-
+   sucedida, ou "-signal" se um sinal interromper o processo.
+
+   Disponibilidade: Unix, Windows.
+
+os.P_DETACH
+os.P_OVERLAY
+
+   Valores possíveis do o parâmetro *mode* para a família de funções
+   "spawn*". Eles são menos portáteis do que os listados acima.
+   "P_DETACH" é semelhante a "P_NOWAIT", mas o novo processo é
+   separado do console do processo de chamada. Se "P_OVERLAY" for
+   usado, o processo atual será substituído; a função "spawn*" não
+   retornará.
+
+   Disponibilidade: Windows.
+
+os.startfile(path[, operation][, arguments][, cwd][, show_cmd])
+
+   Inicia um arquivo com sua aplicação associada.
+
+   Quando *operation* não é especificado, isso atua como um clique
+   duplo no arquivo no Windows Explorer, ou como fornecer o nome do
+   arquivo como um argumento para o comando **start** do console
+   interativo de comandos: o arquivo é aberto com qualquer aplicação
+   (se houver) com a extensão associada.
+
+   Quando outra *operation* é fornecida, ela deve ser um "verbo de
+   comando" que especifica o que deve ser feito com o arquivo. Verbos
+   comuns documentados pela Microsoft são "'open'", "'print'" e
+   "'edit'" (para serem usados em arquivos), bem como "'explore'" e
+   "'find'" (para serem usados em diretórios).
+
+   Ao iniciar uma aplicação, especifique *arguments* a serem passados
+   como uma única string. Este argumento pode não ter efeito quando
+   usar esta função para iniciar um documento.
+
+   O diretório de trabalho padrão é herdado, mas pode ser substituído
+   pelo argumento *cwd*. Este deve ser um caminho absoluto. Um *path*
+   relativo será resolvido levando em consideração este argumento.
+
+   Use *show_cmd* para substituir o estilo de janela padrão. Se isso
+   terá algum efeito irá depender da aplicação sendo iniciada. Os
+   valores são inteiros conforme suportado pela função Win32
+   "ShellExecute()".
+
+   "startfile()" retorna assim que a aplicação associada é iniciada.
+   Não há opção de aguardar o fechamento da aplicação, e nenhuma
+   maneira de recuperar o status de saída da aplicação. O parâmetro
+   *path* é relativo ao diretório atual ou ao *cwd*. Se você quiser
+   usar um caminho absoluto, certifique-se que o primeiro caractere
+   não seja uma barra ("'/'"). Use "pathlib" ou a função
+   "os.path.normpath()" para garantir que os caminhos sejam
+   codificados corretamente para Win32.
+
+   Para reduzir a sobrecarga de inicialização do interpretador, a
+   função Win32 "ShellExecute()" não é resolvida até que esta função
+   seja chamada pela primeira vez. Se a função não puder ser
+   resolvida, "NotImplementedError" será levantada.
+
+   Levanta um evento de auditoria "os.startfile" coms argumentos
+   "path", "operation".
+
+   Levanta um evento de auditoria "os.startfile/2" com os argumentos
+   "path", "operation", "arguments", "cwd", "show_cmd".
+
+   Disponibilidade: Windows.
+
+   Alterado na versão 3.10: Adicionados os argumentos *arguments*,
+   *cwd* e *show_cmd*, e o evento de auditoria "os.startfile/2".
+
+os.system(command)
+
+   Executa o comando (uma string) em um subshell. Isso é implementado
+   chamando a função C padrão "system()", e tem as mesmas limitações.
+   Alterações em "sys.stdin" etc. não são refletidas no ambiente do
+   comando executado. Se *command* gerar qualquer saída, ela será
+   enviada ao fluxo de saída padrão do interpretador. O padrão C não
+   especifica o significado do valor de retorno da função C, então o
+   valor de retorno da função Python depende do sistema.
+
+   No Unix, o valor de retorno é o status de saída do processo
+   codificado no formato especificado para "wait()".
+
+   No Windows, o valor de retorno é aquele retornado pelo shell do
+   sistema após a execução de *command*. O shell é fornecido pela
+   variável de ambiente Windows "COMSPEC": normalmente é **cmd.exe**,
+   que retorna o status de saída da execução do comando; em sistemas
+   que usam um shell não nativo, consulte a documentação do shell.
+
+   O módulo "subprocess" fornece recursos mais poderosos para gerar
+   novos processos e recuperar seus resultados; usar esse módulo é
+   preferível a usar esta função. Veja a seção Replacing Older
+   Functions with the subprocess Module na documentação do
+   "subprocess" para algumas receitas úteis.
+
+   No Unix, "waitstatus_to_exitcode()" pode ser usada para converter o
+   resultado (status de saída) em um código de saída. No Windows, o
+   resultado é diretamente o código de saída.
+
+   Levanta um evento de auditoria "os.system" com o argumento
+   "command".
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+os.times()
+
+   Retorna os tempos atuais de processo globais. O valor de retorno é
+   um objeto com cinco atributos:
+
+   * "user" - tempo do usuário
+
+   * "system" - tempo do sistema
+
+   * "children_user" - tempo do usuário de todos os processo filhos
+
+   * "children_system" - tempo do sistema de todos os processo filhos
+
+   * "elapsed" - tempo real decorrido desde um ponto fixo no passado
+
+   Para compatibilidade com versões anteriores, esse objeto também se
+   comporta como uma tupla de 5 elementos contendo "user", "system",
+   "children_user", "children_system" e "elapsed" nessa ordem.
+
+   Consulte as páginas de manual *times(2)* e times(3) no Unix ou o
+   GetProcessTimes MSDN no Windows. No Windows, apenas "user" e
+   "system" são conhecidos; os outros atributos são zero.
+
+   Disponibilidade: Unix, Windows.
+
+   Alterado na versão 3.3: Tipo de retorno foi alterado de uma tupla
+   para um objeto tupla ou similar com atributos nomeados.
+
+os.wait()
+
+   Aguarda a conclusão de um processo filho e retorna uma tupla
+   contendo seu pid e indicação de status de saída: um número de 16
+   bits, cujo byte baixo é o número do sinal que matou o processo e
+   cujo byte alto é o status de saída (se o sinal número é zero); o
+   bit alto do byte baixo é definido se um arquivo principal foi
+   produzido.
+
+   Se não houver filhos que possam ser esperados, "ChildProcessError"
+   é levantada.
+
+   "waitstatus_to_exitcode()" pode ser usado para converter o status
+   de saída em um código de saída.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Ver também:
+
+     As outras funções "wait*()" documentadas abaixo podem ser usadas
+     para aguardar a conclusão de um processo filho específico e ter
+     mais opções. "waitpid()" é o único também disponível no Windows.
+
+os.waitid(idtype, id, options, /)
+
+   Aguarde a conclusão de um processo filho.
+
+   *idtype* pode ser "P_PID", "P_PGID", "P_ALL" ou (no Linux)
+   "P_PIDFD". A interpretação de *id* depende disso; veja suas
+   descrições individuais.
+
+   *options* é uma combinação OU de sinalizadores. Pelo menos um entre
+   "WEXITED", "WSTOPPED" ou "WCONTINUED" é obrigatório; "WNOHANG" e
+   "WNOWAIT" são sinalizadores opcionais adicionais.
+
+   O valor de retorno é um objeto que representa os dados contidos na
+   estrutura "siginfo_t" com os seguintes atributos:
+
+   * "si_pid" (ID do processo)
+
+   * "si_uid" (ID de usuário real do filho)
+
+   * "si_signo" (sempre "SIGCHLD")
+
+   * "si_status" (o status de saída ou número do sinal, dependendo de
+     "si_code")
+
+   * "si_code" (veja "CLD_EXITED" para possíveis valores)
+
+   Se "WNOHANG" for especificado e não houver filhos correspondentes
+   no estado solicitado, "None" será retornado. Caso contrário, se não
+   houver filhos correspondentes que possam ser esperados,
+   "ChildProcessError" será levantada.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Nota:
+
+     Esta função não está disponível no MacOS.
+
+   Novo na versão 3.3.
+
+os.waitpid(pid, options, /)
+
+   Os detalhes desta função diferem no Unix e no Windows.
+
+   No Unix: Aguarda a conclusão de um processo filho dado pelo id de
+   processo *pid* e retorna uma tupla contendo seu id de processo e
+   indicação de status de saída (codificado como para "wait()"). A
+   semântica da chamada é afetada pelo valor do inteiro *options*, que
+   deve ser "0" para operação normal.
+
+   Se *pid*  for maior que "0", "waitpid()" solicita informações de
+   status para aquele processo específico. Se *pid* for "0", a
+   solicitação é para o status de qualquer filho no grupo de processos
+   do processo atual. Se *pid* for "-1", a solicitação pertence a
+   qualquer filho do processo atual. Se *pid* for menor que "-1", o
+   status é solicitado para qualquer processo no grupo de processos
+   "-pid" (o valor absoluto de *pid*).
+
+   *options* é uma combinação OU de sinalizadores. Se contiver
+   "WNOHANG" e não houver filhos correspondentes no estado solicitado,
+   "(0, 0)" será retornado. Caso contrário, se não houver filhos
+   correspondentes que possam ser esperados, "ChildProcessError" será
+   levantada. Outras opções que podem ser usadas são "WUNTRACED" e
+   "WCONTINUED".
+
+   No Windows: Aguarda a conclusão de um processo fornecido pelo
+   identificador de processo *pid* e retorna uma tupla contendo *pid*,
+   e seu status de saída deslocado 8 bits para a esquerda (o
+   deslocamento torna o uso da função em várias plataformas mais
+   fácil). Um *pid* menor ou igual a "0" não tem nenhum significado
+   especial no Windows e levanta uma exceção. O valor de inteiros
+   *options* não tem efeito. *pid* pode se referir a qualquer processo
+   cujo id é conhecido, não necessariamente um processo filho. As
+   funções "spawn*" chamadas com "P_NOWAIT" retornam manipuladores de
+   processo adequados.
+
+   "waitstatus_to_exitcode()" pode ser usado para converter o status
+   de saída em um código de saída.
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   Alterado na versão 3.5: Se a chamada de sistema é interrompida e o
+   tratador de sinal não levanta uma exceção, a função agora tenta
+   novamente a chamada de sistema em vez de levantar uma exceção
+   "InterruptedError" (consulte **PEP 475** para entender a
+   justificativa).
+
+os.wait3(options)
+
+   Semelhante a "waitpid()", exceto que nenhum argumento de id de
+   processo é fornecido e uma tupla de 3 elementos contendo a id do
+   processo da criança, indicação de status de saída e informações de
+   uso de recursos é retornada. Consulte "resource.getrusage()" para
+   obter detalhes sobre as informações de uso de recursos. O argumento
+   *option* é o mesmo fornecido para "waitpid()" e "wait4()".
+
+   "waitstatus_to_exitcode()" pode ser usado para converter o status
+   de saída em um código de saída.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.wait4(pid, options)
+
+   Semelhante a "waitpid()", exceto uma tupla de 3 elementos, contendo
+   a id do processo da filho, indicação de status de saída e
+   informações de uso de recursos é retornada. Consulte
+   "resource.getrusage()" para obter detalhes sobre as informações de
+   uso de recursos. Os argumentos para "wait4()" são os mesmos que
+   aqueles fornecidos a "waitpid()".
+
+   "waitstatus_to_exitcode()" pode ser usado para converter o status
+   de saída em um código de saída.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.P_PID
+os.P_PGID
+os.P_ALL
+os.P_PIDFD
+
+   Estes são os valores possíveis para *idtype* em "waitid()". Eles
+   afetam como *id* é interpretado:
+
+   * "P_PID" - espera pelo filho cujo PID é *id*.
+
+   * "P_PGID" - espera por qualquer filho cujo ID do grupo de
+     progresso seja *id*.
+
+   * "P_ALL" - espera por qualquer criança; *id* é ignorado.
+
+   * "P_PIDFD" - espera pelo filho identificado pelo descritor de
+     arquivo *id* (um descritor de arquivo de processo criado com
+     "pidfd_open()").
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Nota:
+
+     "P_PIDFD" só está disponível no Linux >= 5.4.
+
+   Novo na versão 3.3.
+
+   Novo na versão 3.9: A constante "P_PIDFD".
+
+os.WCONTINUED
+
+   Este sinalizador *options* para "waitpid()", "wait3()", "wait4()" e
+   "waitid()" faz com que os processos filho sejam relatados se eles
+   tiverem continuado de uma parada de controle de trabalho desde que
+   foram relatados pela última vez.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WEXITED
+
+   Este sinalizador *options* para "waitid()" faz com que os processos
+   filhos que terminaram sejam relatados.
+
+   As outras funções "wait*" sempre reportam filhos que terminaram,
+   então esta opção não está disponível para eles.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.WSTOPPED
+
+   Este sinalizador *options* para "waitid()" faz com que os processos
+   filhos que foram parados pela entrega de um sinal sejam reportados.
+
+   Esta opção não está disponível para as outras funções "wait*".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+os.WUNTRACED
+
+   Este sinalizador de *options* para "waitpid()", "wait3()" e
+   "wait4()" faz com que os processos filho também sejam relatados se
+   eles foram interrompidos, mas seu estado atual não foi relatado
+   desde que foram parou.
+
+   Esta opção não está disponível para "waitid()".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WNOHANG
+
+   Este sinalizador *options* faz com que "waitpid()", "wait3()",
+   "wait4()" e "waitid()" retornem imediatamente se nenhum status de
+   processo filho estiver disponível imediatamente.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WNOWAIT
+
+   Este sinalizador *options* faz com que "waitid()" deixe o filho em
+   um estado de espera, para que uma chamada "wait*()" posterior possa
+   ser usada para recuperar as informações de status do filho
+   novamente.
+
+   Esta opção não está disponível para as outras funções "wait*".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.CLD_EXITED
+os.CLD_KILLED
+os.CLD_DUMPED
+os.CLD_TRAPPED
+os.CLD_STOPPED
+os.CLD_CONTINUED
+
+   Estes são os valores possíveis para "si_code" no resultado
+   retornado por "waitid()".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.9: Adicionados os valores "CLD_KILLED" e
+   "CLD_STOPPED".
+
+os.waitstatus_to_exitcode(status)
+
+   Converte um status de espera em um código de saída.
+
+   No Unix:
+
+   * Se o processo saiu normalmente (se "WIFEXITED(status)" for
+     verdadeiro), retorna o status de saída do processo (retorna
+     "WEXITSTATUS(status)"): resultado maior ou igual a 0.
+
+   * Se o processo foi encerrado por um sinal (se
+     "WIFSIGNALED(status)" for verdadeiro), retorna "-signum" onde
+     *signum* é o número do sinal que causou o encerramento do
+     processo (retorna "-WTERMSIG(status)"): resultado menor que 0.
+
+   * Do contrário, levanta uma "ValueError".
+
+   No Windows, retorna *status* deslocado para a direita em 8 bits.
+
+   No Unix, se o processo está sendo rastreado ou se "waitpid()" foi
+   chamado com a opção "WUNTRACED", o chamador deve primeiro verificar
+   se "WIFSTOPPED(status)" é verdadeiro. Esta função não deve ser
+   chamada se "WIFSTOPPED(status)" for verdadeiro.
+
+   Ver também:
+
+     As funções "WIFEXITED()", "WEXITSTATUS()", "WIFSIGNALED()",
+     "WTERMSIG()", "WIFSTOPPED()", "WSTOPSIG()".
+
+   Disponibilidade: Unix, Windows, não Emscripten, não WASI.
+
+   Novo na versão 3.9.
+
+As funções a seguir recebem um código de status do processo conforme
+retornado por "system()", "wait()" ou "waitpid()" como parâmetro. Eles
+podem ser usados ​​para determinar a disposição de um processo.
+
+os.WCOREDUMP(status, /)
+
+   Retorna "True" se um despejo de núcleo *(core dump)* foi gerado
+   para o processo; caso contrário, retorna "False".
+
+   Esta função deve ser empregada apenas se "WIFSIGNALED()" for
+   verdadeira.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WIFCONTINUED(status)
+
+   Retorna "True" se um filho interrompido foi retomado pela entrega
+   de "SIGCONT" (se o processo foi continuado de uma parada de
+   controle de trabalho); caso contrário, retorna "False".
+
+   Veja a opção "WCONTINUED".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WIFSTOPPED(status)
+
+   Retorna "True" se o processo foi interrompido pela entrega de um
+   sinal; caso contrário, retorna "False".
+
+   "WIFSTOPPED()" só retorna "True" se a chamada de "waitpid()" foi
+   feita usando a opção "WUNTRACED" ou quando o processo está sendo
+   rastreado (veja *ptrace(2)*).
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WIFSIGNALED(status)
+
+   Retorna "True" se o processo foi encerrado por um sinal; caso
+   contrário, retorna "False".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WIFEXITED(status)
+
+   Retorna "True" se o processo foi encerrado normalmente, isto é,
+   chamando "exit()" ou "_exit()", ou retornando de "main()"; caso
+   contrário, retorna "False".
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WEXITSTATUS(status)
+
+   Retorna o status de saída do processo.
+
+   Esta função deve ser empregada apenas se "WIFEXITED()" for
+   verdadeira.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WSTOPSIG(status)
+
+   Retorna o sinal que causou a interrupção do processo.
+
+   Esta função deve ser empregada apenas se "WIFSTOPPED()" for
+   verdadeira.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+os.WTERMSIG(status)
+
+   Retorna o número do sinal que causou o encerramento do processo.
+
+   Esta função deve ser empregada apenas se "WIFSIGNALED()" for
+   verdadeira.
+
+   Disponibilidade: Unix, não Emscripten, não WASI.
+
+
+Interface do agendador
+======================
+
+Essas funções controlam como o tempo de CPU de um processo é alocado
+pelo sistema operacional. Eles estão disponíveis apenas em algumas
+plataformas Unix. Para informações mais detalhadas, consulte suas
+páginas man do Unix.
+
+Novo na versão 3.3.
+
+As políticas de agendamento a seguir serão expostas se houver suporte
+pelo sistema operacional.
+
+os.SCHED_OTHER
+
+   A política de agendamento padrão.
+
+os.SCHED_BATCH
+
+   Política de agendamento para processos com uso intensivo de CPU que
+   tenta preservar a interatividade no resto do computador.
+
+os.SCHED_IDLE
+
+   Política de agendamento para tarefas em segundo plano de prioridade
+   extremamente baixa.
+
+os.SCHED_SPORADIC
+
+   Política de agendamento para programas de servidor esporádicos.
+
+os.SCHED_FIFO
+
+   Uma política de agendamento Primeiro a Entrar, Primeiro a Sair
+   (FIFO).
+
+os.SCHED_RR
+
+   Uma política de agendamento round-robin.
+
+os.SCHED_RESET_ON_FORK
+
+   Este sinalizador pode ser operado em OU com qualquer outra política
+   de agendamento. Quando um processo com este sinalizador definido
+   bifurca, a política de agendamento e a prioridade de seu filho são
+   redefinidas para o padrão.
+
+class os.sched_param(sched_priority)
+
+   Esta classe representa parâmetros de agendamento ajustáveis
+   ​​usados ​​em "sched_setparam()", "sched_setscheduler()" e
+   "sched_getparam()". É imutável.
+
+   Neste momento, há somente um único parâmetro possível:
+
+   sched_priority
+
+      A prioridade de agendamento para uma política de agendamento.
+
+os.sched_get_priority_min(policy)
+
+   Obtém o valor mínimo de prioridade para *policy*. *policy* é uma
+   das constantes de política de agendamento acima.
+
+os.sched_get_priority_max(policy)
+
+   Obtém o valor máximo de prioridade para *policy*. *policy* é uma
+   das constantes de política de agendamento acima.
+
+os.sched_setscheduler(pid, policy, param, /)
+
+   Define a política de agendamento para o processo com PID *pid*. Um
+   *pid* de 0 significa o processo de chamada. *policy* é uma das
+   constantes de política de agendamento acima. *param* é uma
+   instância de "sched_param".
+
+os.sched_getscheduler(pid, /)
+
+   Retorna a política de agendamento para o processo com PID *pid*. Um
+   *pid* de 0 significa o processo de chamada. O resultado é uma das
+   constantes de política de agendamento acima.
+
+os.sched_setparam(pid, param, /)
+
+   Define os parâmetros de agendamento para o processo com PID *pid*.
+   Um *pid* de 0 significa o processo de chamada. *param* é uma
+   instância de "sched_param".
+
+os.sched_getparam(pid, /)
+
+   Retorna os parâmetros de agendamento como uma instância de
+   "sched_param" para o processo com PID *pid*. Um *pid* de 0
+   significa o processo de chamada.
+
+os.sched_rr_get_interval(pid, /)
+
+   Retorna o quantum round-robin em segundos para o processo com PID
+   *pid*. Um *pid* de 0 significa o processo de chamada.
+
+os.sched_yield()
+
+   Libera a CPU voluntariamente.
+
+os.sched_setaffinity(pid, mask, /)
+
+   Restringe o processo com PID *pid* (ou o processo atual se zero)
+   para um conjunto de CPUs. *mask* é um iterável de inteiros que
+   representam o conjunto de CPUs às quais o processo deve ser
+   restrito.
+
+os.sched_getaffinity(pid, /)
+
+   Retorna o conjunto de CPUs ao qual o processo com PID *pid* está
+   restrito.
+
+   Se *pid* for zero, retorna o conjunto de CPUs às quais a thread
+   chamadora do processo atual está restrita.
+
+
+Diversas informações de sistema
+===============================
+
+os.confstr(name, /)
+
+   Retorna valores de configuração do sistema com valor de string.
+   *name* especifica o valor de configuração a ser recuperado; pode
+   ser uma string que é o nome de um valor de sistema definido; esses
+   nomes são especificados em vários padrões (POSIX, Unix 95, Unix 98
+   e outros). Algumas plataformas também definem nomes adicionais. Os
+   nomes conhecidos pelo sistema operacional host são fornecidos como
+   as chaves do dicionário "confstr_names". Para variáveis ​​de
+   configuração não incluídas nesse mapeamento, passar um número
+   inteiro para *name* também é aceito.
+
+   Se o valor de configuração especificado por *name* não for
+   definido, retorna "None".
+
+   Se *name* for uma string e não for conhecida, "ValueError" é
+   levantada. Se um valor específico para *name* não for compatível
+   com o sistema de host, mesmo que seja incluído em "confstr_names",
+   uma "OSError" é levantada com "errno.EINVAL" como número do erro.
+
+   Disponibilidade: Unix.
+
+os.confstr_names
+
+   Nomes de mapeamento de dicionário aceitos por "confstr()" para os
+   valores inteiros definidos para esses nomes pelo sistema
+   operacional do host. Isso pode ser usado para determinar o conjunto
+   de nomes conhecidos pelo sistema.
+
+   Disponibilidade: Unix.
+
+os.cpu_count()
+
+   Retorna o número de CPUs lógicas do sistema. Retorna "None" se não
+   determinado.
+
+   Este número não é equivalente ao número de CPUs lógicas que o
+   processo atual pode usar. "len(os.sched_getaffinity(0))" obtém o
+   número de CPUs lógicas às quais a thread chamadora do processo
+   atual está restrita.
+
+   Novo na versão 3.4.
+
+os.getloadavg()
+
+   Retorna o número de processos na fila de execução do sistema em
+   média nos últimos 1, 5 e 15 minutos ou levanta "OSError" se a média
+   de carga não foi obtida.
+
+   Disponibilidade: Unix.
+
+os.sysconf(name, /)
+
+   Retorna valores de configuração do sistema com valor inteiro. Se o
+   valor de configuração especificado por *name* não estiver definido,
+   "-1" é retornado. Os comentários sobre o parâmetro *name* para
+   "confstr()" se aplicam aqui também; o dicionário que fornece
+   informações sobre os nomes conhecidos é fornecido por
+   "sysconf_names".
+
+   Disponibilidade: Unix.
+
+os.sysconf_names
+
+   Nomes de mapeamento de dicionário aceitos por "sysconf()" para os
+   valores inteiros definidos para esses nomes pelo sistema
+   operacional do host. Isso pode ser usado para determinar o conjunto
+   de nomes conhecidos pelo sistema.
+
+   Disponibilidade: Unix.
+
+   Alterado na versão 3.11: Adiciona o nome "'SC_MINSIGSTKSZ'".
+
+Os dados a seguir são usados para suportar operações de manipulação de
+path. Estão definidos e disponíveis para todas as plataformas.
+
+Operações de nível mais alto em nomes de caminho são definidos no
+módulo "os.path".
+
+os.curdir
+
+   A string constante usada pelo sistema operacional para se referir
+   ao diretório atual. Isso é "'.'" para Windows e POSIX. Também
+   disponível via "os.path".
+
+os.pardir
+
+   A string constante usada pelo sistema operacional para se referir
+   ao diretório pai. Isso é "'..'" para Windows e POSIX. Também
+   disponível via "os.path".
+
+os.sep
+
+   O caractere usado pelo sistema operacional para separar os
+   componentes do nome do caminho. Este é "'/'" para POSIX e "'\\'"
+   para Windows. Observe que saber disso não é suficiente para ser
+   capaz de analisar ou concatenar nomes de caminho -- use
+   "os.path.split()" e "os.path.join()" -- mas ocasionalmente é útil.
+   Também disponível via "os.path".
+
+os.altsep
+
+   Um caractere alternativo usado pelo sistema operacional para
+   separar os componentes do nome de caminho, ou "None" se apenas um
+   caractere separador existir. Isso é definido como "'/'" em sistemas
+   Windows onde "sep" é uma contrabarra. Também disponível via
+   "os.path".
+
+os.extsep
+
+   O caractere que separa o nome do arquivo base da extensão; por
+   exemplo, o "'.'" em "os.py". Também disponível via "os.path".
+
+os.pathsep
+
+   O caractere convencionalmente usado pelo sistema operacional para
+   separar os componentes do caminho de pesquisa (como em "PATH"),
+   como "':'" para POSIX ou "';'" para Windows. Também disponível via
+   "os.path".
+
+os.defpath
+
+   O caminho de pesquisa padrão usado por "exec*p*" e "spawn*p*" se o
+   ambiente não tiver uma chave "'PATH'". Também disponível via
+   "os.path".
+
+os.linesep
+
+   A string usada para separar (ou melhor, encerrar) linhas na
+   plataforma atual. Pode ser um único caractere, como "'\n'" para
+   POSIX, ou múltiplos caracteres, por exemplo, "'\r\n'" para Windows.
+   Não use *os.linesep* como terminador de linha ao escrever arquivos
+   abertos em modo de texto (o padrão); use um único "'\n'" ao invés,
+   em todas as plataformas.
+
+os.devnull
+
+   O caminho do arquivo do dispositivo nulo. Por exemplo:
+   "'/dev/null'" para POSIX, "'nul'" para Windows. Também disponível
+   via "os.path".
+
+os.RTLD_LAZY
+os.RTLD_NOW
+os.RTLD_GLOBAL
+os.RTLD_LOCAL
+os.RTLD_NODELETE
+os.RTLD_NOLOAD
+os.RTLD_DEEPBIND
+
+   Sinalizadores para uso com as funções "setdlopenflags()" e
+   "getdlopenflags()". Veja a página man do Unix *dlopen(3)* para
+   saber o que significam os diferentes sinalizadores.
+
+   Novo na versão 3.3.
+
+
+Números aleatórios
+==================
+
+os.getrandom(size, flags=0)
+
+   Obtém até *size* bytes aleatórios. Esta função pode retornar menos
+   bytes que a quantia requisitada.
+
+   Esses bytes podem ser usados ​​para propagar geradores de número
+   aleatório no espaço do usuário ou para fins criptográficos.
+
+   "getrandom()" depende da entropia obtida de drivers de dispositivos
+   e outras fontes de ruído ambiental. A leitura desnecessária de
+   grandes quantidades de dados terá um impacto negativo sobre outros
+   usuários dos dispositivos "/dev/random" e "/dev/urandom".
+
+   O argumento sinalizadores é uma máscara de bits que pode conter
+   zero ou mais dos seguintes valores operados com OU juntos:
+   "os.GRND_RANDOM" e "GRND_NONBLOCK".
+
+   Veja também a página de manual do getrandom() do Linux.
+
+   Disponibilidade: Linux >= 3.17.
+
+   Novo na versão 3.6.
+
+os.urandom(size, /)
+
+   Retorna uma bytestring de *size* bytes aleatórios próprios para uso
+   criptográfico.
+
+   Esta função retorna bytes aleatórios de uma fonte de aleatoriedade
+   específica do sistema operacional. Os dados retornados devem ser
+   imprevisíveis o suficiente para aplicações criptográficos, embora
+   sua qualidade exata dependa da implementação do sistema
+   operacional.
+
+   No Linux, se a chamada de sistema "getrandom()" estiver disponível,
+   ela é usada no modo bloqueante: bloqueia até que o pool de entropia
+   urandom do sistema seja inicializado (128 bits de entropia são
+   coletados pelo kernel). Veja a **PEP 524** para a justificativa. No
+   Linux, a função "getrandom()" pode ser usada para obter bytes
+   aleatórios no modo não bloqueante (usando a sinalização
+   "GRND_NONBLOCK") ou para pesquisar até que o pool de entropia
+   urandom do sistema seja inicializado.
+
+   Em um sistema semelhante ao Unix, bytes aleatórios são lidos do
+   dispositivo "/dev/urandom". Se o dispositivo "/dev/urandom" não
+   estiver disponível ou não for legível, a exceção
+   "NotImplementedError" é levantada.
+
+   No Windows, ainda vai usar "BCryptGenRandom()".
+
+   Ver também:
+
+     O módulo "secrets" fornece funções de nível mais alto. Para uma
+     interface fácil de usar para o gerador de números aleatórios
+     fornecido por sua plataforma, consulte "random.SystemRandom".
+
+   Alterado na versão 3.5: No Linux 3.17 e mais recente, a chamada de
+   sistema "getrandom()" agora é usada quando disponível. No OpenBSD
+   5.6 e mais recentes, a função C "getentropy()" agora é usada. Essas
+   funções evitam o uso de um descritor de arquivo interno.
+
+   Alterado na versão 3.5.2: No Linux, se a chamada de sistema
+   "getrandom()" bloqueia (o pool de entropia urandom ainda não foi
+   inicializado), recorre à leitura "/dev/urandom".
+
+   Alterado na versão 3.6: No Linux, "getrandom()" é usado agora no
+   modo de bloqueio para aumentar a segurança.
+
+   Alterado na versão 3.11: No Windows, "BCryptGenRandom()" é usadp e,
+   vez de "CryptGenRandom()", o qual foi descontinuado.
+
+os.GRND_NONBLOCK
+
+   Por padrão, ao ler de "/dev/random", "getrandom()" bloqueia se
+   nenhum byte aleatório estiver disponível, e ao ler de
+   "/dev/urandom", ele bloqueia se o pool de entropia não ainda foi
+   inicializado.
+
+   Se o sinalizador "GRND_NONBLOCK" estiver definido, então
+   "getrandom()" não bloqueia nesses casos, mas, em vez disso, levanta
+   "BlockingIOError" imediatamente.
+
+   Novo na versão 3.6.
+
+os.GRND_RANDOM
+
+   Se este bit é definido bytes aleatórios são pegos a partir de
+   "/dev/random" ao invés de "/dev/urandom".
+
+   Novo na versão 3.6.

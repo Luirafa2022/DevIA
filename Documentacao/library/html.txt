@@ -1,0 +1,38 @@
+"html" --- Suporte HTML(HyperText Markup Language)
+**************************************************
+
+**Código-fonte** Lib/html/__init__.py
+
+======================================================================
+
+Este módulo define utilitários para manipular HTML.
+
+html.escape(s, quote=True)
+
+   Converte os caracteres "&", "<" e ">" na string *s* para sequências
+   seguras em HTML. Use se necessitar mostrar texto que possa conter
+   estes caracteres no HTML. Se o flag opcional *quote* é true, os
+   caracteres (""") e ("'") também são convertidos; isso auxilia na
+   inclusão de valores delimitados por aspas num atributo HTML, como
+   em "<a href="...">".
+
+   Novo na versão 3.2.
+
+html.unescape(s)
+
+   Converte todas as referências de caracteres numéricos e nomeados
+   (ex. "&gt;", "&#62;", "&#x3e;") na string *s* para caracteres
+   Unicode correspondentes. Essa função usa as regras definidas pelo
+   padrão HTML 5 para referências de caracteres, sejam válidas ou
+   inválidas, e a "lista de referência de caracteres nomeados do HTML
+   5".
+
+   Novo na versão 3.4.
+
+======================================================================
+
+Sub módulos no pacote "html" são:
+
+* "html.parser" -- analisador HTML/XHTML com modo de análise branda
+
+* "html.entities" -- definições das entidade HTML

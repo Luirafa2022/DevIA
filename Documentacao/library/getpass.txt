@@ -1,0 +1,52 @@
+"getpass" --- Entrada de senha portátil
+***************************************
+
+**Código-fonte:** Lib/getpass.py
+
+======================================================================
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+O módulo "getpass" fornece duas funções:
+
+getpass.getpass(prompt='Password: ', stream=None)
+
+   Solicita uma senha do usuário sem emiti-la. O usuário é solicitado
+   usando a string *prompt*, cujo padrão é "'Password: '". No Unix, o
+   prompt é escrito no objeto arquivo ou similar *stream* usando o
+   tratador de erros de substituição, se necessário. O *stream* padrão
+   para o terminal de controle ("/dev/tty") ou se não estiver
+   disponível para "sys.stderr" (este argumento é ignorado no
+   Windows).
+
+   Se uma entrada sem exibição em tela não estiver disponível,
+   getpass() recorre a exibir uma mensagem de aviso para *stream* e lê
+   de "sys.stdin" e levantar de um "GetPassWarning".
+
+   Nota:
+
+     Se você chamar getpass de dentro do IDLE, a entrada pode ser
+     feita no terminal de onde você iniciou o IDLE, e não na própria
+     janela ociosa.
+
+exception getpass.GetPassWarning
+
+   A subclasse "UserWarning" é levantada quando a entrada de senha
+   pode acabar sendo exibida na tela.
+
+getpass.getuser()
+
+   Retorna o "nome de login" do usuário.
+
+   Esta função verifica as variáveis de ambiente "LOGNAME", "USER",
+   "LNAME" e "USERNAME", nesta ordem, e retorna o valor da primeiro
+   que estiver definida como uma string não vazia. Se nenhuma estiver
+   definida, o nome de login do banco de dados de senhas é retornado
+   em sistemas que suportam o módulo "pwd", caso contrário, uma
+   exceção é levantada.
+
+   Em geral, esta função deve ter preferência sobre "os.getlogin()".

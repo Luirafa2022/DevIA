@@ -1,0 +1,148 @@
+"importlib.resources.abc" -- Classes base abstratas para recursos
+*****************************************************************
+
+**Código-fonte:** Lib/importlib/resources/abc.py
+
+======================================================================
+
+Novo na versão 3.11.
+
+class importlib.resources.abc.ResourceReader
+
+   *Substituída por TraversableResources*
+
+   Uma *classe base abstrata* para fornecer a capacidade de ler
+   *recursos*.
+
+   Da perspectiva deste ABC, um *recurso* é um artefato binário que é
+   enviado dentro de um pacote. Normalmente isso é algo como um
+   arquivo de dados que fica próximo ao arquivo "__init__.py" do
+   pacote. O objetivo desta classe é ajudar a abstrair o acesso a tais
+   arquivos de dados para que não importe se o pacote e seu(s)
+   arquivo(s) de dados estão armazenados em um arquivo, por exemplo,
+   zip versus no sistema de arquivos.
+
+   Para qualquer um dos métodos desta classe, espera-se que o
+   argumento *resource* seja um *objeto caminho ou similar* que
+   representa conceitualmente apenas um nome de arquivo. Isso
+   significa que nenhum caminho de subdiretório deve ser incluído no
+   argumento *resource*. Isso ocorre porque a localização do pacote
+   para o qual o leitor se destina, atua como o "diretório". Portanto,
+   a metáfora para diretórios e nomes de arquivos são pacotes e
+   recursos, respectivamente. É também por isso que se espera que as
+   instâncias dessa classe se correlacionem diretamente a um pacote
+   específico (em vez de representar potencialmente vários pacotes ou
+   um módulo).
+
+   Carregadores que desejam oferecer suporte à leitura de recursos
+   devem fornecer um método chamado
+   "get_resource_reader(nomecompleto)" que retorna um objeto
+   implementando esta interface ABC. Se o módulo especificado por
+   nomecompleto não for um pacote, este método deve retornar "None".
+   Um objeto compatível com este ABC só deve ser retornado quando o
+   módulo especificado for um pacote.
+
+   Descontinuado desde a versão 3.12, será removido na versão 3.14:
+   Use "importlib.resources.abc.TraversableResources".
+
+   abstractmethod open_resource(resource)
+
+      Retorna um *objeto arquivo ou similar* aberto para leitura
+      binária de *resource*.
+
+      Se o recurso não puder ser encontrado, "FileNotFoundError" é
+      levantada.
+
+   abstractmethod resource_path(resource)
+
+      Retorna o caminho do sistema de arquivos para *resource*.
+
+      Se o recurso não existir concretamente no sistema de arquivos,
+      levanta "FileNotFoundError".
+
+   abstractmethod is_resource(name)
+
+      Retorna "True" se o *name* nomeado for considerado um recurso.
+      "FileNotFoundError" é levantada se *name* não existir.
+
+   abstractmethod contents()
+
+      Retorna um *iterável* de strings sobre o conteúdo do pacote.
+      Observe que não é necessário que todos os nomes retornados pelo
+      iterador sejam recursos reais, por exemplo, é aceitável retornar
+      nomes para os quais "is_resource()" seria falso.
+
+      Permitir que nomes que não são recursos sejam retornados é
+      permitir situações em que a forma como um pacote e seus recursos
+      são armazenados é conhecida a priori e os nomes que não são
+      recursos seriam úteis. Por exemplo, o retorno de nomes de
+      subdiretórios é permitido para que, quando se souber que o
+      pacote e os recursos estão armazenados no sistema de arquivos,
+      esses nomes de subdiretórios possam ser usados diretamente.
+
+      O método abstrato retorna um iterável sem itens.
+
+class importlib.resources.abc.Traversable
+
+   Um objeto com um subconjunto de métodos de "pathlib.Path" adequados
+   para percorrer diretórios e abrir arquivos.
+
+   Para uma representação do objeto no sistema de arquivos, use
+   "importlib.resources.as_file()".
+
+   name
+
+      Abstrato. O nome base deste objeto sem nenhuma referência pai.
+
+   abstractmethod iterdir()
+
+      Produz objetos Traversable em self.
+
+   abstractmethod is_dir()
+
+      Retorna True se self for um diretório.
+
+   abstractmethod is_file()
+
+      Retorna True se self for um arquivo.
+
+   abstractmethod joinpath(child)
+
+      Retorna o filho Traversable em self.
+
+   abstractmethod __truediv__(child)
+
+      Retorna o filho Traversable em self.
+
+   abstractmethod open(mode='r', *args, **kwargs)
+
+      *mode* pode ser 'r' ou 'rb' para abrir como texto ou binário.
+      Retorna um manipulador adequado para leitura (o mesmo que
+      "pathlib.Path.open").
+
+      Ao abrir como texto, aceita parâmetros de codificação como os
+      aceitos por "io.TextIOWrapper".
+
+   read_bytes()
+
+      Lê o conteúdo de self como bytes.
+
+   read_text(encoding=None)
+
+      Lê o conteúdo de self como texto.
+
+class importlib.resources.abc.TraversableResources
+
+   Uma classe base abstrata para leitores de recursos capaz de servir
+   a interface "importlib.resources.files()". É uma subclasse de
+   "ResourceReader" e fornece implementações concretas dos métodos
+   abstratos de "ResourceReader". Portanto, qualquer carregador que
+   forneça "TraversableResources" também fornece "ResourceReader".
+
+   Espera-se que os carregadores que desejam oferecer suporte à
+   leitura de recursos implementem essa interface.
+
+   abstractmethod files()
+
+      Retorna um objeto "importlib.resources.abc.Traversable" para o
+      pacote carregado.
