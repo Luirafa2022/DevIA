@@ -1,4 +1,3 @@
-![___1_-removebg-preview](https://github.com/Luirafa2022/DevIA/assets/100379672/b0dccd78-60e9-4843-bb59-01bcbcfe240b)
 # DevIA
 Esse é o inicio de desenvolvimento de um projeto de uma IA que responda com base na documentação para ajudar a programar.
 
@@ -12,3 +11,4 @@ Para usá-la é só baixar a pasta e descompactar ela e colocar em uma IDE.
 Estou muito feliz por começar esse projeto, espero que no futuro ela seja uma boa IA, já que eu não uso outra IA pré pronta para melhorar a minha, estou fazendo ela do zero.
 
 Espero que gostem e bom aproveitamento.
+![___1_-removebg-preview](https://github.com/Luirafa2022/DevIA/assets/100379672/b0dccd78-60e9-4843-bb59-01bcbcfe240b)
