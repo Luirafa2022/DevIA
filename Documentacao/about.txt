@@ -1,0 +1,33 @@
+Sobre esses documentos
+**********************
+
+Esses documentos são gerados a partir de reStructuredText pelo Sphinx,
+um processador de documentos especificamente escrito para documentação
+Python.
+
+O desenvolvimento da documentação e de suas ferramentas é um esforço
+totalmente voluntário, como Python em si. Se você quer contribuir, por
+favor dê uma olhada na página Lidando com bugs para informações sobre
+como fazer. Novos voluntários são sempre bem-vindos!
+
+Agradecimentos especiais para:
+
+* Fred L. Drake, Jr., o criador do primeiro conjunto de ferramentas
+  para documentar Python e escritor de boa parte do conteúdo;
+
+* O projeto Docutils por criar reStructuredText e o pacote Docutils;
+
+* Fredrik Lundh, pelo seu projeto de referência alternativa em Python,
+  do qual Sphinx pegou muitas boas ideias.
+
+
+Contribuidores da Documentação Python
+=====================================
+
+Muitas pessoas tem contribuído para a linguagem Python, sua biblioteca
+padrão e sua documentação. Veja Misc/ACKS na distribuição do código do
+Python para ver uma lista parcial de contribuidores.
+
+Tudo isso só foi possível com o esforço e a contribuição da comunidade
+Python, por isso temos essa maravilhosa documentação -- Obrigado a
+todos!
