@@ -1,0 +1,167 @@
+Conversão e formação de strings
+*******************************
+
+Funções para conversão de números e saída formatada de Strings.
+
+int PyOS_snprintf(char *str, size_t size, const char *format, ...)
+    * Parte da ABI Estável.*
+
+   Saída não superior a *size* bytes para *str* de acordo com a string
+   de formato *format* e os argumentos extras. Veja a página man do
+   Unix *snprintf(3)*.
+
+int PyOS_vsnprintf(char *str, size_t size, const char *format, va_list va)
+    * Parte da ABI Estável.*
+
+   Saída não superior a *size* bytes para *str* de acordo com o
+   formato string *format* e a variável argumento de lista *va*.
+   Página man do Unix *vsnprintf(3)*.
+
+"PyOS_snprintf()" e "PyOS_vsnprintf()" envolvem as funções
+"snprintf()" e "vsnprintf()" da biblioteca Standard C. Seu objetivo é
+garantir um comportamento consistente em casos extremos, o que as
+funções do Standard C não garantem.
+
+Os invólucros garantem que "str[size-1]" seja sempre "'\0'" no
+retorno. Eles nunca escrevem mais do que *size* bytes (incluindo o
+"'\0'" ao final) em str. Ambas as funções exigem que "str != NULL",
+"size > 0", "format != NULL" e "size < INT_MAX". Note que isso
+significa que não há equivalente ao "n = snprintf(NULL, 0, ...)" do
+C99 que determinaria o tamanho de buffer necessário.
+
+O valor de retorno (*rv*) para essas funções deve ser interpretado da
+seguinte forma:
+
+* Quando "0 <= rv < size", a conversão de saída foi bem-sucedida e os
+  caracteres de *rv* foram escritos em *str* (excluindo o "'\0'" byte
+  em "str[rv]").
+
+* Quando "rv >= size", a conversão de saída foi truncada e um buffer
+  com "rv + 1" bytes teria sido necessário para ter sucesso.
+  "str[size-1]" é "'\0'" neste caso.
+
+* Quando "rv < 0", "aconteceu algo de errado." "str[size-1]" é "'\0'"
+  neste caso também, mas o resto de *str* é indefinido. A causa exata
+  do erro depende da plataforma subjacente.
+
+As funções a seguir fornecem strings independentes de localidade para
+conversões de números.
+
+unsigned long PyOS_strtoul(const char *str, char **ptr, int base)
+    * Parte da ABI Estável.*
+
+   Convert the initial part of the string in "str" to an unsigned long
+   value according to the given "base", which must be between "2" and
+   "36" inclusive, or be the special value "0".
+
+   Leading white space and case of characters are ignored.  If "base"
+   is zero it looks for a leading "0b", "0o" or "0x" to tell which
+   base.  If these are absent it defaults to "10".  Base must be 0 or
+   between 2 and 36 (inclusive).  If "ptr" is non-"NULL" it will
+   contain a pointer to the end of the scan.
+
+   If the converted value falls out of range of corresponding return
+   type, range error occurs ("errno" is set to "ERANGE") and
+   "ULONG_MAX" is returned.  If no conversion can be performed, "0" is
+   returned.
+
+   See also the Unix man page *strtoul(3)*.
+
+   Novo na versão 3.2.
+
+long PyOS_strtol(const char *str, char **ptr, int base)
+    * Parte da ABI Estável.*
+
+   Convert the initial part of the string in "str" to an long value
+   according to the given "base", which must be between "2" and "36"
+   inclusive, or be the special value "0".
+
+   Same as "PyOS_strtoul()", but return a long value instead and
+   "LONG_MAX" on overflows.
+
+   See also the Unix man page *strtol(3)*.
+
+   Novo na versão 3.2.
+
+double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_exception)
+    * Parte da ABI Estável.*
+
+   Converte uma string "s" em double, levantando uma exceção Python em
+   caso de falha. O conjunto de strings aceitas corresponde ao
+   conjunto de strings aceito pelo construtor "float()" do Python,
+   exceto que "s" não deve ter espaços em branco à esquerda ou à
+   direita. A conversão é independente da localidade atual.
+
+   Se "endptr" for "NULL", converte a string inteira. Levanta
+   "ValueError" e retorna "-1.0" se a string não for uma representação
+   válida de um número de ponto flutuante.
+
+   Se endptr não for "NULL", converte o máximo possível da string e
+   defina "*endptr" para apontar para o primeiro caractere não
+   convertido. Se nenhum segmento inicial da string for a
+   representação válida de um número de ponto flutuante, define
+   "*endptr" para apontar para o início da string, levanta ValueError
+   e retorne "-1.0".
+
+   Se "s" representa um valor que é muito grande para armazenar em um
+   ponto flutuante (por exemplo, ""1e500"" é uma string assim em
+   muitas plataformas), então se "overflow_exception" for "NULL"
+   retorna "Py_HUGE_VAL" (com um sinal apropriado) e não define
+   nenhuma exceção. Caso contrário, "overflow_exception" deve apontar
+   para um objeto de exceção Python; levantar essa exceção e retornar
+   "-1.0". Em ambos os casos, define "*endptr" para apontar para o
+   primeiro caractere após o valor convertido.
+
+   Se qualquer outro erro ocorrer durante a conversão (por exemplo, um
+   erro de falta de memória), define a exceção Python apropriada e
+   retorna "-1.0".
+
+   Novo na versão 3.1.
+
+char *PyOS_double_to_string(double val, char format_code, int precision, int flags, int *ptype)
+    * Parte da ABI Estável.*
+
+   Converte um double *val* para uma string usando *format_code*,
+   *precision* e *flags* fornecidos.
+
+   *format_code* deve ser um entre "'e'", "'E'", "'f'", "'F'", "'g'",
+   "'G'" ou "'r'".  Para "'r'", a precisão *precision* fornecida deve
+   ser 0 e é ignorada. O código de formato "'r'" especifica o formato
+   padrão de "repr()".
+
+   *flags* pode ser zero ou mais de valores "Py_DTSF_SIGN",
+   "Py_DTSF_ADD_DOT_0" ou "Py_DTSF_ALT", alternados por operador
+   lógico OU:
+
+   * "Py_DTSF_SIGN" significa sempre preceder a string retornada com
+     um caractere de sinal, mesmo se *val* não for negativo.
+
+   * "Py_DTSF_ADD_DOT_0" significa garantir que a string retornada não
+     se pareça com um inteiro.
+
+   * "Py_DTSF_ALT" significa aplicar regras de formatação
+     "alternativas". Veja a documentação para o especificador "'#'" de
+     "PyOS_snprintf()" para detalhes.
+
+   Se *type* não for "NULL", então o valor para o qual ele aponta será
+   definido como um dos "Py_DTST_FINITE", "Py_DTST_INFINITE" ou
+   "Py_DTST_NAN", significando que *val* é um número finito, um número
+   infinito ou não um número, respectivamente.
+
+   O valor de retorno é um ponteiro para *buffer* com a string
+   convertida ou "NULL" se a conversão falhou. O chamador é
+   responsável por liberar a string retornada chamando "PyMem_Free()".
+
+   Novo na versão 3.1.
+
+int PyOS_stricmp(const char *s1, const char *s2)
+
+   Comparação de strings sem diferença entre maiúsculas e minúsculas.
+   A função funciona quase de forma idêntica a "strcmp()" exceto que
+   ignora o caso.
+
+int PyOS_strnicmp(const char *s1, const char *s2, Py_ssize_t size)
+
+   Comparação de strings sem diferença entre maiúsculas e minúsculas.
+   A função funciona quase de forma idêntica a "strncmp()" exceto que
+   ignora o caso.

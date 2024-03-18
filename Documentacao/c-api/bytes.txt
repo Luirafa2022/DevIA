@@ -1,0 +1,196 @@
+Objetos Bytes
+*************
+
+Estas funções levantam "TypeError" quando se espera um parâmetro bytes
+e são chamados com um parâmetro que não é bytes.
+
+type PyBytesObject
+
+   Esta é uma instância de "PyObject" representando o objeto bytes do
+   Python.
+
+PyTypeObject PyBytes_Type
+    * Parte da ABI Estável.*
+
+   Esta instância de "PyTypeObject" representa o tipo de bytes Python;
+   é o mesmo objeto que "bytes" na camada de Python.
+
+int PyBytes_Check(PyObject *o)
+
+   Retorna verdadeiro se o objeto *o* for um objeto bytes ou se for
+   uma instância de um subtipo do tipo bytes. Esta função sempre tem
+   sucesso.
+
+int PyBytes_CheckExact(PyObject *o)
+
+   Retorna verdadeiro se o objeto *o* for um objeto bytes, mas não uma
+   instância de um subtipo do tipo bytes. Esta função sempre tem
+   sucesso.
+
+PyObject *PyBytes_FromString(const char *v)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto de bytes com uma cópia da string *v* como
+   valor em caso de sucesso e "NULL" em caso de falha. O parâmetro *v*
+   não deve ser "NULL" e isso não será verificado.
+
+PyObject *PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto de bytes com uma cópia da string *v* como
+   valor e comprimento *len* em caso de sucesso e "NULL" em caso de
+   falha. Se *v* for "NULL", o conteúdo do objeto bytes não será
+   inicializado.
+
+PyObject *PyBytes_FromFormat(const char *format, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Leva uma string tipo "printf()" do C *format* e um número variável
+   de argumentos, calcula o tamanho do objeto bytes do Python
+   resultante e retorna um objeto bytes com os valores formatados
+   nela. Os argumentos da variável devem ser tipos C e devem
+   corresponder exatamente aos caracteres de formato na string
+   *format*. Os seguintes formatos de caracteres são permitidos:
+
+   +---------------------+-----------------+----------------------------------+
+   | Caracteres          | Tipo            | Comentário                       |
+   | Formatados          |                 |                                  |
+   |=====================|=================|==================================|
+   | "%%"                | *n/d*           | O caractere literal %.           |
+   +---------------------+-----------------+----------------------------------+
+   | "%c"                | int             | Um único byte, representado como |
+   |                     |                 | um C int.                        |
+   +---------------------+-----------------+----------------------------------+
+   | "%d"                | int             | Equivalente a "printf("%d")".    |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%u"                | unsigned int    | Equivalente a "printf("%u")".    |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%ld"               | long            | Equivalente a "printf("%ld")".   |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%lu"               | unsigned long   | Equivalente a "printf("%lu")".   |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%zd"               | "Py_ssize_t"    | Equivalente a "printf("%zd")".   |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%zu"               | size_t          | Equivalente a "printf("%zu")".   |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%i"                | int             | Equivalente a "printf("%i")".    |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%x"                | int             | Equivalente a "printf("%x")".    |
+   |                     |                 | [1]                              |
+   +---------------------+-----------------+----------------------------------+
+   | "%s"                | const char*     | Uma matriz de caracteres C com   |
+   |                     |                 | terminação nula.                 |
+   +---------------------+-----------------+----------------------------------+
+   | "%p"                | const void*     | A representação hexadecimal de   |
+   |                     |                 | um ponteiro C. Principalmente    |
+   |                     |                 | equivalente a "printf("%p")"     |
+   |                     |                 | exceto que é garantido que       |
+   |                     |                 | comece com o literal "0x"        |
+   |                     |                 | independentemente do que o       |
+   |                     |                 | "printf" da plataforma ceda.     |
+   +---------------------+-----------------+----------------------------------+
+
+   Um caractere de formato não reconhecido faz com que todo o resto da
+   string de formato seja copiado como é para o objeto resultante e
+   todos os argumentos extras sejam descartados.
+
+   [1] Para especificadores de número inteiro (d, u, ld, lu, zd, zu,
+       i, x): o sinalizador de conversão 0 tem efeito mesmo quando uma
+       precisão é fornecida.
+
+PyObject *PyBytes_FromFormatV(const char *format, va_list vargs)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Idêntico a "PyBytes_FromFormat()" exceto que é preciso exatamente
+   dois argumentos.
+
+PyObject *PyBytes_FromObject(PyObject *o)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna a representação de bytes do objeto *o* que implementa o
+   protocolo de buffer.
+
+Py_ssize_t PyBytes_Size(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Retorna o comprimento dos bytes em objeto bytes *o*.
+
+Py_ssize_t PyBytes_GET_SIZE(PyObject *o)
+
+   Similar a "PyBytes_Size()", mas sem verificação de erro.
+
+char *PyBytes_AsString(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Retorna um ponteiro para o conteúdo de *o*. O ponteiro se refere ao
+   buffer interno de *o*, que consiste em "len(o) + 1" bytes. O último
+   byte no buffer é sempre nulo, independentemente de haver outros
+   bytes nulos. Os dados não devem ser modificados de forma alguma, a
+   menos que o objeto tenha sido criado usando
+   "PyBytes_FromStringAndSize(NULL, size)". Não deve ser desalocado.
+   Se *o* não é um objeto de bytes, "PyBytes_AsString()" retorna
+   "NULL" e levanta "TypeError".
+
+char *PyBytes_AS_STRING(PyObject *string)
+
+   Similar a "PyBytes_AsString()", mas sem verificação de erro.
+
+int PyBytes_AsStringAndSize(PyObject *obj, char **buffer, Py_ssize_t *length)
+    * Parte da ABI Estável.*
+
+   Return the null-terminated contents of the object *obj* through the
+   output variables *buffer* and *length*. Returns "0" on success.
+
+   Se *length* for "NULL", o objeto bytes não poderá conter bytes
+   nulos incorporados; se isso acontecer, a função retornará "-1" e a
+   "ValueError" será levantado.
+
+   O buffer refere-se a um buffer interno de *obj*, que inclui um byte
+   nulo adicional no final (não contado em *length*). Os dados não
+   devem ser modificados de forma alguma, a menos que o objeto tenha
+   sido criado apenas usando "PyBytes_FromStringAndSize(NULL, size)".
+   Não deve ser desalinhado. Se *obj* não é um objeto bytes,
+   "PyBytes_AsStringAndSize()" retorna "-1" e levanta "TypeError".
+
+   Alterado na versão 3.5: Anteriormente "TypeError" era levantado
+   quando os bytes nulos incorporados eram encontrados no objeto
+   bytes.
+
+void PyBytes_Concat(PyObject **bytes, PyObject *newpart)
+    * Parte da ABI Estável.*
+
+   Cria um novo objeto de bytes em **bytes* contendo o conteúdo de
+   *newpart* anexado a *bytes*; o chamador será o proprietário da nova
+   referência. A referência ao valor antigo de *bytes* será roubada.
+   Se o novo objeto não puder ser criado, a antiga referência a
+   *bytes* ainda será descartada e o valor de **bytes* será definido
+   como "NULL"; a exceção apropriada será definida.
+
+void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart)
+    * Parte da ABI Estável.*
+
+   "Crie um novo objeto bytes em **bytes* contendo o conteúdo de
+   newpart anexado a bytes. Esta versão libera a *strong reference*
+   (referência forte) para newpart (ou seja, decrementa a contagem de
+   referências a ele)."
+
+int _PyBytes_Resize(PyObject **bytes, Py_ssize_t newsize)
+
+   Uma maneira de redimensionar um objeto de bytes, mesmo que seja
+   "imutável". Use isso apenas para construir um novo objeto de bytes;
+   não use isso se os bytes já puderem ser conhecidos em outras partes
+   do código. É um erro invocar essa função se o refcount no objeto de
+   bytes de entrada não for um. Passe o endereço de um objeto de bytes
+   existente como um lvalue (pode ser gravado) e o novo tamanho
+   desejado. Em caso de sucesso, **bytes* mantém o objeto de bytes
+   redimensionados e "0" é retornado; o endereço em **bytes* pode
+   diferir do seu valor de entrada. Se a realocação falhar, o objeto
+   de bytes originais em **bytes* é desalocado, **bytes* é definido
+   como "NULL", "MemoryError" é definido e "-1" é retornado.

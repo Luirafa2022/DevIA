@@ -1,0 +1,83 @@
+Objetos Byte Array
+******************
+
+type PyByteArrayObject
+
+   Esse subtipo de "PyObject" representa um objeto Python bytearray.
+
+PyTypeObject PyByteArray_Type
+    * Parte da ABI Estável.*
+
+   Essa instância de "PyTypeObject" representa um tipo Python
+   bytearray; é o mesmo objeto que o "bytearray" na camada Python.
+
+
+Macros para verificação de tipo
+===============================
+
+int PyByteArray_Check(PyObject *o)
+
+   Retorna verdadeiro se o objeto *o* for um objeto bytearray ou se
+   for uma instância de um subtipo do tipo bytearray. Esta função
+   sempre tem sucesso.
+
+int PyByteArray_CheckExact(PyObject *o)
+
+   Retorna verdadeiro se o objeto *o* for um objeto bytearray, mas não
+   uma instância de um subtipo do tipo bytearray. Esta função sempre
+   tem sucesso.
+
+
+Funções diretas da API
+======================
+
+PyObject *PyByteArray_FromObject(PyObject *o)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto bytearray, *o*, que implementa o protocolo
+   de buffer.
+
+PyObject *PyByteArray_FromStringAndSize(const char *string, Py_ssize_t len)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Cria um novo objeto bytearray a partir de *string* e seu
+   comprimento, *len*. Em caso de falha, "NULL" é retornado.
+
+PyObject *PyByteArray_Concat(PyObject *a, PyObject *b)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Concatena os bytearrays *a* e *b* e retorna um novo bytearray com o
+   resultado.
+
+Py_ssize_t PyByteArray_Size(PyObject *bytearray)
+    * Parte da ABI Estável.*
+
+   Retorna o tamanho de *bytearray* após verificar se há um ponteiro
+   "NULL".
+
+char *PyByteArray_AsString(PyObject *bytearray)
+    * Parte da ABI Estável.*
+
+   Retorna o conteúdo de *bytearray* como uma matriz de caracteres
+   após verificar um ponteiro "NULL". A matriz retornada sempre tem um
+   byte nulo extra acrescentado.
+
+int PyByteArray_Resize(PyObject *bytearray, Py_ssize_t len)
+    * Parte da ABI Estável.*
+
+   Redimensiona o buffer interno de *bytearray* para o tamanho *len*.
+
+
+Macros
+======
+
+Estas macros trocam segurança por velocidade e não verificam os
+ponteiros.
+
+char *PyByteArray_AS_STRING(PyObject *bytearray)
+
+   Similar a "PyByteArray_AsString()", mas sem verificação de erro.
+
+Py_ssize_t PyByteArray_GET_SIZE(PyObject *bytearray)
+
+   Similar a "PyByteArray_Size()", mas sem verificação de erro.

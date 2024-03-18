@@ -1,0 +1,159 @@
+Objeto Set
+**********
+
+Esta seção detalha a API pública para os objetos "set" e "frozenset".
+Qualquer funcionalidade não listada abaixo é melhor acessada usando o
+protocolo de objeto abstrato (incluindo "PyObject_CallMethod()",
+"PyObject_RichCompareBool()", "PyObject_Hash()", "PyObject_Repr()",
+"PyObject_IsTrue()", "PyObject_Print()" e "PyObject_GetIter()") ou o
+protocolo abstrato de número (incluindo "PyNumber_And()",
+"PyNumber_Subtract()", "PyNumber_Or()", "PyNumber_Xor()",
+"PyNumber_InPlaceAnd()", "PyNumber_InPlaceSubtract()",
+"PyNumber_InPlaceOr()" e "PyNumber_InPlaceXor()").
+
+type PySetObject
+
+   Este subtipo de "PyObject" é usado para manter os dados internos
+   para ambos os objetos "set" e "frozenset". É como um "PyDictObject"
+   em que tem um tamanho fixo para conjuntos pequenos (muito parecido
+   com o armazenamento de tupla) e apontará para um bloco de memória
+   de tamanho variável separado para conjuntos de tamanho médio e
+   grande (muito parecido com lista armazenamento). Nenhum dos campos
+   desta estrutura deve ser considerado público e todos estão sujeitos
+   a alterações. Todo o acesso deve ser feito por meio da API
+   documentada, em vez de manipular os valores na estrutura.
+
+PyTypeObject PySet_Type
+    * Parte da ABI Estável.*
+
+   Essa é uma instância de "PyTypeObject" representando o tipo Python
+   "set"
+
+PyTypeObject PyFrozenSet_Type
+    * Parte da ABI Estável.*
+
+   Esta é uma instância de "PyTypeObject" representando o tipo Python
+   "frozenset".
+
+As macros de verificação de tipo a seguir funcionam em ponteiros para
+qualquer objeto Python. Da mesma forma, as funções construtoras
+funcionam com qualquer objeto Python iterável.
+
+int PySet_Check(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "set" ou uma instância de
+   um subtipo. Esta função sempre tem sucesso.
+
+int PyFrozenSet_Check(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "frozenset" ou uma
+   instância de um subtipo. Esta função sempre tem sucesso.
+
+int PyAnySet_Check(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "set", um objeto
+   "frozenset" ou uma instância de um subtipo. Esta função sempre tem
+   sucesso.
+
+int PySet_CheckExact(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "set", mas não uma
+   instância de um subtipo. Esta função sempre tem sucesso.
+
+   Novo na versão 3.10.
+
+int PyAnySet_CheckExact(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "set" ou um objeto
+   "frozenset", mas não uma instância de um subtipo. Esta função
+   sempre tem sucesso.
+
+int PyFrozenSet_CheckExact(PyObject *p)
+
+   Retorna verdadeiro se *p* for um objeto "frozenset", mas não uma
+   instância de um subtipo. Esta função sempre tem sucesso.
+
+PyObject *PySet_New(PyObject *iterable)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna uma nova "set" contendo objetos retornados pelo iterável
+   *iterable*. O *iterable* pode ser "NULL" para criar um novo
+   conjunto vazio. Retorna o novo conjunto em caso de sucesso ou
+   "NULL" em caso de falha. Levanta "TypeError" se *iterable* não for
+   realmente iterável. O construtor também é útil para copiar um
+   conjunto ("c=set(s)").
+
+PyObject *PyFrozenSet_New(PyObject *iterable)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna uma nova "frozenset" contendo objetos retornados pelo
+   iterável *iterable*. O *iterable* pode ser "NULL" para criar um
+   novo frozenset vazio. Retorna o novo conjunto em caso de sucesso ou
+   "NULL" em caso de falha. Levanta "TypeError" se *iterable* não for
+   realmente iterável.
+
+As seguintes funções e macros estão disponíveis para instâncias de
+"set" ou "frozenset" ou instâncias de seus subtipos.
+
+Py_ssize_t PySet_Size(PyObject *anyset)
+    * Parte da ABI Estável.*
+
+   Retorna o comprimento de um objeto "set" ou "frozenset".
+   Equivalente a "len(anyset)". Levanta um "SystemError" se *anyset*
+   não for um "set", "frozenset", ou uma instância de um subtipo.
+
+Py_ssize_t PySet_GET_SIZE(PyObject *anyset)
+
+   Forma macro de "PySet_Size()" sem verificação de erros.
+
+int PySet_Contains(PyObject *anyset, PyObject *key)
+    * Parte da ABI Estável.*
+
+   Retorna "1" se encontrado, "0" se não encontrado, e "-1" se um erro
+   é encontrado. Ao contrário do método Python "__contains__()", esta
+   função não converte automaticamente conjuntos não hasheáveis em
+   frozensets temporários. Levanta um "TypeError" se a *key* não for
+   hasheável. Levanta "SystemError" se *anyset* não é um "set",
+   "frozenset", ou uma instância de um subtipo.
+
+int PySet_Add(PyObject *set, PyObject *key)
+    * Parte da ABI Estável.*
+
+   Adiciona *key* a uma instância de "set". Também funciona com
+   instâncias de "frozenset" (como "PyTuple_SetItem()", ele pode ser
+   usado para preencher os valores de novos conjuntos de congelamentos
+   antes que eles sejam expostos a outro código). Retorna "0" em caso
+   de sucesso ou "-1" em caso de falha. Levanta um "TypeError" se a
+   *key* não for hasheável. Levanta uma "MemoryError" se não houver
+   espaço para crescer. Levanta uma "SystemError" se *set* não for uma
+   instância de "set" ou seu subtipo.
+
+As seguintes funções estão disponíveis para instâncias de "set" ou
+seus subtipos, mas não para instâncias de "frozenset" ou seus
+subtipos.
+
+int PySet_Discard(PyObject *set, PyObject *key)
+    * Parte da ABI Estável.*
+
+   Retorna "1" se encontrado e removido, "0" se não encontrado
+   (nenhuma ação realizada) e "-1" se um erro for encontrado. Não
+   levanta "KeyError" para chaves ausentes. Levanta uma "TypeError" se
+   a *key* não for hasheável. Ao contrário do método Python
+   "discard()", esta função não converte automaticamente conjuntos não
+   hasheáveis em frozensets temporários. Levanta "SystemError" se
+   *set* não é uma instância de "set" ou seu subtipo.
+
+PyObject *PySet_Pop(PyObject *set)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna uma nova referência a um objeto arbitrário no *set* e
+   remove o objeto do *set*. Retorna "NULL" em caso de falha. Levanta
+   "KeyError" se o conjunto estiver vazio. Levanta uma "SystemError"
+   se *set* não for uma instância de "set" ou seu subtipo.
+
+int PySet_Clear(PyObject *set)
+    * Parte da ABI Estável.*
+
+   Esvazia um conjunto existente de todos os elementos. Retorna "0" em
+   caso de sucesso. Retorna "-1" e levanta "SystemError" se *set* não
+   for uma instância de "set" ou seu subtipo.

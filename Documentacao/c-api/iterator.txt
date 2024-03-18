@@ -1,0 +1,49 @@
+Objetos Iteradores
+******************
+
+O Python fornece dois objetos iteradores de propósito geral. O
+primeiro, um iterador de sequência, trabalha com uma sequência
+arbitrária suportando o método "__getitem__()". O segundo trabalha com
+um objeto chamável e um valor de sentinela, chamando o chamável para
+cada item na sequência e finalizando a iteração quando o valor de
+sentinela é retornado.
+
+PyTypeObject PySeqIter_Type
+    * Parte da ABI Estável.*
+
+   Objeto de tipo para objetos iteradores retornados por
+   "PySeqIter_New()" e a forma de um argumento da função embutida
+   "iter()" para os tipos de sequência embutidos.
+
+int PySeqIter_Check(PyObject *op)
+
+   Retorna true se o tipo de *op* for "PySeqIter_Type". Esta função
+   sempre é bem-sucedida.
+
+PyObject *PySeqIter_New(PyObject *seq)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um iterador que funcione com um objeto de sequência geral,
+   *seq*. A iteração termina quando a sequência levanta "IndexError"
+   para a operação de assinatura.
+
+PyTypeObject PyCallIter_Type
+    * Parte da ABI Estável.*
+
+   Objeto de tipo para objetos iteradores retornados por
+   "PyCallIter_New()" e a forma de dois argumentos da função embutida
+   "iter()".
+
+int PyCallIter_Check(PyObject *op)
+
+   Retorna true se o tipo de *op* for "PyCallIter_Type". Esta função
+   sempre é bem-sucedida.
+
+PyObject *PyCallIter_New(PyObject *callable, PyObject *sentinel)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo iterador. O primeiro parâmetro, *callable*, pode
+   ser qualquer objeto chamável do Python que possa ser chamado sem
+   parâmetros; cada chamada deve retornar o próximo item na iteração.
+   Quando *callable* retorna um valor igual a *sentinel*, a iteração
+   será encerrada.

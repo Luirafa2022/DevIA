@@ -1,0 +1,44 @@
+API do PyHash
+*************
+
+Veja também o membro "PyTypeObject.tp_hash".
+
+type Py_hash_t
+
+   Tipo de valor do hash: inteiro com sinal.
+
+   Novo na versão 3.2.
+
+type Py_uhash_t
+
+   Tipo de valor do hash: inteiro sem sinal.
+
+   Novo na versão 3.2.
+
+type PyHash_FuncDef
+
+   Definição de função de hash usada por "PyHash_GetFuncDef()".
+
+   const char *name
+
+      Nome de função hash (string codificada em UTF-8).
+
+   const int hash_bits
+
+      Tamanho interno do valor do hash em bits.
+
+   const int seed_bits
+
+      Tamanho da entrada de seed em bits.
+
+   Novo na versão 3.4.
+
+PyHash_FuncDef *PyHash_GetFuncDef(void)
+
+   Obtém a definição de função de hash.
+
+   Ver também:
+
+     **PEP 456** "Algoritmo de hash seguro e intercambiável".
+
+   Novo na versão 3.4.

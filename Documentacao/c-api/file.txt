@@ -1,0 +1,102 @@
+Objetos arquivos
+****************
+
+Essas APIs são uma emulação mínima da API C do Python 2 para objetos
+arquivo embutidos, que costumavam depender do suporte de E/S em buffer
+(FILE*) da biblioteca C padrão. No Python 3, arquivos e streams usam o
+novo módulo "io", que define várias camadas sobre a E/S sem buffer de
+baixo nível do sistema operacional. As funções descritas a seguir são
+wrappers C de conveniência sobre essas novas APIs e são destinadas
+principalmente para relatórios de erros internos no interpretador;
+código de terceiros é recomendado para acessar as APIs de "io".
+
+PyObject *PyFile_FromFd(int fd, const char *name, const char *mode, int buffering, const char *encoding, const char *errors, const char *newline, int closefd)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Cria um objeto arquivo Python a partir do descritor de arquivo de
+   um arquivo já aberto *fd*. Os argumentos *name*, *encoding*,
+   *errors* and *newline* podem ser "NULL" para usar os padrões;
+   *buffering* pode ser *-1* para usar o padrão. *name* é ignorado e
+   mantido para compatibilidade com versões anteriores. Retorna "NULL"
+   em caso de falha. Para uma descrição mais abrangente dos
+   argumentos, consulte a documentação da função "io.open()".
+
+   Aviso:
+
+     Como os streams do Python têm sua própria camada de buffer,
+     combiná-los com os descritores de arquivo no nível do sistema
+     operacional pode produzir vários problemas (como ordenação
+     inesperada de dados).
+
+   Alterado na versão 3.2: Ignora atributo *name*.
+
+int PyObject_AsFileDescriptor(PyObject *p)
+    * Parte da ABI Estável.*
+
+   Retorna o descritor de arquivo associado a *p* como um int. Se o
+   objeto for um inteiro, seu valor será retornado. Caso contrário, o
+   método "fileno()" do objeto será chamado se existir; o método deve
+   retornar um inteiro, que é retornado como o valor do descritor de
+   arquivo. Define uma exceção e retorna "-1" em caso de falha.
+
+PyObject *PyFile_GetLine(PyObject *p, int n)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Equivalente a "p.readline([n])", esta função lê uma linha do objeto
+   *p*. *p* pode ser um objeto arquivo ou qualquer objeto com um
+   método "readline()". Se *n* for "0", exatamente uma linha é lida,
+   independentemente do comprimento da linha. Se *n* for maior que
+   "0", não mais do que *n* bytes serão lidos do arquivo; uma linha
+   parcial pode ser retornada. Em ambos os casos, uma string vazia é
+   retornada se o final do arquivo for alcançado imediatamente. Se *n*
+   for menor que "0", entretanto, uma linha é lida independentemente
+   do comprimento, mas "EOFError" é levantada se o final do arquivo
+   for alcançado imediatamente.
+
+int PyFile_SetOpenCodeHook(Py_OpenCodeHookFunction handler)
+
+   Substitui o comportamento normal de "io.open_code()" para passar
+   seu parâmetro por meio do manipulador fornecido.
+
+   The handler is a function of type:
+
+   type Py_OpenCodeHookFunction
+
+      Equivalent of PyObject *(*)(PyObject *path, void *userData),
+      where *path* is guaranteed to be "PyUnicodeObject".
+
+   O ponteiro *userData* é passado para a função de gancho. Como as
+   funções de gancho podem ser chamadas de diferentes tempos de
+   execução, esse ponteiro não deve se referir diretamente ao estado
+   do Python.
+
+   Como este gancho é usado intencionalmente durante a importação,
+   evite importar novos módulos durante sua execução, a menos que eles
+   estejam congelados ou disponíveis em "sys.modules".
+
+   Uma vez que um gancho foi definido, ele não pode ser removido ou
+   substituído, e chamadas posteriores para "PyFile_SetOpenCodeHook()"
+   irão falhar. Em caso de falha, a função retorna -1 e define uma
+   exceção se o interpretador foi inicializado.
+
+   É seguro chamar esta função antes "Py_Initialize()".
+
+   Levanta um evento de auditoria "setopencodehook" com nenhum
+   argumento.
+
+   Novo na versão 3.8.
+
+int PyFile_WriteObject(PyObject *obj, PyObject *p, int flags)
+    * Parte da ABI Estável.*
+
+   Escreve o objeto *obj* no objeto arquivo *p*. O único sinalizador
+   suportado para *flags* é "Py_PRINT_RAW"; se fornecido, o "str()" do
+   objeto é escrito em vez de "repr()". Retorna "0" em caso de sucesso
+   ou "-1" em caso de falha; a exceção apropriada será definida.
+
+int PyFile_WriteString(const char *s, PyObject *p)
+    * Parte da ABI Estável.*
+
+   Escreve a string *s* no objeto arquivo *p*. Retorna "0" em caso de
+   sucesso ou "-1" em caso de falha; a exceção apropriada será
+   definida.

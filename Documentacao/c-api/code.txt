@@ -1,0 +1,269 @@
+Objetos código
+**************
+
+Os objetos código são um detalhe de baixo nível da implementação do
+CPython. Cada um representa um pedaço de código executável que ainda
+não foi vinculado a uma função.
+
+type PyCodeObject
+
+   A estrutura C dos objetos usados para descrever objetos código. Os
+   campos deste tipo estão sujeitos a alterações a qualquer momento.
+
+PyTypeObject PyCode_Type
+
+   This is an instance of "PyTypeObject" representing the Python code
+   object.
+
+int PyCode_Check(PyObject *co)
+
+   Return true if *co* is a code object. This function always
+   succeeds.
+
+Py_ssize_t PyCode_GetNumFree(PyCodeObject *co)
+
+   Return the number of free variables in a code object.
+
+int PyCode_GetFirstFree(PyCodeObject *co)
+
+   Return the position of the first free variable in a code object.
+
+PyCodeObject *PyUnstable_Code_New(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, PyObject *code, PyObject *consts, PyObject *names, PyObject *varnames, PyObject *freevars, PyObject *cellvars, PyObject *filename, PyObject *name, PyObject *qualname, int firstlineno, PyObject *linetable, PyObject *exceptiontable)
+
+   *Esta é uma API Instável. Isso pode se alterado sem aviso em
+   lançamentos menores.*
+
+   Devolve um novo objeto código. Se precisar de um objeto código
+   vazio para criar um quadro, use "PyCode_NewEmpty()"
+
+   Como a definição de bytecode muda constantemente, chamar
+   "PyUnstable_Code_New()" diretamente pode vinculá-lo a uma versão de
+   Python específica.
+
+   Os vários argumentos desta função são inter-dependentes de maneiras
+   complexas, significando que mesmo alterações discretas de valor tem
+   chances de resultar em execução incorreta ou erros fatais de VM.
+   Tenha extremo cuidado ao usar esta função.
+
+   Alterado na versão 3.11: Adicionou os parâmetros "qualname" e
+   "exceptiontable"
+
+   Alterado na versão 3.12: Renomeado de "PyCode_New" como parte da
+   API C Instável. O nome antigo foi descontinuado, mas continuará
+   disponível até que a assinatura mude novamente.
+
+PyCodeObject *PyUnstable_Code_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, PyObject *code, PyObject *consts, PyObject *names, PyObject *varnames, PyObject *freevars, PyObject *cellvars, PyObject *filename, PyObject *name, PyObject *qualname, int firstlineno, PyObject *linetable, PyObject *exceptiontable)
+
+   *Esta é uma API Instável. Isso pode se alterado sem aviso em
+   lançamentos menores.*
+
+   Similar a "PyUnstable_Code_New()", mas com um "posonlyargcount"
+   extra para argumentos somente-posicionais. As mesmas ressalvas que
+   se aplicam a "PyUnstable_Code_New" também se aplicam a essa função.
+
+   Novo na versão 3.8: Como "PyCode_NewWithPosOnlyArgs"
+
+   Alterado na versão 3.11: Adicionados os parâmetros "qualname" e
+   "exceptiontable"
+
+   Alterado na versão 3.12: Renomeado para
+   "PyUnstable_Code_NewWithPosOnlyArgs". O nome antigo foi
+   descontinuado, mas continuará disponível até que a assinatura mude
+   novamente.
+
+PyCodeObject *PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno)
+    *Retorna valor: Nova referência.*
+
+   Retorna um novo objeto código vazio com o nome de arquivo, nome da
+   função e número da primeira linha especificados. O objeto código
+   resultante irá levantar uma "Exception" se executado.
+
+int PyCode_Addr2Line(PyCodeObject *co, int byte_offset)
+
+   Retorna o número da linha da instrução que ocorre em ou antes de
+   "byte_offset" e termina depois disso. Se você só precisa do número
+   da linha de um quadro, use "PyFrame_GetLineNumber()".
+
+   Para iterar eficientemente sobre os números de linha em um objeto
+   código, use a API descrita em PEP 626 .
+
+int PyCode_Addr2Location(PyObject *co, int byte_offset, int *start_line, int *start_column, int *end_line, int *end_column)
+
+   Define os ponteiros "int" passados para a linha do código-fonte e
+   os números da coluna para a instrução em "byte_offset". Define o
+   valor como "0" quando as informações não estão disponíveis para
+   nenhum elemento em particular.
+
+   Retorna "1" se a função for bem-sucedida e 0 caso contrário.
+
+   Novo na versão 3.11.
+
+PyObject *PyCode_GetCode(PyCodeObject *co)
+
+   Equivalente ao código Python "getattr(co, 'co_code')". Retorna uma
+   referência forte a um "PyBytesObject" representando o bytecode em
+   um objeto código. Em caso de erro, "NULL" é retornado e uma exceção
+   é levantada.
+
+   Este "PyBytesObject" pode ser criado sob demanda pelo interpretador
+   e não representa necessariamente o bytecode realmente executado
+   pelo CPython. O caso de uso primário para esta função são
+   depuradores e criadores de perfil.
+
+   Novo na versão 3.11.
+
+PyObject *PyCode_GetVarnames(PyCodeObject *co)
+
+   Equivalente ao código Python "getattr(co, 'co_varnames')". Retorna
+   uma nova referência a um "PyTupleObject" contendo os nomes das
+   variáveis locais. Em caso de erro, "NULL" é retornado e uma exceção
+   é levantada.
+
+   Novo na versão 3.11.
+
+PyObject *PyCode_GetCellvars(PyCodeObject *co)
+
+   Equivalente ao código Python "getattr(co, 'co_cellvars')". Retorna
+   uma nova referência a um "PyTupleObject" contendo os nomes das
+   variáveis locais referenciadas por funções aninhadas. Em caso de
+   erro, "NULL" é retornado e uma exceção é levantada.
+
+   Novo na versão 3.11.
+
+PyObject *PyCode_GetFreevars(PyCodeObject *co)
+
+   Equivalente ao código Python "getattr(co, 'co_freevars')". Retorna
+   uma nova referência a um "PyTupleObject" contendo os nomes das
+   variáveis livres. Em caso de erro, "NULL" é retornado e uma exceção
+   é levantada.
+
+   Novo na versão 3.11.
+
+int PyCode_AddWatcher(PyCode_WatchCallback callback)
+
+   Registra *callback* como um observador do objeto código para o
+   interpretador atual.  Devolve um ID que pode ser passado para
+   "PyCode_ClearWatcher()". Em caso de erro (por exemplo, não há IDs
+   de observadores disponíveis), devolve "-1" e define uma exceção.
+
+   Novo na versão 3.12.
+
+int PyCode_ClearWatcher(int watcher_id)
+
+   Libera o observador identificado por *watcher_id* anteriormente
+   retornado por "PyCode_AddWatcher()" para o interpretador atual.
+   Retorna "0" em caso de sucesso ou "-1" em caso de erro e levanta
+   uma exceção (ex., se o *watcher_id* dado não foi registrado.)
+
+   Novo na versão 3.12.
+
+type PyCodeEvent
+
+   Enumeração dos possíveis eventos de observador do objeto código:
+   "PY_CODE_EVENT_CREATE" - "PY_CODE_EVENT_DESTROY"
+
+   Novo na versão 3.12.
+
+typedef int (*PyCode_WatchCallback)(PyCodeEvent event, PyCodeObject *co)
+
+   Tipo de uma função de callback de observador de objeto código.
+
+   Se *evento* é "PY_CODE_EVENT_CREATE", então a função de retorno é
+   invocada após *co`ter sido completamente inicializado. Senão, a
+   função de retorno é invocada antes que a destruição de `co* ocorra,
+   para que o estado anterior de *co* possa ser inspecionado.
+
+   Se *evento* for``PY_CODE_EVENT_DESTROY``,  obter uma referência
+   para a função de retorno do objeto-a-ser-destruído irá reativá-lo e
+   impedirá que o objeto seja liberado. Quando o objeto reativado é
+   posteriormente destruído, qualquer observador de funções de retorno
+   ativos naquele momento serão chamados novamente.
+
+   Usuários desta API não devem depender de detalhes internos de
+   implementação em tempo de execução. Tais detalhes podem incluir,
+   mas não estão limitados a: o ordem e o momento exatos da criação e
+   destruição de objetos código. Enquanto alterações nestes detalhes
+   podem resultar em diferenças que são visíveis para os observadores
+   (incluindo se uma função de retorno é chamada ou não), isso não
+   muda a semântica do código Python executado.
+
+   Se a função de retorno definir uma exceção, ela deverá retornar
+   "-1"; essa exceção será impressa como uma exceção não reprovável
+   usando "PyErr_WriteUnraisable()". Caso contrário, deverá retornar
+   "0".
+
+   É possível que já exista uma exceção pendente definida na entrada
+   da chamada de retorno. Nesse caso, a função de retorno deve
+   retornar "0" com a mesma exceção ainda definida. Isso significa que
+   a callback não pode chamar nenhuma outra API que possa definir uma
+   exceção, a menos que salve e limpe o estado da exceção primeiro e o
+   restaure antes de retornar.
+
+   Novo na versão 3.12.
+
+
+Informação adicional
+********************
+
+Para suportar extensões de baixo nível de avaliação de quadro (frame),
+tais como compiladores "just-in-time", é possível anexar dados
+arbitrários adicionais a objetos código.
+
+Estas funções são parte da camada instável da API C: Essa
+funcionalidade é um detalhe de implementação do CPython, e a API pode
+mudar sem avisos de descontinuidade.
+
+Py_ssize_t PyUnstable_Eval_RequestCodeExtraIndex(freefunc free)
+
+   *Esta é uma API Instável. Isso pode se alterado sem aviso em
+   lançamentos menores.*
+
+   Retorna um novo e opaco valor de índice usado para adicionar dados
+   a objetos código.
+
+   Geralmente, você chama esta função apenas uma vez (por
+   interpretador) e usa o resultado com "PyCode_GetExtra" e
+   "PyCode_SetExtra" para manipular dados em objetos código
+   individuais.
+
+   Se *free* não for "NULL": quando o objeto código é desalocado,
+   *free* será chamado em dados não-"NULL" armazenados sob o novo
+   índice. Use "Py_DecRef()" quando armazenar "PyObject".
+
+   Novo na versão 3.6: como "_PyEval_RequestCodeExtraIndex"
+
+   Alterado na versão 3.12: Renomeado para
+   "PyUnstable_Eval_RequestCodeExtraIndex". O nome antigo nome privado
+   foi descontinuado, mas continuará disponível até a mudança da API.
+
+int PyUnstable_Code_GetExtra(PyObject *code, Py_ssize_t index, void **extra)
+
+   *Esta é uma API Instável. Isso pode se alterado sem aviso em
+   lançamentos menores.*
+
+   Define *extra* para os dados adicionais armazenados sob o novo
+   índice dado. Retorna 0 em caso de sucesso. Define uma exceção e
+   retorna -1 em caso de erro.
+
+   Se nenhum dado foi determinado sob o índice, define *extra* como
+   "NULL" e retorna 0 sem definir nenhuma exceção.
+
+   Novo na versão 3.6: as "_PyCode_GetExtra"
+
+   Alterado na versão 3.12: Renomeado para "PyUnstable_Code_GetExtra".
+   O nome antigo privado foi descontinuado, mas continuará disponível
+   até a mudança da API.
+
+int PyUnstable_Code_SetExtra(PyObject *code, Py_ssize_t index, void *extra)
+
+   *Esta é uma API Instável. Isso pode se alterado sem aviso em
+   lançamentos menores.*
+
+   Set the extra data stored under the given index to *extra*. Return
+   0 on success. Set an exception and return -1 on failure.
+
+   Novo na versão 3.6: as "_PyCode_SetExtra"
+
+   Alterado na versão 3.12: Renamed to "PyUnstable_Code_SetExtra". The
+   old private name is deprecated, but will be available until the API
+   changes.

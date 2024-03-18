@@ -1,0 +1,458 @@
+Utilitários do Sistema Operacional
+**********************************
+
+PyObject *PyOS_FSPath(PyObject *path)
+    *Retorna valor: Nova referência.** Parte da ABI Estável desde a
+   versão 3.6.*
+
+   Retorna a representação do sistema de arquivos para *path*. Se o
+   objeto for um objeto "str" ou "bytes", então uma nova *referência
+   forte* é retornada. Se o objeto implementa a interface
+   "os.PathLike", então "__fspath__()" é retornado desde que seja um
+   objeto "str" ou "bytes". Caso contrário, "TypeError" é levantada e
+   "NULL" é retornado.
+
+   Novo na versão 3.6.
+
+int Py_FdIsInteractive(FILE *fp, const char *filename)
+
+   Retorna verdadeiro (não zero) se o arquivo padrão de E/S *fp* com o
+   nome *filename* for considerado interativo. Este é o caso dos
+   arquivos para os quais "isatty(fileno(fp))" é verdade. Se
+   "PyConfig.interactive" for não zero, esta função também retorna
+   true se o ponteiro *filename* for "NULL" ou se o nome for igual a
+   uma das strings "'<stdin>'" ou "'???'".
+
+   Esta função não deve ser chamada antes da inicialização do Python.
+
+void PyOS_BeforeFork()
+    * Parte da ABI Estável on platforms with fork() desde a versão
+   3.7.*
+
+   Função para preparar algum estado interno antes de ser feito um
+   fork do processo. Isso deve ser chamado antes de chamar "fork()" ou
+   qualquer função semelhante que clone o processo atual. Disponível
+   apenas em sistemas onde "fork()" é definido.
+
+   Aviso:
+
+     A chamada C "fork()" só deve ser feita a partir da thread "main"
+     (do interpretador "main"). O mesmo vale para "PyOS_BeforeFork()".
+
+   Novo na versão 3.7.
+
+void PyOS_AfterFork_Parent()
+    * Parte da ABI Estável on platforms with fork() desde a versão
+   3.7.*
+
+   Função para atualizar algum estado interno depois de ser feito um
+   fork do processo. Isso deve ser chamado a partir do processo pai
+   depois de chamar "fork()" ou qualquer função semelhante que clone o
+   processo atual, independentemente da clonagem do processo ter sido
+   bem-sucedida ou não. Disponível apenas em sistemas onde "fork()" é
+   definido.
+
+   Aviso:
+
+     A chamada C "fork()" só deve ser feita a partir da thread "main"
+     (do interpretador "main"). O mesmo vale para
+     "PyOS_AfterFork_Parent()".
+
+   Novo na versão 3.7.
+
+void PyOS_AfterFork_Child()
+    * Parte da ABI Estável on platforms with fork() desde a versão
+   3.7.*
+
+   Função para atualizar o estado interno do interpretador depois de
+   ser feito um fork do processo. Isso deve ser chamado a partir do
+   processo filho depois de chamar "fork()" ou qualquer função
+   semelhante que clone o processo atual, se houver alguma chance do
+   processo ter uma chamada de retorno para o interpretador Python.
+   Disponível apenas em sistemas onde "fork()" é definido.
+
+   Aviso:
+
+     A chamada C "fork()" só deve ser feita a partir da thread "main"
+     (do interpretador "main"). O mesmo vale para
+     "PyOS_AfterFork_Child()".
+
+   Novo na versão 3.7.
+
+   Ver também:
+
+     "os.register_at_fork()" permite registrar funções personalizadas
+     do Python para serem chamadas por "PyOS_BeforeFork()",
+     "PyOS_AfterFork_Parent()" e  "PyOS_AfterFork_Child()".
+
+void PyOS_AfterFork()
+    * Parte da ABI Estável on platforms with fork().*
+
+   Função para atualizar algum estado interno após ser feito um fork
+   de processo; isso deve ser chamado no novo processo se o
+   interpretador do Python continuar a ser usado. Se um novo
+   executável é carregado no novo processo, esta função não precisa
+   ser chamada.
+
+   Obsoleto desde a versão 3.7: Esta função foi sucedida por
+   "PyOS_AfterFork_Child()".
+
+int PyOS_CheckStack()
+    * Parte da ABI Estável on platforms with USE_STACKCHECK desde a
+   versão 3.7.*
+
+   Return true when the interpreter runs out of stack space.  This is
+   a reliable check, but is only available when "USE_STACKCHECK" is
+   defined (currently on certain versions of Windows using the
+   Microsoft Visual C++ compiler). "USE_STACKCHECK" will be defined
+   automatically; you should never change the definition in your own
+   code.
+
+typedef void (*PyOS_sighandler_t)(int)
+    * Parte da ABI Estável.*
+
+PyOS_sighandler_t PyOS_getsig(int i)
+    * Parte da ABI Estável.*
+
+   Return the current signal handler for signal *i*.  This is a thin
+   wrapper around either "sigaction()" or "signal()".  Do not call
+   those functions directly!
+
+PyOS_sighandler_t PyOS_setsig(int i, PyOS_sighandler_t h)
+    * Parte da ABI Estável.*
+
+   Set the signal handler for signal *i* to be *h*; return the old
+   signal handler. This is a thin wrapper around either "sigaction()"
+   or "signal()".  Do not call those functions directly!
+
+wchar_t *Py_DecodeLocale(const char *arg, size_t *size)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   Aviso:
+
+     This function should not be called directly: use the "PyConfig"
+     API with the "PyConfig_SetBytesString()" function which ensures
+     that Python is preinitialized.This function must not be called
+     before Python is preinitialized and so that the LC_CTYPE locale
+     is properly configured: see the "Py_PreInitialize()" function.
+
+   Decode a byte string from the *filesystem encoding and error
+   handler*. If the error handler is surrogateescape error handler,
+   undecodable bytes are decoded as characters in range
+   U+DC80..U+DCFF; and if a byte sequence can be decoded as a
+   surrogate character, the bytes are escaped using the
+   surrogateescape error handler instead of decoding them.
+
+   Return a pointer to a newly allocated wide character string, use
+   "PyMem_RawFree()" to free the memory. If size is not "NULL", write
+   the number of wide characters excluding the null character into
+   "*size"
+
+   Return "NULL" on decoding error or memory allocation error. If
+   *size* is not "NULL", "*size" is set to "(size_t)-1" on memory
+   error or set to "(size_t)-2" on decoding error.
+
+   The *filesystem encoding and error handler* are selected by
+   "PyConfig_Read()": see "filesystem_encoding" and
+   "filesystem_errors" members of "PyConfig".
+
+   Decoding errors should never happen, unless there is a bug in the C
+   library.
+
+   Use the "Py_EncodeLocale()" function to encode the character string
+   back to a byte string.
+
+   Ver também:
+
+     The "PyUnicode_DecodeFSDefaultAndSize()" and
+     "PyUnicode_DecodeLocaleAndSize()" functions.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.7: The function now uses the UTF-8 encoding in
+   the Python UTF-8 Mode.
+
+   Alterado na versão 3.8: The function now uses the UTF-8 encoding on
+   Windows if "PyPreConfig.legacy_windows_fs_encoding" is zero;
+
+char *Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   Encode a wide character string to the *filesystem encoding and
+   error handler*. If the error handler is surrogateescape error
+   handler, surrogate characters in the range U+DC80..U+DCFF are
+   converted to bytes 0x80..0xFF.
+
+   Return a pointer to a newly allocated byte string, use
+   "PyMem_Free()" to free the memory. Return "NULL" on encoding error
+   or memory allocation error.
+
+   If error_pos is not "NULL", "*error_pos" is set to "(size_t)-1" on
+   success,  or set to the index of the invalid character on encoding
+   error.
+
+   The *filesystem encoding and error handler* are selected by
+   "PyConfig_Read()": see "filesystem_encoding" and
+   "filesystem_errors" members of "PyConfig".
+
+   Use the "Py_DecodeLocale()" function to decode the bytes string
+   back to a wide character string.
+
+   Aviso:
+
+     This function must not be called before Python is preinitialized
+     and so that the LC_CTYPE locale is properly configured: see the
+     "Py_PreInitialize()" function.
+
+   Ver também:
+
+     The "PyUnicode_EncodeFSDefault()" and "PyUnicode_EncodeLocale()"
+     functions.
+
+   Novo na versão 3.5.
+
+   Alterado na versão 3.7: The function now uses the UTF-8 encoding in
+   the Python UTF-8 Mode.
+
+   Alterado na versão 3.8: The function now uses the UTF-8 encoding on
+   Windows if "PyPreConfig.legacy_windows_fs_encoding" is zero.
+
+
+System Functions
+****************
+
+These are utility functions that make functionality from the "sys"
+module accessible to C code.  They all work with the current
+interpreter thread's "sys" module's dict, which is contained in the
+internal thread state structure.
+
+PyObject *PySys_GetObject(const char *name)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Return the object *name* from the "sys" module or "NULL" if it does
+   not exist, without setting an exception.
+
+int PySys_SetObject(const char *name, PyObject *v)
+    * Parte da ABI Estável.*
+
+   Set *name* in the "sys" module to *v* unless *v* is "NULL", in
+   which case *name* is deleted from the sys module. Returns "0" on
+   success, "-1" on error.
+
+void PySys_ResetWarnOptions()
+    * Parte da ABI Estável.*
+
+   Reset "sys.warnoptions" to an empty list. This function may be
+   called prior to "Py_Initialize()".
+
+void PySys_AddWarnOption(const wchar_t *s)
+    * Parte da ABI Estável.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.warnoptions" should be used instead, see Python
+   Initialization Configuration.
+
+   Append *s* to "sys.warnoptions". This function must be called prior
+   to "Py_Initialize()" in order to affect the warnings filter list.
+
+   Obsoleto desde a versão 3.11.
+
+void PySys_AddWarnOptionUnicode(PyObject *unicode)
+    * Parte da ABI Estável.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.warnoptions" should be used instead, see Python
+   Initialization Configuration.
+
+   Append *unicode* to "sys.warnoptions".
+
+   Note: this function is not currently usable from outside the
+   CPython implementation, as it must be called prior to the implicit
+   import of "warnings" in "Py_Initialize()" to be effective, but
+   can't be called until enough of the runtime has been initialized to
+   permit the creation of Unicode objects.
+
+   Obsoleto desde a versão 3.11.
+
+void PySys_SetPath(const wchar_t *path)
+    * Parte da ABI Estável.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.module_search_paths" and
+   "PyConfig.module_search_paths_set" should be used instead, see
+   Python Initialization Configuration.
+
+   Set "sys.path" to a list object of paths found in *path* which
+   should be a list of paths separated with the platform's search path
+   delimiter (":" on Unix, ";" on Windows).
+
+   Obsoleto desde a versão 3.11.
+
+void PySys_WriteStdout(const char *format, ...)
+    * Parte da ABI Estável.*
+
+   Write the output string described by *format* to "sys.stdout".  No
+   exceptions are raised, even if truncation occurs (see below).
+
+   *format* should limit the total size of the formatted output string
+   to 1000 bytes or less -- after 1000 bytes, the output string is
+   truncated. In particular, this means that no unrestricted "%s"
+   formats should occur; these should be limited using "%.<N>s" where
+   <N> is a decimal number calculated so that <N> plus the maximum
+   size of other formatted text does not exceed 1000 bytes.  Also
+   watch out for "%f", which can print hundreds of digits for very
+   large numbers.
+
+   If a problem occurs, or "sys.stdout" is unset, the formatted
+   message is written to the real (C level) *stdout*.
+
+void PySys_WriteStderr(const char *format, ...)
+    * Parte da ABI Estável.*
+
+   As "PySys_WriteStdout()", but write to "sys.stderr" or *stderr*
+   instead.
+
+void PySys_FormatStdout(const char *format, ...)
+    * Parte da ABI Estável.*
+
+   Function similar to PySys_WriteStdout() but format the message
+   using "PyUnicode_FromFormatV()" and don't truncate the message to
+   an arbitrary length.
+
+   Novo na versão 3.2.
+
+void PySys_FormatStderr(const char *format, ...)
+    * Parte da ABI Estável.*
+
+   As "PySys_FormatStdout()", but write to "sys.stderr" or *stderr*
+   instead.
+
+   Novo na versão 3.2.
+
+void PySys_AddXOption(const wchar_t *s)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.xoptions" should be used instead, see Python
+   Initialization Configuration.
+
+   Parse *s* as a set of "-X" options and add them to the current
+   options mapping as returned by "PySys_GetXOptions()". This function
+   may be called prior to "Py_Initialize()".
+
+   Novo na versão 3.2.
+
+   Obsoleto desde a versão 3.11.
+
+PyObject *PySys_GetXOptions()
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável
+   desde a versão 3.7.*
+
+   Return the current dictionary of "-X" options, similarly to
+   "sys._xoptions".  On error, "NULL" is returned and an exception is
+   set.
+
+   Novo na versão 3.2.
+
+int PySys_Audit(const char *event, const char *format, ...)
+
+   Raise an auditing event with any active hooks. Return zero for
+   success and non-zero with an exception set on failure.
+
+   If any hooks have been added, *format* and other arguments will be
+   used to construct a tuple to pass. Apart from "N", the same format
+   characters as used in "Py_BuildValue()" are available. If the built
+   value is not a tuple, it will be added into a single-element tuple.
+   (The "N" format option consumes a reference, but since there is no
+   way to know whether arguments to this function will be consumed,
+   using it may cause reference leaks.)
+
+   Note that "#" format characters should always be treated as
+   "Py_ssize_t", regardless of whether "PY_SSIZE_T_CLEAN" was defined.
+
+   "sys.audit()" performs the same function from Python code.
+
+   Novo na versão 3.8.
+
+   Alterado na versão 3.8.2: Require "Py_ssize_t" for "#" format
+   characters. Previously, an unavoidable deprecation warning was
+   raised.
+
+int PySys_AddAuditHook(Py_AuditHookFunction hook, void *userData)
+
+   Append the callable *hook* to the list of active auditing hooks.
+   Return zero on success and non-zero on failure. If the runtime has
+   been initialized, also set an error on failure. Hooks added through
+   this API are called for all interpreters created by the runtime.
+
+   O ponteiro *userData* é passado para a função de gancho. Como as
+   funções de gancho podem ser chamadas de diferentes tempos de
+   execução, esse ponteiro não deve se referir diretamente ao estado
+   do Python.
+
+   This function is safe to call before "Py_Initialize()". When called
+   after runtime initialization, existing audit hooks are notified and
+   may silently abort the operation by raising an error subclassed
+   from "Exception" (other errors will not be silenced).
+
+   The hook function is always called with the GIL held by the Python
+   interpreter that raised the event.
+
+   See **PEP 578** for a detailed description of auditing.  Functions
+   in the runtime and standard library that raise events are listed in
+   the audit events table. Details are in each function's
+   documentation.
+
+   Levanta um evento de auditoria "sys.addaudithook" com nenhum
+   argumento.
+
+   typedef int (*Py_AuditHookFunction)(const char *event, PyObject *args, void *userData)
+
+      The type of the hook function. *event* is the C string event
+      argument passed to "PySys_Audit()". *args* is guaranteed to be a
+      "PyTupleObject". *userData* is the argument passed to
+      PySys_AddAuditHook().
+
+   Novo na versão 3.8.
+
+
+Process Control
+***************
+
+void Py_FatalError(const char *message)
+    * Parte da ABI Estável.*
+
+   Print a fatal error message and kill the process.  No cleanup is
+   performed. This function should only be invoked when a condition is
+   detected that would make it dangerous to continue using the Python
+   interpreter; e.g., when the object administration appears to be
+   corrupted.  On Unix, the standard C library function "abort()" is
+   called which will attempt to produce a "core" file.
+
+   The "Py_FatalError()" function is replaced with a macro which logs
+   automatically the name of the current function, unless the
+   "Py_LIMITED_API" macro is defined.
+
+   Alterado na versão 3.9: Log the function name automatically.
+
+void Py_Exit(int status)
+    * Parte da ABI Estável.*
+
+   Exit the current process.  This calls "Py_FinalizeEx()" and then
+   calls the standard C library function "exit(status)".  If
+   "Py_FinalizeEx()" indicates an error, the exit status is set to
+   120.
+
+   Alterado na versão 3.6: Errors from finalization no longer ignored.
+
+int Py_AtExit(void (*func)())
+    * Parte da ABI Estável.*
+
+   Register a cleanup function to be called by "Py_FinalizeEx()".  The
+   cleanup function will be called with no arguments and should return
+   no value.  At most 32 cleanup functions can be registered.  When
+   the registration is successful, "Py_AtExit()" returns "0"; on
+   failure, it returns "-1".  The cleanup function registered last is
+   called first. Each cleanup function will be called at most once.
+   Since Python's internal finalization will have completed before the
+   cleanup function, no Python APIs should be called by *func*.

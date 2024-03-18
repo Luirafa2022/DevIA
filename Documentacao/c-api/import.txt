@@ -1,0 +1,315 @@
+Importando módulos
+******************
+
+PyObject *PyImport_ImportModule(const char *name)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   This is a wrapper around "PyImport_Import()" which takes a const
+   char* as an argument instead of a PyObject*.
+
+PyObject *PyImport_ImportModuleNoBlock(const char *name)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Esta função é um alias descontinuado de "PyImport_ImportModule()".
+
+   Alterado na versão 3.3: Essa função falhava em alguns casos, quando
+   o bloqueio de importação era mantido por outra thread. No Python
+   3.3, no entanto, o esquema de bloqueio mudou passando a ser por
+   módulo na maior parte, dessa forma, o comportamento especial dessa
+   função não é mais necessário.
+
+PyObject *PyImport_ImportModuleEx(const char *name, PyObject *globals, PyObject *locals, PyObject *fromlist)
+    *Retorna valor: Nova referência.*
+
+   Importa um módulo. Isso é melhor descrito referindo-se à função
+   embutida do Python "__import__()".
+
+   O valor de retorno é uma nova referência ao módulo importado ou
+   pacote de nível superior, ou "NULL" com uma exceção definida em
+   caso de falha. Como para "__import__()", o valor de retorno quando
+   um submódulo de um pacote é solicitado é normalmente o pacote de
+   nível superior, a menos que um *fromlist* não vazio seja fornecido.
+
+   As importações com falhas removem objetos incompletos do módulo,
+   como em "PyImport_ImportModule()".
+
+PyObject *PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals, PyObject *locals, PyObject *fromlist, int level)
+    *Retorna valor: Nova referência.** Parte da ABI Estável desde a
+   versão 3.7.*
+
+   Importa um módulo. Isso é melhor descrito referindo-se à função
+   embutida do Python "__import__()", já que a função padrão
+   "__import__()" chama essa função diretamente.
+
+   O valor de retorno é uma nova referência ao módulo importado ou
+   pacote de nível superior, ou "NULL" com uma exceção definida em
+   caso de falha. Como para "__import__()", o valor de retorno quando
+   um submódulo de um pacote é solicitado é normalmente o pacote de
+   nível superior, a menos que um *fromlist* não vazio seja fornecido.
+
+   Novo na versão 3.3.
+
+PyObject *PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals, PyObject *fromlist, int level)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Semelhante para "PyImport_ImportModuleLevelObject()", mas o nome é
+   uma string codificada em UTF-8 de um objeto Unicode.
+
+   Alterado na versão 3.3: Valores negativos para *level* não são mais
+   aceitos.
+
+PyObject *PyImport_Import(PyObject *name)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Essa é uma interface de alto nível que chama a atual "função
+   auxiliar de importação" (com um *level* explícito de 0,
+   significando importação absoluta). Invoca a função "__import__()" a
+   partir de "__builtins__" da global atual. Isso significa que a
+   importação é feita usando quaisquer extras de importação instalados
+   no ambiente atual.
+
+   Esta função sempre usa importações absolutas.
+
+PyObject *PyImport_ReloadModule(PyObject *m)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Recarrega um módulo. Retorna uma nova referência para o módulo
+   recarregado, ou "NULL" com uma exceção definida em caso de falha (o
+   módulo ainda existe neste caso).
+
+PyObject *PyImport_AddModuleObject(PyObject *name)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável
+   desde a versão 3.7.*
+
+   Retorna o objeto módulo correspondente a um nome de módulo. O
+   argumento *name* pode ter a forma "package.module". Primeiro
+   verifica o dicionário de módulos se houver algum, caso contrário,
+   cria um novo e insere-o no dicionário de módulos. Retorna "NULL"
+   com uma exceção definida em caso de falha.
+
+   Nota:
+
+     Esta função não carrega ou importa o módulo; se o módulo não foi
+     carregado, você receberá um objeto de módulo vazio. Use
+     "PyImport_ImportModule()" ou uma de suas variações para importar
+     um módulo. Estruturas de pacotes implícitos por um nome
+     pontilhado para a *name* não são criados se não estiverem
+     presentes.
+
+   Novo na versão 3.3.
+
+PyObject *PyImport_AddModule(const char *name)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Semelhante para "PyImport_AddModuleObject()", mas o nome é uma
+   string codifica em UTF-8 em vez de um objeto Unicode.
+
+PyObject *PyImport_ExecCodeModule(const char *name, PyObject *co)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Given a module name (possibly of the form "package.module") and a
+   code object read from a Python bytecode file or obtained from the
+   built-in function "compile()", load the module.  Return a new
+   reference to the module object, or "NULL" with an exception set if
+   an error occurred.  *name* is removed from "sys.modules" in error
+   cases, even if *name* was already in "sys.modules" on entry to
+   "PyImport_ExecCodeModule()".  Leaving incompletely initialized
+   modules in "sys.modules" is dangerous, as imports of such modules
+   have no way to know that the module object is an unknown (and
+   probably damaged with respect to the module author's intents)
+   state.
+
+   The module's "__spec__" and "__loader__" will be set, if not set
+   already, with the appropriate values.  The spec's loader will be
+   set to the module's "__loader__" (if set) and to an instance of
+   "SourceFileLoader" otherwise.
+
+   The module's "__file__" attribute will be set to the code object's
+   "co_filename".  If applicable, "__cached__" will also be set.
+
+   Esta função recarregará o módulo se este já tiver sido importado.
+   Veja "PyImport_ReloadModule()" para forma desejada de recarregar um
+   módulo.
+
+   Se *name* apontar para um nome pontilhado no formato de
+   "package.module", quaisquer estruturas de pacote ainda não criadas
+   ainda não serão criadas.
+
+   Veja também "PyImport_ExecCodeModuleEx()" e
+   "PyImport_ExecCodeModuleWithPathnames()".
+
+   Alterado na versão 3.12: The setting of "__cached__" and
+   "__loader__" is deprecated. See "ModuleSpec" for alternatives.
+
+PyObject *PyImport_ExecCodeModuleEx(const char *name, PyObject *co, const char *pathname)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Como "PyImport_ExecCodeModule()", mas o atributo "__file__"  do
+   objeto módulo é definido como *pathname*  se não for "NULL".
+
+   Veja também "PyImport_ExecCodeModuleWithPathnames()".
+
+PyObject *PyImport_ExecCodeModuleObject(PyObject *name, PyObject *co, PyObject *pathname, PyObject *cpathname)
+    *Retorna valor: Nova referência.** Parte da ABI Estável desde a
+   versão 3.7.*
+
+   Como "PyImport_ExecCodeModuleEx()", mas o atributo "__cached__"  do
+   objeto módulo é definido como *cpathname*  se não for "NULL". Das
+   três funções, esta é a preferida para usar.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.12: Setting "__cached__" is deprecated. See
+   "ModuleSpec" for alternatives.
+
+PyObject *PyImport_ExecCodeModuleWithPathnames(const char *name, PyObject *co, const char *pathname, const char *cpathname)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Como "PyImport_ExecCodeModuleObject()", mas *name*, *pathname* e
+   *cpathname* são strings codificadas em UTF-8. Também são feitas
+   tentativas para descobrir qual valor para *pathname* deve ser de
+   *cpathname* se o primeiro estiver definido como "NULL".
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.3: Uses "imp.source_from_cache()" in
+   calculating the source path if only the bytecode path is provided.
+
+   Alterado na versão 3.12: No longer uses the removed "imp" module.
+
+long PyImport_GetMagicNumber()
+    * Parte da ABI Estável.*
+
+   Retorna o número mágico para arquivos de bytecode Python (também
+   conhecido como arquivo ".pyc"). O número mágico deve estar presente
+   nos primeiros quatro bytes do arquivo bytecode, na ordem de bytes
+   little-endian. Retorna "-1" em caso de erro.
+
+   Alterado na versão 3.3: Retorna o valor de "-1" no caso de falha.
+
+const char *PyImport_GetMagicTag()
+    * Parte da ABI Estável.*
+
+   Retorna a string de tag mágica para nomes de arquivo de bytecode
+   Python no formato de **PEP 3147**. Tenha em mente que o valor em
+   "sys.implementation.cache_tag" é autoritativo e deve ser usado no
+   lugar desta função.
+
+   Novo na versão 3.2.
+
+PyObject *PyImport_GetModuleDict()
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna o dicionário usado para a administração do módulo (também
+   conhecido como "sys.modules"). Observe que esta é uma variável por
+   interpretador.
+
+PyObject *PyImport_GetModule(PyObject *name)
+    *Retorna valor: Nova referência.** Parte da ABI Estável desde a
+   versão 3.8.*
+
+   Retorna o módulo já importado com o nome fornecido. Se o módulo
+   ainda não foi importado, retorna "NULL", mas não define um erro.
+   Retorna "NULL" e define um erro se a pesquisa falhar.
+
+   Novo na versão 3.7.
+
+PyObject *PyImport_GetImporter(PyObject *path)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Return a finder object for a "sys.path"/"pkg.__path__" item *path*,
+   possibly by fetching it from the "sys.path_importer_cache" dict.
+   If it wasn't yet cached, traverse "sys.path_hooks" until a hook is
+   found that can handle the path item.  Return "None" if no hook
+   could; this tells our caller that the *path based finder* could not
+   find a finder for this path item. Cache the result in
+   "sys.path_importer_cache". Return a new reference to the finder
+   object.
+
+int PyImport_ImportFrozenModuleObject(PyObject *name)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   Carrega um módulo congelado chamado *name*. Retorna "1" para
+   sucesso, "0" se o módulo não for encontrado e "-1" com uma exceção
+   definida se a inicialização falhar. Para acessar o módulo importado
+   em um carregamento bem-sucedido, use "PyImport_ImportModule()".
+   (Observe o nome incorreto --- esta função recarregaria o módulo se
+   ele já tivesse sido importado.)
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.4: O atributo "__file__" não está mais
+   definido no módulo.
+
+int PyImport_ImportFrozenModule(const char *name)
+    * Parte da ABI Estável.*
+
+   Semelhante a "PyImport_ImportFrozenModuleObject()", mas o nome é
+   uma string codificada em UTF-8 em vez de um objeto Unicode.
+
+struct _frozen
+
+   Esta é a definição do tipo de estrutura para descritores de módulo
+   congelados, conforme gerado pelo utilitário **freeze** (veja
+   "Tools/freeze/" na distribuição fonte do Python). Sua definição,
+   encontrada em "Include/import.h", é:
+
+      struct _frozen {
+          const char *name;
+          const unsigned char *code;
+          int size;
+          bool is_package;
+      };
+
+   Alterado na versão 3.11: O novo campo "is_package" indica se o
+   módulo é um pacote ou não. Isso substitui a configuração do campo
+   "size" para um valor negativo.
+
+const struct _frozen *PyImport_FrozenModules
+
+   Este ponteiro é inicializado para apontar para um vetor de
+   registros de "_frozen", terminado por um cujos membros são todos
+   "NULL" ou zero. Quando um módulo congelado é importado, ele é
+   pesquisado nesta tabela. O código de terceiros pode fazer truques
+   com isso para fornecer uma coleção criada dinamicamente de módulos
+   congelados.
+
+int PyImport_AppendInittab(const char *name, PyObject *(*initfunc)(void))
+    * Parte da ABI Estável.*
+
+   Adiciona um único módulo à tabela existente de módulos embutidos.
+   Este é um invólucro prático em torno de "PyImport_ExtendInittab()",
+   retornando "-1" se a tabela não puder ser estendida. O novo módulo
+   pode ser importado pelo nome *name* e usa a função *initfunc* como
+   a função de inicialização chamada na primeira tentativa de
+   importação. Deve ser chamado antes de "Py_Initialize()".
+
+struct _inittab
+
+   Structure describing a single entry in the list of built-in
+   modules. Programs which embed Python may use an array of these
+   structures in conjunction with "PyImport_ExtendInittab()" to
+   provide additional built-in modules. The structure consists of two
+   members:
+
+   const char *name
+
+      The module name, as an ASCII encoded string.
+
+   PyObject *(*initfunc)(void)
+
+      Initialization function for a module built into the interpreter.
+
+int PyImport_ExtendInittab(struct _inittab *newtab)
+
+   Add a collection of modules to the table of built-in modules.  The
+   *newtab* array must end with a sentinel entry which contains "NULL"
+   for the "name" field; failure to provide the sentinel value can
+   result in a memory fault. Returns "0" on success or "-1" if
+   insufficient memory could be allocated to extend the internal
+   table.  In the event of failure, no modules are added to the
+   internal table.  This must be called before "Py_Initialize()".
+
+   Se Python é inicializado várias vezes, "PyImport_AppendInittab()"
+   ou "PyImport_ExtendInittab()" devem ser chamados antes de cada
+   inicialização do Python.

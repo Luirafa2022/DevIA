@@ -1,0 +1,40 @@
+Objetos Geradores
+*****************
+
+Objetos geradores são o que o Python usa para implementar iteradores
+geradores. Eles são normalmente criados por iteração sobre uma função
+que produz valores, em vez de invocar explicitamente "PyGen_New()" ou
+"PyGen_NewWithQualName()".
+
+type PyGenObject
+
+   A estrutura C usada para objetos geradores.
+
+PyTypeObject PyGen_Type
+
+   O objeto de tipo correspondendo a objetos geradores.
+
+int PyGen_Check(PyObject *ob)
+
+   Retorna verdadeiro se *ob* for um objeto gerador; *ob* não deve ser
+   "NULL". Esta função sempre tem sucesso.
+
+int PyGen_CheckExact(PyObject *ob)
+
+   Retorna verdadeiro se o tipo do *ob* é "PyGen_Type"; *ob* não deve
+   ser "NULL". Esta função sempre tem sucesso.
+
+PyObject *PyGen_New(PyFrameObject *frame)
+    *Retorna valor: Nova referência.*
+
+   Cria e retorna um novo objeto gerador com base no objeto *frame*.
+   Uma referência a *quadro* é roubada por esta função. O argumento
+   não deve ser "NULL".
+
+PyObject *PyGen_NewWithQualName(PyFrameObject *frame, PyObject *name, PyObject *qualname)
+    *Retorna valor: Nova referência.*
+
+   Cria e retorna um novo objeto gerador com base no objeto *frame*,
+   com "__name__" e "__qualname__" definidos como *name* e *qualname*.
+   Uma referência a *frame* é roubada por esta função. O argumento
+   *frame* não deve ser "NULL".

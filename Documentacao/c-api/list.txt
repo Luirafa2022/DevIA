@@ -1,0 +1,135 @@
+Objeto List
+***********
+
+type PyListObject
+
+   Este subtipo de "PyObject" representa um objeto de lista Python.
+
+PyTypeObject PyList_Type
+    * Parte da ABI Estável.*
+
+   Esta instância de "PyTypeObject" representa o tipo de lista Python.
+   Este é o mesmo objeto que "list" na camada Python.
+
+int PyList_Check(PyObject *p)
+
+   Retorna verdadeiro se *p* é um objeto lista ou uma instância de um
+   subtipo do tipo lista. Esta função sempre tem sucesso.
+
+int PyList_CheckExact(PyObject *p)
+
+   Retorna verdadeiro se *p* é um objeto lista, mas não uma instância
+   de um subtipo do tipo lista. Esta função sempre tem sucesso.
+
+PyObject *PyList_New(Py_ssize_t len)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna uma nova lista de comprimento *len* em caso de sucesso, ou
+   "NULL" em caso de falha.
+
+   Nota:
+
+     Se *len* for maior que zero, os itens do objeto de lista
+     retornado são definidos como "NULL". Portanto, você não pode usar
+     funções API abstratas, como "PySequence_SetItem()" ou expor o
+     objeto ao código Python antes de definir todos os itens para um
+     objeto real com "PyList_SetItem()".
+
+Py_ssize_t PyList_Size(PyObject *list)
+    * Parte da ABI Estável.*
+
+   Retorna o comprimento do objeto de lista em *list*; isto é
+   equivalente a "len(list)" em um objeto lista.
+
+Py_ssize_t PyList_GET_SIZE(PyObject *list)
+
+   Similar a "PyList_Size()", mas sem verificação de erro.
+
+PyObject *PyList_GetItem(PyObject *list, Py_ssize_t index)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna o objeto na posição *index* na lista apontada por *list*. A
+   posição deve ser não negativa; não há suporte à indexação do final
+   da lista. Se *index* estiver fora dos limites (<o ou >=len(list)),
+   retorna "NULL" e levanta uma exceção "IndexError".
+
+PyObject *PyList_GET_ITEM(PyObject *list, Py_ssize_t i)
+    *Retorna valor: Referência emprestada.*
+
+   Similar a "PyList_GetItem()", mas sem verificação de erro.
+
+int PyList_SetItem(PyObject *list, Py_ssize_t index, PyObject *item)
+    * Parte da ABI Estável.*
+
+   Define o item no índice *index* na lista como *item*. Retorna "0"
+   em caso de sucesso. Se *index* estiver fora dos limites, retorna
+   "-1" e levanta uma exceção "IndexError".
+
+   Nota:
+
+     Esta função "rouba" uma referência para o *item* e descarta uma
+     referência para um item já presente na lista na posição afetada.
+
+void PyList_SET_ITEM(PyObject *list, Py_ssize_t i, PyObject *o)
+
+   Forma macro de "PyList_SetItem()" sem verificação de erro. Este é
+   normalmente usado apenas para preencher novas listas onde não há
+   conteúdo anterior.
+
+   Nota:
+
+     Esta macro "rouba" uma referência para o *item* e, ao contrário
+     de "PyList_SetItem()", *não* descarta uma referência para nenhum
+     item que esteja sendo substituído; qualquer referência em *list*
+     será perdida.
+
+int PyList_Insert(PyObject *list, Py_ssize_t index, PyObject *item)
+    * Parte da ABI Estável.*
+
+   Insere o item *item* na lista *list* na frente do índice *index*.
+   Retorna "0" se for bem-sucedido; retorna "-1" e levanta uma exceção
+   se malsucedido. Análogo a "list.insert(index, item)".
+
+int PyList_Append(PyObject *list, PyObject *item)
+    * Parte da ABI Estável.*
+
+   Adiciona o item *item* ao final da lista *list*. Retorna "0" se for
+   bem-sucedido; retorna "-1" e levanta uma exceção se malsucedido.
+   Análogo a "list.insert(index, item)".
+
+PyObject *PyList_GetSlice(PyObject *list, Py_ssize_t low, Py_ssize_t high)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna uma lista dos objetos em *list* contendo os objetos *entre*
+   *low* e *alto*. Retorne "NULL" e levanta uma exceção se
+   malsucedido. Análogo a "list[low:high]". Não há suporte à indexação
+   do final da lista.
+
+int PyList_SetSlice(PyObject *list, Py_ssize_t low, Py_ssize_t high, PyObject *itemlist)
+    * Parte da ABI Estável.*
+
+   Define a fatia de *list* entre *low* e *high* para o conteúdo de
+   *itemlist*. Análogo a "list[low:high] = itemlist". *itemlist* pode
+   ser "NULL", indicando a atribuição de uma lista vazia (exclusão de
+   fatia). Retorna "0" em caso de sucesso, "-1" em caso de falha. Não
+   há suporte à indexação do final da lista.
+
+int PyList_Sort(PyObject *list)
+    * Parte da ABI Estável.*
+
+   Ordena os itens de *list* no mesmo lugar. Retorna "0" em caso de
+   sucesso, e "-1" em caso de falha. Isso é o equivalente de
+   "list.sort()".
+
+int PyList_Reverse(PyObject *list)
+    * Parte da ABI Estável.*
+
+   Inverte os itens de *list* no mesmo lugar. Retorna "0" em caso de
+   sucesso, e "-1" em caso de falha. Isso é o equivalente de
+   "list.reverse()".
+
+PyObject *PyList_AsTuple(PyObject *list)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto tupla contendo os conteúdos de *list*;
+   equivale a "tuple(list)".

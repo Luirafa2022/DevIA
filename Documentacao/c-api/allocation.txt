@@ -1,0 +1,64 @@
+Alocando Objetos na Pilha
+*************************
+
+PyObject *_PyObject_New(PyTypeObject *type)
+    *Retorna valor: Nova referência.*
+
+PyVarObject *_PyObject_NewVar(PyTypeObject *type, Py_ssize_t size)
+    *Retorna valor: Nova referência.*
+
+PyObject *PyObject_Init(PyObject *op, PyTypeObject *type)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Inicializa um objeto *op* recém-alocado com seu tipo e referência
+   inicial.  Retorna o objeto inicializado. Se o *type* indica que o
+   objeto participa no detector de lixo cíclico ele é adicionado ao
+   grupo do detector de objetos observados. Outros campos do objeto
+   não são afetados.
+
+PyVarObject *PyObject_InitVar(PyVarObject *op, PyTypeObject *type, Py_ssize_t size)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Isto faz tudo que o "PyObject_Init()" faz e também inicializa a
+   informação de comprimento para um objeto de tamanho variável.
+
+PyObject_New(TYPE, typeobj)
+
+   Aloca um novo objeto Python usando o tipo de estrutura do C *TYPE*
+   e o objeto Python do tipo *typeobj* ("PyTypeObject*"). Campos não
+   definidos pelo cabeçalho do objeto Python não são inicializados. O
+   chamador será dono da apenas a referência ao objeto (isto é, sua
+   contagem de referências será uma). O tamanho da alocação de memória
+   é determinado do campo "tp_basicsize" do objeto tipo.
+
+PyObject_NewVar(TYPE, typeobj, size)
+
+   Aloca um novo objeto Python usando o tipo de estrutura do C *TYPE*
+   e o objeto Python do tipo *typeobj* ("PyTypeObject*"). Campos não
+   definidos pelo cabeçalho do objeto Python não são inicializados. A
+   memória alocada permite a estrutura *TYPE* e os campos *size*
+   ("Py_ssize_t") do tamanho dado pelo campo "tp_itemsize" do tipo
+   *typeobj*. Isto é útil para implementar objetos como tuplas, as
+   quais são capazes de determinar seu tamanho no tempo da construção.
+   Incorporando o vetor de campos dentro da mesma alocação diminuindo
+   o numero de alocações, melhorando a eficiência do gerenciamento de
+   memória.
+
+void PyObject_Del(void *op)
+
+   Libera memória alocada a um objeto usando "PyObject_New" ou
+   "PyObject_NewVar". Isto é normalmente chamado pelo manipulador de
+   "tp_dealloc" especificado no tipo do objeto. Os campos do objeto
+   não devem ser acessados após esta chamada como a memória não é mais
+   um objeto Python válido.
+
+PyObject _Py_NoneStruct
+
+   Objeto o qual é visível no Python como "None". Isto só deve ser
+   acessado usando a macro "Py_None", o qual avalia como um ponteiro
+   para este objeto.
+
+Ver também:
+
+  "PyModule_Create()"
+     Para alocar e criar módulos de extensão.

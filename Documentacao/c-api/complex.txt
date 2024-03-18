@@ -1,0 +1,124 @@
+Objetos de números complexos
+****************************
+
+Os objetos de números complexos do Python são implementados como dois
+tipos distintos quando visualizados na API C: um é o objeto Python
+exposto aos programas Python e o outro é uma estrutura C que
+representa o valor real do número complexo. A API fornece funções para
+trabalhar com ambos.
+
+
+Números complexos como estruturas C.
+====================================
+
+Observe que as funções que aceitam essas estruturas como parâmetros e
+as retornam como resultados o fazem *por valor* em vez de
+desreferenciá-las por meio de ponteiros. Isso é consistente em toda a
+API.
+
+type Py_complex
+
+   A estrutura C que corresponde à parte do valor de um objeto de
+   número complexo Python. A maioria das funções para lidar com
+   objetos de números complexos usa estruturas desse tipo como valores
+   de entrada ou saída, conforme apropriado. É definido como:
+
+      typedef struct {
+         double real;
+         double imag;
+      } Py_complex;
+
+Py_complex _Py_c_sum(Py_complex left, Py_complex right)
+
+   Retorna a soma de dois números complexos, utilizando a
+   representação C "Py_complex".
+
+Py_complex _Py_c_diff(Py_complex left, Py_complex right)
+
+   Retorna a diferença entre dois números complexos, utilizando a
+   representação C "Py_complex".
+
+Py_complex _Py_c_neg(Py_complex num)
+
+   Retorna a negação do número complexo *num*, utilizando a
+   representação C "Py_complex".
+
+Py_complex _Py_c_prod(Py_complex left, Py_complex right)
+
+   Retorna o produto de dois números complexos, utilizando a
+   representação C "Py_complex".
+
+Py_complex _Py_c_quot(Py_complex dividend, Py_complex divisor)
+
+   Retorna o quociente de dois números complexos, utilizando a
+   representação C "Py_complex".
+
+   If *divisor* is null, this method returns zero and sets "errno" to
+   "EDOM".
+
+Py_complex _Py_c_pow(Py_complex num, Py_complex exp)
+
+   Retorna a exponenciação de *num* por *exp*, utilizando a
+   representação C "Py_complex"
+
+   If *num* is null and *exp* is not a positive real number, this
+   method returns zero and sets "errno" to "EDOM".
+
+
+Números complexos como objetos Python
+=====================================
+
+type PyComplexObject
+
+   Este subtipo de "PyObject" representa um objeto Python de número
+   complexo.
+
+PyTypeObject PyComplex_Type
+    * Parte da ABI Estável.*
+
+   Esta instância de "PyTypeObject" representa o tipo de número
+   complexo Python. É o mesmo objeto que "complex" na camada Python.
+
+int PyComplex_Check(PyObject *p)
+
+   Retorna true se seu argumento é um "PyComplexObject" ou um subtipo
+   de "PyComplexObject". Esta função sempre tem sucesso.
+
+int PyComplex_CheckExact(PyObject *p)
+
+   Retorna true se seu argumento é um "PyComplexObject", mas não um
+   subtipo de "PyComplexObject". Esta função sempre tem sucesso.
+
+PyObject *PyComplex_FromCComplex(Py_complex v)
+    *Retorna valor: Nova referência.*
+
+   Cria um novo objeto de número complexo Python a partir de um valor
+   C "Py_complex".
+
+PyObject *PyComplex_FromDoubles(double real, double imag)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto "PyComplexObject" de *real* e *imag*.
+
+double PyComplex_RealAsDouble(PyObject *op)
+    * Parte da ABI Estável.*
+
+   Retorna a parte real de *op* como um double C.
+
+double PyComplex_ImagAsDouble(PyObject *op)
+    * Parte da ABI Estável.*
+
+   Retorna a parte imaginária de *op* como um double C.
+
+Py_complex PyComplex_AsCComplex(PyObject *op)
+
+   Retorna o valor "Py_complex" do número complexo *op*.
+
+   If *op* is not a Python complex number object but has a
+   "__complex__()" method, this method will first be called to convert
+   *op* to a Python complex number object.  If "__complex__()" is not
+   defined then it falls back to "__float__()".  If "__float__()" is
+   not defined then it falls back to "__index__()".  Upon failure,
+   this method returns "-1.0" as a real value.
+
+   Alterado na versão 3.8: Use "__index__()" if available.

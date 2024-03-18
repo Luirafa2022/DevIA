@@ -1,0 +1,70 @@
+API e Versionamento de ABI
+**************************
+
+O CPython expõe seu número de versão nas seguintes macros. Note que
+estes correspondem com o código da versão que está **construída**, não
+necessariamente a versão usada no **run time**.
+
+Veja Estabilidade da API C para uma discussão da estabilidade da API e
+ABI através das versões.
+
+PY_MAJOR_VERSION
+
+   O "3" em "3.4.1a2".
+
+PY_MINOR_VERSION
+
+   O "4" em "3.4.1a2".
+
+PY_MICRO_VERSION
+
+   O "1" em "3.4.1a2".
+
+PY_RELEASE_LEVEL
+
+   O "a" em "3.4.1a2". Isto pode ser "0xA" para alfa, "0xB" para beta,
+   "0xC" para o candidato a lançamento ou "0xF" para final.
+
+PY_RELEASE_SERIAL
+
+   O "2" em "3.4.1a2". Zero para os lançamentos finais.
+
+PY_VERSION_HEX
+
+   O número da versão do Python codificado em um único inteiro.
+
+   As informações da versão subjacente podem ser achadas tratando-as
+   como um número de 32 bits da seguinte maneira:
+
+   +---------+---------------------------+---------------------------+----------------------------+
+   | Bytes   | Bits (big endian order)   | Significado               | Valor para "3.4.1a2"       |
+   |=========|===========================|===========================|============================|
+   | 1       | 1-8                       | "PY_MAJOR_VERSION"        | "0x03"                     |
+   +---------+---------------------------+---------------------------+----------------------------+
+   | 2       | 9-16                      | "PY_MINOR_VERSION"        | "0x04"                     |
+   +---------+---------------------------+---------------------------+----------------------------+
+   | 3       | 17-24                     | "PY_MICRO_VERSION"        | "0x01"                     |
+   +---------+---------------------------+---------------------------+----------------------------+
+   | 4       | 25-28                     | "PY_RELEASE_LEVEL"        | "0xA"                      |
+   |         +---------------------------+---------------------------+----------------------------+
+   |         | 29-32                     | "PY_RELEASE_SERIAL"       | "0x2"                      |
+   +---------+---------------------------+---------------------------+----------------------------+
+
+   Assim "3.4.1a2" é a versão hex "0x030401a2" e "3.10.0" é a versãos
+   hex "0x030a00f0".
+
+   Use isso para comparações numéricas como, por exemplo, "#if
+   PY_VERSION_HEX >= ...".
+
+   Esta versão também está disponível através do símbolo "Py_Version".
+
+const unsigned long Py_Version
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   O número da versão do runtime do Python codificado em um único
+   inteiro constante, com o mesmo formato da macro "PY_VERSION_HEX".
+   Ele contém a versão do Python usada em tempo de execução.
+
+   Novo na versão 3.11.
+
+Todas as macros dadas estão definidas em Include/patchlevel.h.

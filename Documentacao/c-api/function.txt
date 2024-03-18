@@ -1,0 +1,179 @@
+Objetos Função
+**************
+
+Existem algumas funções específicas para as funções do Python.
+
+type PyFunctionObject
+
+   A estrutura C usada para funções.
+
+PyTypeObject PyFunction_Type
+
+   Esta é uma instância de "PyTypeObject" e representa o tipo de
+   função Python. Está exposto aos programadores Python como
+   "types.FunctionType".
+
+int PyFunction_Check(PyObject *o)
+
+   Retorna verdadeiro se *o* é um objeto de função (tem tipo
+   "PyFunction_Type"). O parâmetro não deve ser "NULL". Esta função
+   sempre tem sucesso.
+
+PyObject *PyFunction_New(PyObject *code, PyObject *globals)
+    *Retorna valor: Nova referência.*
+
+   Retorna um novo objeto função associado ao código objeto *code*.
+   *globals* deve ser um dicionário com as variáveis globais
+   acessíveis à função.
+
+   The function's docstring and name are retrieved from the code
+   object. "__module__" is retrieved from *globals*. The argument
+   defaults, annotations and closure are set to "NULL". "__qualname__"
+   is set to the same value as the code object's "co_qualname" field.
+
+PyObject *PyFunction_NewWithQualName(PyObject *code, PyObject *globals, PyObject *qualname)
+    *Retorna valor: Nova referência.*
+
+   As "PyFunction_New()", but also allows setting the function
+   object's "__qualname__" attribute. *qualname* should be a unicode
+   object or "NULL"; if "NULL", the "__qualname__" attribute is set to
+   the same value as the code object's "co_qualname" field.
+
+   Novo na versão 3.3.
+
+PyObject *PyFunction_GetCode(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o objeto de código associado ao objeto função *op*.
+
+PyObject *PyFunction_GetGlobals(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o dicionário global associado ao objeto função *op*.
+
+PyObject *PyFunction_GetModule(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Return a *borrowed reference* to the "__module__" attribute of the
+   function object *op*. It can be *NULL*.
+
+   This is normally a "string" containing the module name, but can be
+   set to any other object by Python code.
+
+PyObject *PyFunction_GetDefaults(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o argumento os valores padrão do objeto função *op*. Isso
+   pode ser uma tupla de argumentos ou "NULL".
+
+int PyFunction_SetDefaults(PyObject *op, PyObject *defaults)
+
+   Define o argumento valores padrão para o objeto função *op*.
+   *defaults* deve ser "Py_None" ou uma tupla.
+
+   Levanta "SystemError" e retorna "-1" em falha.
+
+void PyFunction_SetVectorcall(PyFunctionObject *func, vectorcallfunc vectorcall)
+
+   Set the vectorcall field of a given function object *func*.
+
+   Warning: extensions using this API must preserve the behavior of
+   the unaltered (default) vectorcall function!
+
+   Novo na versão 3.12.
+
+PyObject *PyFunction_GetClosure(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o fechamento associado ao objeto função *op*. Isso pode ser
+   "NULL" ou uma tupla de objetos de célula.
+
+int PyFunction_SetClosure(PyObject *op, PyObject *closure)
+
+   Define o fechamento associado ao objeto função *op*. *closure* deve
+   ser "Py_None" ou uma tupla de objetos de célula.
+
+   Levanta "SystemError" e retorna "-1" em falha.
+
+PyObject *PyFunction_GetAnnotations(PyObject *op)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna as anotações do objeto função *op*. Este pode ser um
+   dicionário mutável ou "NULL".
+
+int PyFunction_SetAnnotations(PyObject *op, PyObject *annotations)
+
+   Define as anotações para o objeto função *op*. *annotations* deve
+   ser um dicionário ou "Py_None".
+
+   Levanta "SystemError" e retorna "-1" em falha.
+
+int PyFunction_AddWatcher(PyFunction_WatchCallback callback)
+
+   Register *callback* as a function watcher for the current
+   interpreter. Return an ID which may be passed to
+   "PyFunction_ClearWatcher()". In case of error (e.g. no more watcher
+   IDs available), return "-1" and set an exception.
+
+   Novo na versão 3.12.
+
+int PyFunction_ClearWatcher(int watcher_id)
+
+   Clear watcher identified by *watcher_id* previously returned from
+   "PyFunction_AddWatcher()" for the current interpreter. Return "0"
+   on success, or "-1" and set an exception on error (e.g.  if the
+   given *watcher_id* was never registered.)
+
+   Novo na versão 3.12.
+
+type PyFunction_WatchEvent
+
+   Enumeration of possible function watcher events: -
+   "PyFunction_EVENT_CREATE" - "PyFunction_EVENT_DESTROY" -
+   "PyFunction_EVENT_MODIFY_CODE" - "PyFunction_EVENT_MODIFY_DEFAULTS"
+   - "PyFunction_EVENT_MODIFY_KWDEFAULTS"
+
+   Novo na versão 3.12.
+
+typedef int (*PyFunction_WatchCallback)(PyFunction_WatchEvent event, PyFunctionObject *func, PyObject *new_value)
+
+   Type of a function watcher callback function.
+
+   If *event* is "PyFunction_EVENT_CREATE" or
+   "PyFunction_EVENT_DESTROY" then *new_value* will be "NULL".
+   Otherwise, *new_value* will hold a *borrowed reference* to the new
+   value that is about to be stored in *func* for the attribute that
+   is being modified.
+
+   The callback may inspect but must not modify *func*; doing so could
+   have unpredictable effects, including infinite recursion.
+
+   If *event* is "PyFunction_EVENT_CREATE", then the callback is
+   invoked after *func* has been fully initialized. Otherwise, the
+   callback is invoked before the modification to *func* takes place,
+   so the prior state of *func* can be inspected. The runtime is
+   permitted to optimize away the creation of function objects when
+   possible. In such cases no event will be emitted. Although this
+   creates the possibility of an observable difference of runtime
+   behavior depending on optimization decisions, it does not change
+   the semantics of the Python code being executed.
+
+   If *event* is "PyFunction_EVENT_DESTROY",  Taking a reference in
+   the callback to the about-to-be-destroyed function will resurrect
+   it, preventing it from being freed at this time. When the
+   resurrected object is destroyed later, any watcher callbacks active
+   at that time will be called again.
+
+   Se a função de retorno definir uma exceção, ela deverá retornar
+   "-1"; essa exceção será impressa como uma exceção não reprovável
+   usando "PyErr_WriteUnraisable()". Caso contrário, deverá retornar
+   "0".
+
+   É possível que já exista uma exceção pendente definida na entrada
+   da chamada de retorno. Nesse caso, a função de retorno deve
+   retornar "0" com a mesma exceção ainda definida. Isso significa que
+   a callback não pode chamar nenhuma outra API que possa definir uma
+   exceção, a menos que salve e limpe o estado da exceção primeiro e o
+   restaure antes de retornar.
+
+   Novo na versão 3.12.

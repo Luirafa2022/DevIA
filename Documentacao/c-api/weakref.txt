@@ -1,0 +1,79 @@
+Objetos de referência fraca
+***************************
+
+O Python oferece suporte a *referências fracas* como objetos de
+primeira classe. Existem dois tipos de objetos específicos que
+implementam diretamente referências fracas. O primeiro é um objeto de
+referência simples, e o segundo atua como um intermediário ao objeto
+original tanto quanto ele pode.
+
+int PyWeakref_Check(PyObject *ob)
+
+   Retorna verdadeiro se *ob* for um objeto referência ou um objeto
+   intermediário. Esta função sempre tem sucesso.
+
+int PyWeakref_CheckRef(PyObject *ob)
+
+   Retorna verdadeiro se *ob* for um objeto referência. Esta função
+   sempre tem sucesso.
+
+int PyWeakref_CheckProxy(PyObject *ob)
+
+   Retorna verdadeiro se *ob* for um objeto intermediário. Esta função
+   sempre tem sucesso.
+
+PyObject *PyWeakref_NewRef(PyObject *ob, PyObject *callback)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um objeto de referência fraca para o objeto *ob*. Isso
+   sempre retornará uma nova referência, mas não é garantido para
+   criar um novo objeto; um objeto de referência existente pode ser
+   retornado. O segundo parâmetro, *callback*, pode ser um objeto
+   chamável que recebe notificação quando *ob* for lixo coletado; ele
+   deve aceitar um único parâmetro, que será o objeto de referência
+   fraca propriamente dito. *callback* também pode ser "None" ou
+   "NULL". Se *ob* não for um objeto fracamente referenciável, ou se
+   *callback* não for um chamável, "None", ou "NULL", isso retornará
+   "NULL" e levantará a "TypeError".
+
+PyObject *PyWeakref_NewProxy(PyObject *ob, PyObject *callback)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um objeto de proxy de referência fraca para o objeto *ob*.
+   Isso sempre retornará uma nova referência, mas não é garantido para
+   criar um novo objeto; um objeto de proxy existente pode ser
+   retornado. O segundo parâmetro, *callback*, pode ser um objeto
+   chamável que recebe notificação quando *ob* for lixo coletado; ele
+   deve aceitar um único parâmetro, que será o objeto de referência
+   fraca propriamente dito. *callback* também pode ser "None" ou
+   "NULL". Se *ob* não for um objeto fracamente referenciável, ou se
+   *callback* não for um chamável, "None", ou "NULL", isso retornará
+   "NULL" e levantará a "TypeError".
+
+PyObject *PyWeakref_GetObject(PyObject *ref)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna o objeto referenciado de uma referência fraca, *ref*. Se o
+   referente não estiver mais em tempo real, retorna "Py_None".
+
+   Nota:
+
+     Esta função retorna uma *referência emprestada* para o objeto
+     referenciado. Isso significa que você deve sempre chamar
+     "Py_INCREF()" no objeto, exceto quando ele não puder ser
+     destruído antes do último uso da referência emprestada.
+
+PyObject *PyWeakref_GET_OBJECT(PyObject *ref)
+    *Retorna valor: Referência emprestada.*
+
+   Semelhante a "PyWeakref_GetObject()", mas não verifica erros.
+
+void PyObject_ClearWeakRefs(PyObject *object)
+    * Parte da ABI Estável.*
+
+   Esta função é chamada pelo tratador "tp_dealloc" para limpar
+   referências fracas.
+
+   Isso itera pelas referências fracas para *object* e chama retornos
+   de chamada para as referências que possuem um. Ele retorna quando
+   todos os retornos de chamada foram tentados.

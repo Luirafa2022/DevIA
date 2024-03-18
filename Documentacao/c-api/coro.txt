@@ -1,0 +1,28 @@
+Objetos corrotina
+*****************
+
+Novo na versão 3.5.
+
+Os objetos corrotina são aquelas funções declaradas com um retorno de
+palavra-chave "async".
+
+type PyCoroObject
+
+   A estrutura C utilizada para objetos corrotinas.
+
+PyTypeObject PyCoro_Type
+
+   O tipo de objeto correspondente a objetos corrotina.
+
+int PyCoro_CheckExact(PyObject *ob)
+
+   Retorna true se o tipo do *ob* é "PyCoro_Type"; *ob* não deve ser
+   "NULL". Esta função sempre tem sucesso.
+
+PyObject *PyCoro_New(PyFrameObject *frame, PyObject *name, PyObject *qualname)
+    *Retorna valor: Nova referência.*
+
+   Cria e retorna um novo objeto de corrotina com base no objeto
+   *frame*, com "__name__" e "__qualname__" definido como *name* e
+   *qualname*. Uma referência a *frame* é roubada por esta função. O
+   argumento *frame* não deve ser "NULL".

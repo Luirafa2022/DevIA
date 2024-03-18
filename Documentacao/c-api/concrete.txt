@@ -1,0 +1,193 @@
+Camada de Objetos Concretos
+***************************
+
+As funções neste capítulo são específicas para certos tipos de objetos
+Python. Passar para eles um objeto do tipo errado não é uma boa ideia;
+se você receber um objeto de um programa Python e não tiver certeza de
+que ele tem o tipo certo, primeiro execute uma verificação de tipo;
+por exemplo, para verificar se um objeto é um dicionário, use
+"PyDict_Check()". O capítulo está estruturado como a "árvore
+genealógica" dos tipos de objetos Python.
+
+Aviso:
+
+  Enquanto as funções descritas neste capítulo verificam
+  cuidadosamente o tipo de objetos passados, muitos deles não
+  verificam a passagem de "NULL" em vez de um objeto válido. Permitir
+  a passagem de "NULL" pode causar violações ao acesso à memória e
+  encerramento imediato do interpretador.
+
+
+Objetos Fundamentais
+====================
+
+Esta seção descreve os objetos de tipo Python e o objeto singleton
+"None".
+
+* Objetos tipo
+
+  * Creating Heap-Allocated Types
+
+* O Objeto "None"
+
+
+Objetos Numéricos
+=================
+
+* Objetos Inteiros
+
+* Objetos Booleanos
+
+* Objetos de ponto flutuante
+
+  * Pack and Unpack functions
+
+    * Pack functions
+
+    * Unpack functions
+
+* Objetos de números complexos
+
+  * Números complexos como estruturas C.
+
+  * Números complexos como objetos Python
+
+
+Objetos Sequência
+=================
+
+Operações genéricas em objetos de sequência foram discutidas no
+capítulo anterior; Esta seção lida com os tipos específicos de objetos
+sequência que são intrínsecos à linguagem Python.
+
+* Objetos Bytes
+
+* Objetos Byte Array
+
+  * Macros para verificação de tipo
+
+  * Funções diretas da API
+
+  * Macros
+
+* Objetos Unicode e Codecs
+
+  * Unicode Objects
+
+    * Unicode Type
+
+    * Unicode Character Properties
+
+    * Creating and accessing Unicode strings
+
+    * Locale Encoding
+
+    * File System Encoding
+
+    * wchar_t Support
+
+  * Built-in Codecs
+
+    * Generic Codecs
+
+    * UTF-8 Codecs
+
+    * UTF-32 Codecs
+
+    * UTF-16 Codecs
+
+    * UTF-7 Codecs
+
+    * Unicode-Escape Codecs
+
+    * Raw-Unicode-Escape Codecs
+
+    * Latin-1 Codecs
+
+    * ASCII Codecs
+
+    * Character Map Codecs
+
+    * MBCS codecs for Windows
+
+    * Methods & Slots
+
+  * Methods and Slot Functions
+
+* Objeto tupla
+
+* Objetos sequência de estrutura
+
+* Objeto List
+
+
+Coleções
+========
+
+* Objetos dicionários
+
+* Objeto Set
+
+
+Objetos Função
+==============
+
+* Objetos Função
+
+* Objetos de Método de Instância
+
+* Objetos método
+
+* Objeto célula
+
+* Objetos código
+
+* Informação adicional
+
+
+Outros Objetos
+==============
+
+* Objetos arquivos
+
+* Objetos do Módulo
+
+  * Inicializando módulos C
+
+    * inicialização de fase única
+
+    * Inicialização multifásica
+
+    * Funções de criação de módulo de baixo nível
+
+    * Support functions
+
+  * Pesquisa por módulos
+
+* Objetos Iteradores
+
+* Objetos Descritores
+
+* Objetos Slice
+
+  * Objeto Ellipsis
+
+* Objetos MemoryView
+
+* Objetos de referência fraca
+
+* Capsules
+
+* Objetos Frame
+
+  * Internal Frames
+
+* Objetos Geradores
+
+* Objetos corrotina
+
+* Objetos de variáveis ​​de contexto
+
+* Objetos DateTime
+
+* Objetos de indicação de tipos

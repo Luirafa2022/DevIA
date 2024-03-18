@@ -1,0 +1,337 @@
+Objetos dicionários
+*******************
+
+type PyDictObject
+
+   Este subtipo do "PyObject" representa um objeto dicionário Python.
+
+PyTypeObject PyDict_Type
+    * Parte da ABI Estável.*
+
+   Esta instância do "PyTypeObject" representa o tipo do dicionário
+   Python. Este é o mesmo objeto "dict" na camada do Python.
+
+int PyDict_Check(PyObject *p)
+
+   Retorna verdadeiro se *p* é um objeto dicionário ou uma instância
+   de um subtipo do tipo dicionário. Esta função sempre tem sucesso.
+
+int PyDict_CheckExact(PyObject *p)
+
+   Retorna verdadeiro se *p* é um objeto dicionário, mas não uma
+   instância de um subtipo do tipo dicionário. Esta função sempre tem
+   sucesso.
+
+PyObject *PyDict_New()
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo dicionário vazio ou "NULL" em caso de falha.
+
+PyObject *PyDictProxy_New(PyObject *mapping)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um objeto "types.MappingProxyType" para um mapeamento que
+   reforça o comportamento somente leitura. Isso normalmente é usado
+   para criar uma visão para evitar a modificação do dicionário para
+   tipos de classes não dinâmicas.
+
+void PyDict_Clear(PyObject *p)
+    * Parte da ABI Estável.*
+
+   Esvazia um dicionário existente de todos os pares chave-valor.
+
+int PyDict_Contains(PyObject *p, PyObject *key)
+    * Parte da ABI Estável.*
+
+   Determina se o dicionário *p* contém *key*. Se um item em *p*
+   corresponder à *key*, retorna "1", caso contrário, retorna "0". Em
+   caso de erro, retorna "-1". Isso é equivalente à expressão Python
+   "key in p".
+
+PyObject *PyDict_Copy(PyObject *p)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo dicionário que contém o mesmo chave-valor como *p*.
+
+int PyDict_SetItem(PyObject *p, PyObject *key, PyObject *val)
+    * Parte da ABI Estável.*
+
+   Insere *val* no dicionário *p* com a tecla *key*. *key* deve ser
+   *hasheável*; se não for, "TypeError" será levantada. Retorna "0" em
+   caso de sucesso ou "-1" em caso de falha. Esta função *não* rouba
+   uma referência a *val*.
+
+int PyDict_SetItemString(PyObject *p, const char *key, PyObject *val)
+    * Parte da ABI Estável.*
+
+   É o mesmo que "PyDict_SetItem()", mas *key* é especificada como uma
+   string de bytes const char* codificada em UTF-8, em vez de um
+   PyObject*.
+
+int PyDict_DelItem(PyObject *p, PyObject *key)
+    * Parte da ABI Estável.*
+
+   Remove a entrada no dicionário *p* com a chave *key*. *key* deve
+   ser *hasheável*; se não for, "TypeError" é levantada. Se *key* não
+   estiver no dicionário, "KeyError" é levantada. Retorna "0" em caso
+   de sucesso ou "-1" em caso de falha.
+
+int PyDict_DelItemString(PyObject *p, const char *key)
+    * Parte da ABI Estável.*
+
+   É o mesmo que "PyDict_DelItem()", mas *key* é especificada como uma
+   string de bytes const char* codificada em UTF-8, em vez de um
+   PyObject*.
+
+PyObject *PyDict_GetItem(PyObject *p, PyObject *key)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna o objeto do dicionário *p* que possui uma chave *key*.
+   Retorna "NULL" se a chave *key* não estiver presente, mas *sem*
+   definir uma exceção.
+
+   Nota:
+
+     Exceções que ocorrem ao chamar os métodos "__hash__()" e
+     "__eq__()" são ignoradas silenciosamente. Ao invés disso, use a
+     função "PyDict_GetItemWithError()".
+
+   Alterado na versão 3.10: Chamar esta API sem *GIL* retido foi
+   permitido por motivos históricos. Não é mais permitido.
+
+PyObject *PyDict_GetItemWithError(PyObject *p, PyObject *key)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Variante de "PyDict_GetItem()" que não suprime exceções. Retorna
+   "NULL" **com** uma exceção definida se uma exceção ocorreu. Retorna
+   "NULL" ** sem ** uma exceção definida se a chave não estiver
+   presente.
+
+PyObject *PyDict_GetItemString(PyObject *p, const char *key)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   É o mesmo que "PyDict_GetItem()", mas *key* é especificada como uma
+   string de bytes const char* codificada em UTF-8, em vez de um
+   PyObject*.
+
+   Nota:
+
+     Exceções que ocorrem ao chamar os métodos "__hash__()" e
+     "__eq__()" ou ao criar objetos temporários da classe "str" são
+     ignoradas silenciosamente. Ao invés disso, prefira usar a função
+     "PyDict_GetItemWithError()" com sua própria *key* de
+     "PyUnicode_FromString()".
+
+PyObject *PyDict_SetDefault(PyObject *p, PyObject *key, PyObject *defaultobj)
+    *Retorna valor: Referência emprestada.*
+
+   Isso é o mesmo que o "dict.setdefault()" de nível Python. Se
+   presente, ele retorna o valor correspondente a *key* do dicionário
+   *p*. Se a chave não estiver no dict, ela será inserida com o valor
+   *defaultobj* e *defaultobj* será retornado. Esta função avalia a
+   função hash de *key* apenas uma vez, em vez de avaliá-la
+   independentemente para a pesquisa e a inserção.
+
+   Novo na versão 3.4.
+
+PyObject *PyDict_Items(PyObject *p)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um "PyListObject" contendo todos os itens do dicionário.
+
+PyObject *PyDict_Keys(PyObject *p)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um "PyListObject" contendo todas as chaves do dicionário.
+
+PyObject *PyDict_Values(PyObject *p)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um "PyListObject" contendo todos os valores do dicionário
+   *p*.
+
+Py_ssize_t PyDict_Size(PyObject *p)
+    * Parte da ABI Estável.*
+
+   Retorna o número de itens no dicionário. Isso é equivalente a
+   "len(p)" em um dicionário.
+
+int PyDict_Next(PyObject *p, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue)
+    * Parte da ABI Estável.*
+
+   Itera todos os pares de valores-chave no dicionário *p*. O
+   "Py_ssize_t" referido por *ppos* deve ser inicializado para "0"
+   antes da primeira chamada para esta função para iniciar a iteração;
+   a função retorna true para cada par no dicionário e false quando
+   todos os pares forem relatados. Os parâmetros *pkey* e *pvalue*
+   devem apontar para variáveis de PyObject* que serão preenchidas com
+   cada chave e valor, respectivamente, ou podem ser "NULL". Todas as
+   referências retornadas por meio deles são emprestadas. *ppos* não
+   deve ser alterado durante a iteração. Seu valor representa
+   deslocamentos dentro da estrutura do dicionário interno e, como a
+   estrutura é esparsa, os deslocamentos não são consecutivos.
+
+   Por exemplo:
+
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+
+      while (PyDict_Next(self->dict, &pos, &key, &value)) {
+          /* do something interesting with the values... */
+          ...
+      }
+
+   O dicionário *p* não deve sofrer mutação durante a iteração. É
+   seguro modificar os valores das chaves à medida que você itera no
+   dicionário, mas apenas enquanto o conjunto de chaves não mudar. Por
+   exemplo:
+
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+
+      while (PyDict_Next(self->dict, &pos, &key, &value)) {
+          long i = PyLong_AsLong(value);
+          if (i == -1 && PyErr_Occurred()) {
+              return -1;
+          }
+          PyObject *o = PyLong_FromLong(i + 1);
+          if (o == NULL)
+              return -1;
+          if (PyDict_SetItem(self->dict, key, o) < 0) {
+              Py_DECREF(o);
+              return -1;
+          }
+          Py_DECREF(o);
+      }
+
+int PyDict_Merge(PyObject *a, PyObject *b, int override)
+    * Parte da ABI Estável.*
+
+   Itera sobre o objeto de mapeamento *b* adicionando pares de
+   valores-chave ao dicionário *a*. *b* pode ser um dicionário, ou
+   qualquer objeto que suporte "PyMapping_Keys()" e
+   "PyObject_GetItem()". Se *override* for verdadeiro, os pares
+   existentes em *a* serão substituídos se uma chave correspondente
+   for encontrada em *b*, caso contrário, os pares serão adicionados
+   apenas se não houver uma chave correspondente em *a*. Retorna "0"
+   em caso de sucesso ou "-1" se uma exceção foi levantada.
+
+int PyDict_Update(PyObject *a, PyObject *b)
+    * Parte da ABI Estável.*
+
+   É o mesmo que "PyDict_Merge(a, b, 1)" em C, e é semelhante a
+   "a.update(b)" em Python, exceto que "PyDict_Update()" não cai na
+   iteração em uma sequência de pares de valores de chave se o segundo
+   argumento não tiver o atributo "keys". Retorna "0" em caso de
+   sucesso ou "-1" se uma exceção foi levantada.
+
+int PyDict_MergeFromSeq2(PyObject *a, PyObject *seq2, int override)
+    * Parte da ABI Estável.*
+
+   Atualiza ou mescla no dicionário *a*, a partir dos pares de chave-
+   valor em *seq2*. *seq2* deve ser um objeto iterável produzindo
+   objetos iteráveis de comprimento 2, vistos como pares chave-valor.
+   No caso de chaves duplicadas, a última vence se *override* for
+   verdadeiro, caso contrário, a primeira vence. Retorne "0" em caso
+   de sucesso ou "-1" se uma exceção foi levantada. Python equivalente
+   (exceto para o valor de retorno):
+
+      def PyDict_MergeFromSeq2(a, seq2, override):
+          for key, value in seq2:
+              if override or key not in a:
+                  a[key] = value
+
+int PyDict_AddWatcher(PyDict_WatchCallback callback)
+
+   Registra *callback* como um observador de dicionário. Retorna um ID
+   inteiro não negativo que deve ser passado para futuras chamadas a
+   "PyDict_Watch()". Em caso de erro (por exemplo, não há mais IDs de
+   observador disponíveis), retorna "-1" e define uma exceção.
+
+   Novo na versão 3.12.
+
+int PyDict_ClearWatcher(int watcher_id)
+
+   Limpa o observador identificado por *watcher_id* retornado
+   anteriormente de "PyDict_AddWatcher()". Retorna "0" em caso de
+   sucesso, "-1" em caso de erro (por exemplo, se o *watcher_id*
+   fornecido nunca foi registrado).
+
+   Novo na versão 3.12.
+
+int PyDict_Watch(int watcher_id, PyObject *dict)
+
+   Marca o dicionário *dict* como observado. A função de retorno
+   concedida a *watcher_id* por "PyDict_AddWatcher()" será chamada
+   quando *dict* for modificado ou desalocado. Retorna "0" em caso de
+   sucesso ou "-1" em caso de erro.
+
+   Novo na versão 3.12.
+
+int PyDict_Unwatch(int watcher_id, PyObject *dict)
+
+   Marca o dicionário *dict* como não mais observado. A função de
+   retorno concedida a *watcher_id* por "PyDict_AddWatcher()" será
+   chamada quando *dict* for modificado ou desalocado. O dicionário
+   deve ter sido observado anteriormente por este observador. Retorna
+   "0" em caso de sucesso ou "-1" em caso de erro.
+
+   Novo na versão 3.12.
+
+type PyDict_WatchEvent
+
+   Enumeração de possíveis eventos de observador de dicionário:
+   "PyDict_EVENT_ADDED", "PyDict_EVENT_MODIFIED",
+   "PyDict_EVENT_DELETED", "PyDict_EVENT_CLONED",
+   "PyDict_EVENT_CLEARED" ou "PyDict_EVENT_DEALLOCATED".
+
+   Novo na versão 3.12.
+
+typedef int (*PyDict_WatchCallback)(PyDict_WatchEvent event, PyObject *dict, PyObject *key, PyObject *new_value)
+
+   Tipo de uma função de retorno de chamada de observador de
+   dicionário.
+
+   Se *event* for "PyDict_EVENT_CLEARED" ou
+   "PyDict_EVENT_DEALLOCATED", tanto *key* quanto *new_value* serão
+   "NULL". Se *event* for "PyDict_EVENT_ADDED" ou
+   "PyDict_EVENT_MODIFIED", *new_value* será o novo valor de *key*. Se
+   *event* for "PyDict_EVENT_DELETED", *key* estará sendo excluída do
+   dicionário e *new_value* será "NULL".
+
+   "PyDict_EVENT_CLONED" ocorre quando *dict* estava anteriormente
+   vazio e outro dict é mesclado a ele. Para manter a eficiência dessa
+   operação, os eventos "PyDict_EVENT_ADDED" por chave não são
+   emitidos nesse caso; em vez disso, um único "PyDict_EVENT_CLONED" é
+   emitido e *key* será o dicionário de origem.
+
+   A função de retorno pode inspecionar, mas não deve modificar o
+   *dict*; isso pode ter efeitos imprevisíveis, inclusive recursão
+   infinita. Não acione a execução do código Python na função de
+   retorno, pois isso poderia modificar o dict como um efeito
+   colateral.
+
+   Se *event* for "PyDict_EVENT_DEALLOCATED", a obtenção de uma nova
+   referência na função de retorno para o dicionário prestes a ser
+   destruído o ressuscitará e impedirá que ele seja liberado nesse
+   momento. Quando o objeto ressuscitado for destruído mais tarde,
+   quaisquer funções de retorno do observador ativos naquele momento
+   serão chamados novamente.
+
+   As funções de retorno ocorrem antes que a modificação notificada no
+   *dict* ocorra, de modo que o estado anterior do *dict* possa ser
+   inspecionado.
+
+   Se a função de retorno definir uma exceção, ela deverá retornar
+   "-1"; essa exceção será impressa como uma exceção não reprovável
+   usando "PyErr_WriteUnraisable()". Caso contrário, deverá retornar
+   "0".
+
+   É possível que já exista uma exceção pendente definida na entrada
+   da função de retorno. Nesse caso, a função de retorno deve retornar
+   "0" com a mesma exceção ainda definida. Isso significa que a função
+   de retorno não pode chamar nenhuma outra API que possa definir uma
+   exceção, a menos que salve e limpe o estado da exceção primeiro e o
+   restaure antes de retornar.
+
+   Novo na versão 3.12.

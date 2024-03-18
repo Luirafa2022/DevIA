@@ -1,0 +1,18 @@
+O Objeto "None"
+***************
+
+Observe que o "PyTypeObject" para "None" não está diretamente exposto
+pela API Python/C. Como "None" é um singleton, é suficiente testar a
+identidade do objeto (usando "==" em C). Não há nenhuma função
+"PyNone_Check()" pela mesma razão.
+
+PyObject *Py_None
+
+   O objeto Python "None", denotando falta de valor. Este objeto não
+   tem métodos e é imortal.
+
+Alterado na versão 3.12: "Py_None" é imortal.
+
+Py_RETURN_NONE
+
+   Retorna "Py_None" de uma função.

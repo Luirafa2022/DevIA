@@ -1,0 +1,63 @@
+Suporte a implementação de Objetos
+**********************************
+
+Este capítulo descreve as funções, tipos e macros usados ao definir
+novos tipos de objeto.
+
+* Alocando Objetos na Pilha
+
+* Estruturas Comuns de Objetos
+
+  * Base object types and macros
+
+  * Implementing functions and methods
+
+  * Accessing attributes of extension types
+
+    * Member flags
+
+    * Member types
+
+    * Defining Getters and Setters
+
+* Objetos tipo
+
+  * Referências rápidas
+
+    * "slots tp"
+
+    * sub-slots
+
+    * slot typedefs
+
+  * PyTypeObject Definition
+
+  * PyObject Slots
+
+  * PyVarObject Slots
+
+  * PyTypeObject Slots
+
+  * Static Types
+
+  * Heap Types
+
+* Number Object Structures
+
+* Mapping Object Structures
+
+* Sequence Object Structures
+
+* Buffer Object Structures
+
+* Async Object Structures
+
+* Slot Type typedefs
+
+* Exemplos
+
+* Suporte a Coleta Cíclica de Lixo
+
+  * Controlando o estado do coletor de lixo
+
+  * Querying Garbage Collector State

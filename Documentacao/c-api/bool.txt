@@ -1,0 +1,44 @@
+Objetos Booleanos
+*****************
+
+Os booleanos em Python são implementados como um subclasse de
+inteiros. Há apenas dois booleanos, "Py_False" e "Py_True". Assim
+sendo, as funções de criação e a exclusão normais não se aplicam aos
+booleanos. No entanto, as seguintes macros estão disponíveis.
+
+PyTypeObject PyBool_Type
+    * Parte da ABI Estável.*
+
+   Este instância de "PyTypeObject" representa o tipo booleano em
+   Python; é o mesmo objeto que "bool" na camada Python.
+
+int PyBool_Check(PyObject *o)
+
+   Retorna verdadeiro se *o* for do tipo "PyBool_Type". Esta função
+   sempre tem sucesso.
+
+PyObject *Py_False
+
+   O objeto Python "False". Este objeto não tem métodos e é imortal.
+
+Alterado na versão 3.12: "Py_False" é imortal.
+
+PyObject *Py_True
+
+   O objeto Python "True". Este objeto não tem métodos e é imortal.
+
+Alterado na versão 3.12: "Py_True" é imortal.
+
+Py_RETURN_FALSE
+
+   Retorna "Py_False" de uma função.
+
+Py_RETURN_TRUE
+
+   Retorna "Py_True" de uma função.
+
+PyObject *PyBool_FromLong(long v)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna "Py_True" ou "Py_False", dependendo do valor verdadeiro de
+   *v*.

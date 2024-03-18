@@ -1,0 +1,45 @@
+Utilitários
+***********
+
+As funções neste capítulo executam várias tarefas de utilidade
+pública, desde ajudar o código C a ser mais portátil em plataformas,
+usando módulos Python de C, como também, a analise de argumentos de
+função e a construção de valores Python a partir de valores C.
+
+* Utilitários do Sistema Operacional
+
+* System Functions
+
+* Process Control
+
+* Importando módulos
+
+* Suporte a *marshalling* de dados
+
+* Análise de argumentos e construção de valores
+
+  * Análise de argumentos
+
+    * Strings and buffers
+
+    * Números
+
+    * Outros objetos
+
+    * Funções da API
+
+  * Construindo valores
+
+* Conversão e formação de strings
+
+* API do PyHash
+
+* Reflexão
+
+* Registro de codec e funções de suporte
+
+  * API de pesquisa de codec
+
+  * API de registro de tratamentos de erros de decodificação Unicode
+
+* Support for Perf Maps

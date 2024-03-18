@@ -1,0 +1,57 @@
+Protocolo de Buffer Antigo
+**************************
+
+Obsoleto desde a versão 3.0.
+
+Essas funções faziam parte da API do "protocolo de buffer antigo" no
+Python 2. No Python 3, esse protocolo não existe mais, mas as funções
+ainda estão expostas para facilitar a portabilidade do código 2.x.
+Eles atuam como um wrapper de compatibilidade em torno do novo
+protocolo de buffer, mas não oferecem controle sobre a vida útil dos
+recursos adquiridos quando um buffer é exportado.
+
+Portanto, é recomendável que você chame "PyObject_GetBuffer()" (ou os
+códigos de formatação "y*" ou "w*" com o família de funções de
+"PyArg_ParseTuple()") para obter uma visão de buffer sobre um objeto e
+"PyBuffer_Release()" quando a visão de buffer puder ser liberada.
+
+int PyObject_AsCharBuffer(PyObject *obj, const char **buffer, Py_ssize_t *buffer_len)
+    * Parte da ABI Estável.*
+
+   Retorna um ponteiro para um local de memória somente leitura
+   utilizável como entrada baseada em caracteres. O argumento *obj*
+   deve ter suporte a interface do buffer de caracteres de segmento
+   único. Em caso de sucesso, retorna "0", define *buffer* com o local
+   da memória e *buffer_len* com o comprimento do buffer. Retorna "-1"
+   e define a "TypeError" em caso de erro.
+
+int PyObject_AsReadBuffer(PyObject *obj, const void **buffer, Py_ssize_t *buffer_len)
+    * Parte da ABI Estável.*
+
+   Retorna um ponteiro para um local de memória somente leitura que
+   contém dados arbitrários. O argumento *obj* deve ter suporte a
+   interface de buffer legível de segmento único. Em caso de sucesso,
+   retorna "0", define *buffer* com o local da memória e *buffer_len*
+   com o comprimento do buffer. Retorna "-1" e define a "TypeError" em
+   caso de erro.
+
+int PyObject_CheckReadBuffer(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Retorna "1" se *o* tiver suporte a interface de buffer legível de
+   segmento único. Caso contrário, retorna "0". Esta função sempre tem
+   sucesso.
+
+   Observe que esta função tenta obter e liberar um buffer, e as
+   exceções que ocorrem ao chamar as funções correspondentes serão
+   suprimidas. Para obter o relatório de erros, use
+   "PyObject_GetBuffer()" em vez disso.
+
+int PyObject_AsWriteBuffer(PyObject *obj, void **buffer, Py_ssize_t *buffer_len)
+    * Parte da ABI Estável.*
+
+   Retorna um ponteiro para um local de memória gravável. O argumento
+   *obj* deve ter suporte a interface de buffer de caracteres de
+   segmento único. Em caso de sucesso, retorna "0", define *buffer*
+   com o local da memória e *buffer_len* com o comprimento do buffer.
+   Retorna "-1" e define a "TypeError" em caso de erro.

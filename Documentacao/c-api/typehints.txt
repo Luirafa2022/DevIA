@@ -1,0 +1,44 @@
+Objetos de indicação de tipos
+*****************************
+
+São fornecidos vários tipos embutidos para sugestão de tipo.
+Atualmente, dois tipos existem -- GenericAlias e Union.  Apenas
+"GenericAlias" está exposto ao C.
+
+PyObject *Py_GenericAlias(PyObject *origin, PyObject *args)
+    * Parte da ABI Estável desde a versão 3.9.*
+
+   Cria um objeto GenericAlias ​​. Equivalente a chamar a classe
+   Python "types.GenericAlias". Os argumentos *origin* e *args*
+   definem os atributos "__origin__" e "__args__" de "GenericAlias"
+   respectivamente. *origin* deve ser um PyTypeObject*, e *args* pode
+   ser um PyTupleObject* ou qualquer "PyObject*". Se *args* passado
+   não for uma tupla, uma tupla de 1 elemento é construída
+   automaticamente e "__args__" é definido como "(args,)". A
+   verificação mínima é feita para os argumentos, então a função terá
+   sucesso mesmo se *origin* não for um tipo. O atributo
+   "__parameters__" de "GenericAlias" é construído lentamente a partir
+   de "__args__". Em caso de falha, uma exceção é levantada e "NULL" é
+   retornado.
+
+   Aqui está um exemplo de como tornar um tipo de extensão genérico:
+
+      ...
+      static PyMethodDef my_obj_methods[] = {
+          // Other methods.
+          ...
+          {"__class_getitem__", Py_GenericAlias, METH_O|METH_CLASS, "See PEP 585"}
+          ...
+      }
+
+   Ver também: O método de modelo de dados "__class_getitem__()".
+
+   Novo na versão 3.9.
+
+PyTypeObject Py_GenericAliasType
+    * Parte da ABI Estável desde a versão 3.9.*
+
+   O tipo C do objeto retornado por "Py_GenericAlias()". Equivalente a
+   "types.GenericAlias" no Python.
+
+   Novo na versão 3.9.

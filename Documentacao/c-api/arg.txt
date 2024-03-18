@@ -1,0 +1,702 @@
+Análise de argumentos e construção de valores
+*********************************************
+
+Essas funções são úteis ao criar funções e métodos das suas extensões.
+Informações adicionais e exemplos estão disponíveis em Estendendo e
+Incorporando o Interpretador Python.
+
+As três primeiras funções descritas, "PyArg_ParseTuple()",
+"PyArg_ParseTupleAndKeywords()", e "PyArg_Parse()", todas usam a
+*string de formatação* que informam à função sobre os argumentos
+esperados. As strings de formato usam a mesma sintaxe para cada uma
+dessas funções.
+
+
+Análise de argumentos
+=====================
+
+Uma string de formato consiste em zero ou mais "unidades de formato".
+Uma unidade de formato descreve um objeto Python; geralmente é um
+único caractere ou uma sequência entre parênteses de unidades de
+formato. Com algumas poucas exceções, uma unidade de formato que não é
+uma sequência entre parênteses normalmente corresponde a um único
+argumento de endereço para essas funções. Na descrição a seguir, a
+forma citada é a unidade de formato; a entrada em parênteses ( ) é o
+tipo de objeto Python que corresponde à unidade de formato; e a
+entrada em colchetes [ ] é o tipo da variável(s) C cujo endereço deve
+ser passado.
+
+
+Strings and buffers
+-------------------
+
+Esses formatos permitem acessar um objeto como um pedaço contíguo de
+memória. Você não precisa fornecer armazenamento bruto para a área de
+unicode ou bytes retornada.
+
+Salvo indicação em contrário, os buffers não são terminados em NUL.
+
+Existem três maneiras pelas quais strings e buffers podem ser
+convertidos em C:
+
+* Formatos como "y*" e "s*" estão dentro de uma estrutura "Py_buffer".
+  Isso bloqueia o buffer  subjacente para que o chamador  possa
+  posteriormente usar o buffer, mesmo dentro de um bloco
+  "Py_BEGIN_ALLOW_THREADS" sem que haja o risco de que dados mutáveis
+  sejam redimensionados ou destruídos. Dessa forma, **você precisa
+  chamar** "PyBuffer_Release()" depois de ter concluído o
+  processamento de dados (ou em qualquer caso de interrupção precoce).
+
+* Os formatos "es", "es#", "et" e "et#" alocam o buffer resultante.
+  **Você precisa chamar** "PyMem_Free()" depois de ter concluído o
+  processamento de dados (ou em qualquer caso de interrupção precoce).
+
+* Outros formatos usam um "str" ou um *objeto byte ou similar* somente
+  leitura, como "bytes", e fornecem um ponteiro "const char *" para
+  seu buffer. Nesse caso, o buffer é "emprestado": ele é gerenciado
+  pelo objeto Python correspondente e compartilha o tempo de vida
+  desse objeto. Você mesmo não precisará liberar nenhuma memória.
+
+  Para garantir que o buffer subjacente possa ser emprestado com
+  segurança, o campo "PyBufferProcs.bf_releasebuffer" do objeto deve
+  ser "NULL". Isso não permite objetos mutáveis comuns, como
+  "bytearray", mas também alguns objetos somente leitura, como
+  "memoryview" ou "bytes".
+
+  Além desse requisito "bf_releasebuffer", não há nenhuma verificação
+  para saber se o objeto de entrada é imutável (por exemplo, se ele
+  atenderia a uma solicitação de um buffer gravável ou se outro thread
+  pode alterar os dados).
+
+Nota:
+
+  Para todas as variantes de formatos "#" ("s#", "y#", etc.), a macro
+  "PY_SSIZE_T_CLEAN" deve ser definida antes de incluir "Python.h". No
+  Python 3.9 e mais antigo, o tipo do argumento de comprimento é
+  "Py_ssize_t" se a macro "PY_SSIZE_T_CLEAN" é definida, ou int caso
+  contrário.
+
+"s" ("str") [const char *]
+   Converte um objeto Unicode para um ponteiro em C para uma string.
+   Um ponteiro para uma string existente é armazenado na variável do
+   ponteiro do caractere cujo o endereço que você está passando. A
+   string em C é terminada em NULO. A string em Python não deve conter
+   pontos de código nulo embutidos; se isso acontecer, uma exceção
+   "ValueError" é levantada. Objetos Unicode são convertidos para
+   strings em C usando a codificação "'utf-8'". Se essa conversão
+   falhar, uma exceção "UnicodeError" é levantada.
+
+   Nota:
+
+     Esse formato não aceita *objetos byte ou similar*. Se você quer
+     aceitar caminhos de arquivos do sistema e convertê-los para
+     strings em C, é preferível que use o formato "O&" com
+     "PyUnicode_FSConverter()" como *conversor*.
+
+   Alterado na versão 3.5: Anteriormente, a exceção "TypeError" era
+   levantada quando pontos de código nulo embutidos em string Python
+   eram encontrados.
+
+"s*" ("str" ou *objeto byte ou similar*) [Py_buffer]
+   Esse formato aceita tanto objetos Unicode quanto objetos byte ou
+   similar. Preenche uma estrutura "Py_buffer" fornecida pelo
+   chamador. Nesse caso, a string em C resultante pode conter bytes
+   NUL embutidos. Objetos Unicode são convertidos para strings em C
+   usando codificação "'utf-8'".
+
+"s#" ("str", *objeto byte ou similar* somente leitura) [const char *,
+"Py_ssize_t"]
+   Como "s*", exceto que não fornece um buffer emprestado. O resultado
+   é armazenado em duas variáveis em C, a primeira é um ponteiro para
+   uma string em C, a segunda é o tamanho. A string pode conter bytes
+   nulos embutidos. Objetos Unicode são convertidos para strings em C
+   usando codificação "'utf-8'".
+
+"z" ("str" ou "None") [const char *]
+   Como "s", mas o objeto Python também pode ser "None", nesse caso o
+   ponteiro C é definido como "NULL".
+
+"z*" ("str", *objeto byte ou similar* ou "None") [Py_buffer]
+   Como "s*", mas o objeto Python também pode ser "None", nesse caso o
+   membro "buf" da estrutura "Py_buffer" é definido como "NULL".
+
+"z#" ("str", *objeto byte ou similar* somente leitura ou "None")
+[const char *, "Py_ssize_t"]
+   Como "s#", mas o objeto Python também pode ser "None", nesse caso o
+   ponteiro C é definido como "NULL".
+
+"y" (*objeto byte ou similar* somente leitura) [const char *]
+   Este formato converte um objeto byte ou similar para um ponteiro C
+   para uma string de caracteres emprestada; não aceita objetos
+   Unicode. O buffer de bytes não pode conter bytes nulos embutidos;
+   se isso ocorrer uma exceção "ValueError" será levantada.
+
+   Alterado na versão 3.5: Anteriormente, a exceção "TypeError" era
+   levantada quando pontos de código nulo embutidos em string Python
+   eram encontrados no buffer de bytes.
+
+"y*" (*objeto byte ou similar*) [Py_buffer]
+   Esta variante em "s*" não aceita objetos unicode, apenas objetos
+   byte ou similar. **Esta é a maneira recomendada para aceitar dados
+   binários.**
+
+"y#" (*objeto byte ou similar* somente leitura) [const char *,
+"Py_ssize_t"]
+   Esta variação de "s#" não aceita objetos Unicode, apenas objetos
+   byte ou similar.
+
+"S" ("bytes") [PyBytesObject *]
+   Exige que o objeto Python seja um objeto "bytes", sem tentar
+   nenhuma conversão. Levanta "TypeError" se o objeto não for um
+   objeto byte. A variável C pode ser declarada como PyObject*.
+
+"Y" ("bytearray") [PyByteArrayObject *]
+   Exige que o objeto Python seja um objeto "bytearray", sem aceitar
+   qualquer conversão.  Levanta "TypeError" se o objeto não é um
+   objeto "bytearray". A variável C apenas pode ser declarada como
+   PyObject*.
+
+"U" ("str") [PyObject *]
+   Exige que o objeto python seja um objeto Unicode, sem tentar alguma
+   conversão. Levanta "TypeError" se o objeto não for um objeto
+   Unicode. A variável C deve ser declarada como PyObject*.
+
+"w*" (*objeto byte ou similar* de leitura e escrita) [Py_buffer]
+   Este formato aceita qualquer objeto que implemente a interface do
+   buffer de leitura e escrita. Ele preenche uma estrutura "Py_buffer"
+   fornecida pelo chamador. O buffer pode conter bytes nulos
+   incorporados. O chamador deve chamar "PyBuffer_Release()" quando
+   isso for feito com o buffer.
+
+"es" ("str") [const char *encoding, char **buffer]
+   Esta variante em "s" é utilizada para codificação do Unicode em um
+   buffer de caracteres. Ele só funciona para dados codificados sem
+   NUL bytes incorporados.
+
+   Este formato exige dois argumentos. O primeiro é usado apenas como
+   entrada e deve ser a const char* que aponta para o nome de uma
+   codificação como uma string terminada em NUL ou "NULL", nesse caso
+   a codificação "'utf-8'" é usada. Uma exceção é levantada se a
+   codificação nomeada não for conhecida pelo Python. O segundo
+   argumento deve ser um char**; o valor do ponteiro a que ele faz
+   referência será definido como um buffer com o conteúdo do texto do
+   argumento. O texto será codificado na codificação especificada pelo
+   primeiro argumento.
+
+   "PyArg_ParseTuple()" alocará um buffer do tamanho necessário,
+   copiará os dados codificados nesse buffer e ajustará **buffer* para
+   referenciar o armazenamento recém-alocado. O chamador é responsável
+   por chamar "PyMem_Free()" para liberar o buffer alocado após o uso.
+
+"et" ("str", "bytes" ou "bytearray") [const char *encoding, char
+**buffer]
+   O mesmo que "es", exceto que os objetos de cadeia de bytes são
+   passados ​​sem os recodificar. Em vez disso, a implementação assume
+   que o objeto de cadeia de bytes usa a codificação passada como
+   parâmetro.
+
+"es#" ("str") [const char *encoding, char **buffer, "Py_ssize_t"
+*buffer_length]
+   Essa variante em "s#" é usada para codificar Unicode em um buffer
+   de caracteres. Diferente do formato "es", essa variante permite a
+   entrada de dados que contêm caracteres NUL.
+
+   Exige três argumentos. O primeiro é usado apenas como entrada e
+   deve ser a const char* que aponta para o nome de uma codificação
+   como uma string terminada em NUL ou "NULL", nesse caso a
+   codificação "'utf-8'" é usada. Uma exceção será gerada se a
+   codificação nomeada não for conhecida pelo Python. O segundo
+   argumento deve ser um char**; o valor do ponteiro a que ele faz
+   referência será definido como um buffer com o conteúdo do texto do
+   argumento. O texto será codificado na codificação especificada pelo
+   primeiro argumento. O terceiro argumento deve ser um ponteiro para
+   um número inteiro; o número inteiro referenciado será definido como
+   o número de bytes no buffer de saída.
+
+   Há dois modos de operação:
+
+   Se **buffer* apontar um ponteiro "NULL", a função irá alocar um
+   buffer do tamanho necessário, copiar os dados codificados para
+   dentro desse buffer e configurar **buffer* para referenciar o novo
+   armazenamento alocado. O chamador é responsável por chamar
+   "PyMem_Free()" para liberar o buffer alocado após o uso.
+
+   Se **buffer* apontar para um ponteiro que não seja "NULL" (um
+   buffer já alocado), "PyArg_ParseTuple()" irá usar essa localização
+   como buffer e interpretar o valor inicial de **buffer_length* como
+   sendo o tamanho do buffer. Depois ela vai copiar os dados
+   codificados para dentro do buffer e terminá-lo com NUL. Se o buffer
+   não for suficientemente grande, um "ValueError" será definido.
+
+   Em ambos os casos, o **buffer_length* é definido como o comprimento
+   dos dados codificados sem o byte NUL à direita.
+
+"et#" ("str", "bytes" ou "bytearray") [const char *encoding, char
+**buffer, "Py_ssize_t" *buffer_length]
+   O mesmo que "es#", exceto que os objetos de cadeia de bytes são
+   passados ​​sem que sejam recodificados. Em vez disso, a
+   implementação assume que o objeto de cadeia de bytes usa a
+   codificação passada como parâmetro.
+
+Alterado na versão 3.12: "u", "u#", "Z" e "Z#" foram removidos porque
+usavam uma representação herdada de "Py_UNICODE*".
+
+
+Números
+-------
+
+"b" ("int") [unsigned char]
+   Converte um inteiro Python não negativo em um inteiro pequeno sem
+   sinal (unsigned tiny int), armazenado em um unsigned char do C.
+
+"B" ("int") [unsigned char]
+   Converte um inteiro Python para um inteiro pequeno (tiny int) sem
+   verificação de estouro, armazenado em um unsigned char do C.
+
+"h" ("int") [short int]
+   Converte um inteiro Python para um short int do C.
+
+"H" ("int") [unsigned short int]
+   Converte um inteiro Python para um unsigned short int do C, sem
+   verificação de estouro.
+
+"i" ("int") [int]
+   Converte um inteiro Python para um int simples do C.
+
+"I" ("int") [unsigned int]
+   Converte um inteiro Python para um unsigned int do C, sem
+   verificação de estouro.
+
+"l" ("int") [long int]
+   Converte um inteiro Python para um long int do C.
+
+"k" ("int") [unsigned long]
+   Converte um inteiro Python para um unsigned long do C sem
+   verificação de estouro.
+
+"L" ("int") [longo longo]
+   Converte um inteiro Python para um long long do C.
+
+"K" ("int") [unsigned long long]
+   Converte um inteiro Python para um unsigned long long do C sem
+   verificação de estouro.
+
+"n" ("int") ["Py_ssize_t"]
+   Converte um inteiro Python para um "Py_ssize_t" do C.
+
+"c" ("bytes" ou "bytearray" de comprimento 1) [char]
+   Converte um byte Python, representado com um objeto "byte" ou
+   "bytearray" de comprimento 1, para um char do C.
+
+   Alterado na versão 3.3: Permite objetos "bytearray".
+
+"C" ("str" de comprimento 1) [int]
+   Converte um caractere Python, representado como uma "str" objeto de
+   comprimento 1, para um int do C
+
+"f`" ("float") [float]
+   Converte um número de ponto flutuante Python para um float do C.
+
+"d" ("float") [double]
+   Converte um número de ponto flutuante Python para um double do C.
+
+"D" ("complex") [Py_complex]
+   Converte um número complexo Python para uma estrutura C
+   "Py_complex"
+
+
+Outros objetos
+--------------
+
+"O" (objeto) [PyObject*]
+   Armazena um objeto Python (sem qualquer conversão) em um ponteiro
+   de objeto C. O programa C então recebe o objeto real que foi
+   passado. Uma nova *referência forte* ao objeto não é criado (isto é
+   sua contagem de referências não é aumentada). O ponteiro armazenado
+   não é "NULL".
+
+"O!" (objeto) [*typeobject*, PyObject *]
+   Armazena um objeto Python em um ponteiro de objeto C. Isso é
+   similar a "O", mas usa dois argumentos C: o primeiro é o endereço
+   de um objeto do tipo Python, o segundo é um endereço da variável C
+   (de tipo PyObject*) no qual o ponteiro do objeto está armazenado.
+   Se o objeto Python não tiver o tipo necessário, "TypeError" é
+   levantada.
+
+"O&" (objeto) [*converter*, *anything*]
+   Converte um objeto Python em uma variável C através de uma função
+   *converter*. Isso leva dois argumentos: o primeiro é a função, o
+   segundo é o endereço da variável C (de tipo arbitrário),
+   convertendo para void*. A função *converter* por sua vez,  é
+   chamada da seguinte maneira:
+
+      status = converter(object, address);
+
+   onde *object* é o objeto Python a ser convertido e *address* é o
+   argumento void* que foi passado para a função "PyArg_Parse*". O
+   *status* retornado deve ser "1" para uma conversão bem-sucedida e
+   "0" se a conversão falhar. Quando a conversão falha, a função
+   *converter* deve levantar uma exceção e deixar o conteúdo de
+   *address* inalterado.
+
+   Se o *converter* retornar "Py_CLEANUP_SUPPORTED", ele poderá ser
+   chamado uma segunda vez se a análise do argumento eventualmente
+   falhar, dando ao conversor a chance de liberar qualquer memória que
+   já havia alocado. Nesta segunda chamada, o parâmetro *object* será
+   "NULL"; *address* terá o mesmo valor que na chamada original.
+
+   Alterado na versão 3.1: 109 "Py_CLEANUP_SUPPORTED" foi adicionado.
+
+"p" ("bool") [int]
+   Testa o valor transmitido para a verdade (um booleano
+   **p**redicado) e converte o resultado em seu valor inteiro C
+   verdadeiro/falso equivalente. Define o int como "1" se a expressão
+   for verdadeira e "0" se for falsa. Isso aceita qualquer valor
+   válido do Python. Veja Teste do valor verdade para obter mais
+   informações sobre como o Python testa valores para a verdade.
+
+   Novo na versão 3.3.
+
+"(items)" ("tuple") [*matching-items*]
+   O objeto deve ser uma sequência Python cujo comprimento seja o
+   número de unidades de formato em *items*. Os argumentos C devem
+   corresponder às unidades de formato individuais em *items*. As
+   unidades de formato para sequências podem ser aninhadas.
+
+É possível passar inteiros "long" (inteiros em que o valor excede a
+constante da plataforma "LONG_MAX") contudo nenhuma checagem de
+intervalo é propriamente feita -- os bits mais significativos são
+silenciosamente truncados quando o campo de recebimento é muito
+pequeno para receber o valor (na verdade, a semântica é herdada de
+downcasts no C -- seu raio de ação pode variar).
+
+Alguns outros caracteres possuem significados na string de formatação.
+Isso pode não ocorrer dentro de parênteses aninhados. Eles são:
+
+"|"
+   Indica que os argumentos restantes na lista de argumentos do Python
+   são opcionais. As variáveis C correspondentes a argumentos
+   opcionais devem ser inicializadas para seus valores padrão ---
+   quando um argumento opcional não é especificado,
+   "PyArg_ParseTuple()" não toca no conteúdo da(s) variável(eis) C
+   correspondente(s).
+
+"$"
+   "PyArg_ParseTupleAndKeywords()" apenas: Indica que os argumentos
+   restantes na lista de argumentos do Python são somente-nomeados.
+   Atualmente, todos os argumentos somente-nomeados devem ser também
+   argumentos opcionais, então "|" deve sempre ser especificado antes
+   de "$" na string de formatação.
+
+   Novo na versão 3.3.
+
+":"
+   A lista de unidades de formatação acaba aqui; a string após os dois
+   pontos é usada como o nome da função nas mensagens de erro (o
+   "valor associado" da exceção que "PyArg_ParseTuple()" levanta).
+
+";"
+   A lista de unidades de formatação acaba aqui; a string após o ponto
+   e vírgula é usada como a mensagem de erro *ao invés* da mensagem de
+   erro padrão. ":" e ";" se excluem mutuamente.
+
+Note que quaisquer referências a objeto Python que são fornecidas ao
+chamador são referências *emprestadas*; não libera-as (isto é, não
+decremente a contagem de referências delas)!
+
+Argumentos adicionais passados para essas funções devem ser endereços
+de variáveis cujo tipo é determinado pela string de formatação; estes
+são usados para armazenar valores vindos da tupla de entrada. Existem
+alguns casos, como descrito na lista de unidades de formatação acima,
+onde esses parâmetros são usados como valores de entrada; eles devem
+concordar com o que é especificado para a unidade de formatação
+correspondente nesse caso.
+
+Para a conversão funcionar, o objeto *arg* deve corresponder ao
+formato e o formato deve estar completo. Em caso de sucesso, as
+funções "PyArg_Parse*" retornam verdadeiro, caso contrário retornam
+falso e levantam uma exceção apropriada. Quando as funções
+"PyArg_Parse*" falham devido a uma falha de conversão em uma das
+unidades de formatação, as variáveis nos endereços correspondentes
+àquela unidade e às unidades de formatação seguintes são deixadas
+intocadas.
+
+
+Funções da API
+--------------
+
+int PyArg_ParseTuple(PyObject *args, const char *format, ...)
+    * Parte da ABI Estável.*
+
+   Analisa os parâmetros de uma função que recebe apenas parâmetros
+   posicionais em variáveis locais. Retorna verdadeiro em caso de
+   sucesso; em caso de falha, retorna falso e levanta a exceção
+   apropriada.
+
+int PyArg_VaParse(PyObject *args, const char *format, va_list vargs)
+    * Parte da ABI Estável.*
+
+   Idêntico a "PyArg_ParseTuple()", exceto que aceita uma va_list ao
+   invés de um número variável de argumentos.
+
+int PyArg_ParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char *keywords[], ...)
+    * Parte da ABI Estável.*
+
+   Analisa os parâmetros de uma função que recebe ambos parâmetros
+   posicionais e de palavra reservada em variáveis locais. O argumento
+   *keywords* é um vetor terminado por "NULL" de nomes de parâmetros
+   de palavra reservada. Nomes vazios denotam positional-only
+   parameters. Retorna verdadeiro em caso de sucesso; em caso de
+   falha, retorna falso e levanta a exceção apropriada.
+
+   Alterado na versão 3.6: Adicionado suporte para positional-only
+   parameters.
+
+int PyArg_VaParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char *keywords[], va_list vargs)
+    * Parte da ABI Estável.*
+
+   Idêntico a "PyArg_ParseTupleAndKeywords()", exceto que aceita uma
+   va_list ao invés de um número variável de argumentos.
+
+int PyArg_ValidateKeywordArguments(PyObject*)
+    * Parte da ABI Estável.*
+
+   Garante que as chaves no dicionário de argumento de palavras
+   reservadas são strings. Isso só é necessário se
+   "PyArg_ParseTupleAndKeywords()" não é usado, já que o último já faz
+   essa checagem.
+
+   Novo na versão 3.2.
+
+int PyArg_Parse(PyObject *args, const char *format, ...)
+    * Parte da ABI Estável.*
+
+   Função usada para desconstruir as listas de argumento de funções
+   "old-style" --- estas são funções que usam o método de análise de
+   parâmetro "METH_OLDARGS", que foi removido no Python 3. Isso não é
+   recomendado para uso de análise de parâmetro em código novo, e a
+   maior parte do código no interpretador padrão foi modificada para
+   não usar mais isso para esse propósito. Ela continua um modo
+   conveniente de decompor outras tuplas, contudo, e pode continuar a
+   ser usada para esse propósito.
+
+int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...)
+    * Parte da ABI Estável.*
+
+   Uma forma mais simples de recuperação de parâmetro que não usa uma
+   string de formato para especificar os tipos de argumentos. Funções
+   que usam este método para recuperar seus parâmetros devem ser
+   declaradas como "METH_VARARGS" em tabelas de função ou método. A
+   tupla contendo os parâmetros reais deve ser passada como *args*;
+   deve realmente ser uma tupla. O comprimento da tupla deve ser de
+   pelo menos *min* e não mais do que *max*; *min* e *max* podem ser
+   iguais. Argumentos adicionais devem ser passados para a função,
+   cada um dos quais deve ser um ponteiro para uma variável PyObject*;
+   eles serão preenchidos com os valores de *args*; eles conterão
+   *referências emprestadas*. As variáveis que correspondem a
+   parâmetros opcionais não fornecidos por *args* não serão
+   preenchidas; estes devem ser inicializados pelo chamador. Esta
+   função retorna verdadeiro em caso de sucesso e falso se *args* não
+   for uma tupla ou contiver o número incorreto de elementos; uma
+   exceção será definida se houver uma falha.
+
+   Este é um exemplo do uso dessa função, tirado das fontes do módulo
+   auxiliar para referências fracas "_weakref":
+
+      static PyObject *
+      weakref_ref(PyObject *self, PyObject *args)
+      {
+          PyObject *object;
+          PyObject *callback = NULL;
+          PyObject *result = NULL;
+
+          if (PyArg_UnpackTuple(args, "ref", 1, 2, &object, &callback)) {
+              result = PyWeakref_NewRef(object, callback);
+          }
+          return result;
+      }
+
+   A chamada à "PyArg_UnpackTuple()" neste exemplo é inteiramente
+   equivalente à chamada para "PyArg_ParseTuple()":
+
+      PyArg_ParseTuple(args, "O|O:ref", &object, &callback)
+
+
+Construindo valores
+===================
+
+PyObject *Py_BuildValue(const char *format, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Cria um novo valor baseado em uma string de formatação similar
+   àquelas aceitas pela família de funções "PyArg_Parse*" e uma
+   sequência de valores. Retorna o valor ou "NULL" em caso de erro;
+   uma exceção será levantada se "NULL" for retornado.
+
+   "Py_BuildValue()" não constrói sempre uma tupla. Ela constrói uma
+   tupla apenas se a sua string de formatação contém duas ou mais
+   unidades de formatação. Se a string de formatação estiver vazia,
+   ela retorna "None"; se ela contém exatamente uma unidade de
+   formatação, ela retorna qualquer que seja o objeto que for descrito
+   pela unidade de formatação. Para forçar ela a retornar uma tupla de
+   tamanho 0 ou um, use parênteses na string de formatação.
+
+   Quando buffers de memória são passados como parâmetros para
+   fornecer dados para construir objetos, como nos formatos "s" e
+   "s#", os dados necessários são copiados. Buffers fornecidos pelo
+   chamador nunca são referenciados pelos objetos criados por
+   "Py_BuildValue()". Em outras palavras, se o seu código invoca
+   "malloc()" e passa a memória alocada para "Py_BuildValue()", seu
+   código é responsável por chamar "free()" para aquela memória uma
+   vez que "Py_BuildValue()" tiver retornado.
+
+   Na descrição a seguir, a forma entre aspas é a unidade de
+   formatação; a entrada em parênteses (arredondado) é o tipo do
+   objeto Python que a unidade de formatação irá retornar; e a entrada
+   em colchetes [quadrado] é o tipo do(s) valor(es) C a ser(em)
+   passado(s).
+
+   Os caracteres de espaço, tab, dois pontos e vírgula são ignorados
+   em strings de formatação (mas não dentro de unidades de formatação
+   como "s#"). Isso pode ser usado para tornar strings de formatação
+   longas um pouco mais legíveis.
+
+   "s" ("str" ou "None") [const char *]
+      Converte uma string C terminada em NULL em um objeto Python
+      "str" usando codificação "'utf-8'". Se o ponteiro da string C é
+      "NULL", "None" é usado.
+
+   "s#" ("str" ou "None") [const char *, "Py_ssize_t"]
+      Converte uma string C e seu comprimento em um objeto Python
+      "str" usando a codificação "'utf-8'". Se o ponteiro da string C
+      é "NULL", o comprimento é ignorado e "None" é retornado.
+
+   "y" ("bytes") [const char *]
+      Isso converte uma string C para um objeto Python "bytes". Se o
+      ponteiro da string C é "NULL", "None" é retornado.
+
+   "y#" ("bytes") [const char *, "Py_ssize_t"]
+      Isso converte uma string C e seu comprimento para um objeto
+      Python. Se o ponteiro da string C é "NULL", "None" é retornado.
+
+   "z" ("str" ou "None") [const char *]
+      O mesmo de "s".
+
+   "z#" ("str" ou "None") [const char *, "Py_ssize_t"]
+      O mesmo de "s#".
+
+   "u" ("str") [const wchar_t *]
+      Converte um buffer terminado por null "wchar_t" de dados Unicode
+      (UTF-16 ou UCS-4) para um objeto Python Unicode. Se o ponteiro
+      do buffer Unicode é "NULL", "None" é retornado.
+
+   "u#" ("str") [const wchar_t *, "Py_ssize_t"]
+      Converte um buffer de dados Unicode (UTF-17 ou UCS-4) e seu
+      comprimento em um objeto Python Unicode. Se o ponteiro do buffer
+      Unicode é "NULL", o comprimento é ignorado e "None" é retornado.
+
+   "U" ("str" ou "None") [const char *]
+      O mesmo de "s".
+
+   "U#" ("str" ou "None") [const char *, "Py_ssize_t"]
+      O mesmo de "s#".
+
+   "i" ("int") [int]
+      Converte um simples int do C em um objeto inteiro do Python.
+
+   "b" ("int") [char]
+      Converte um simples char do C em um objeto inteiro do Python.
+
+   "h" ("int") [short int]
+      Converte um simples short int do C em um objeto inteiro do
+      Python.
+
+   "l" ("int") [long int]
+      Converte um long int do C em um objeto inteiro do Python.
+
+   "B" ("int") [unsigned char]
+      Converte um unsigned char do C em um objeto inteiro do Python.
+
+   "H" ("int") [unsigned short int]
+      Converte um unsigned short int do C em um objeto inteiro do
+      Python.
+
+   "I" ("int") [unsigned int]
+      Converte um unsigned int do C em um objeto inteiro do Python.
+
+   "k" ("int") [unsigned long]
+      Converte um unsigned long do C em um objeto inteiro do Python.
+
+   "L" ("int") [longo longo]
+      Converte um long long do C em um objeto inteiro do Python.
+
+   "K" ("int") [unsigned long long]
+      Converte um unsigned long long do C em um objeto inteiro do
+      Python.
+
+   "n" ("int") ["Py_ssize_t"]
+      Converte um "Py_ssize_t" do C em um objeto inteiro do Python.
+
+   "c" ("bytes" de comprimento 1) [char]
+      Converte um int representando um byte do C em um objeto "bytes"
+      de comprimento 1 do Python.
+
+   "C" ("str" de comprimento 1) [int]
+      Converte um int representando um caractere do C em um objeto
+      "str" de comprimento 1 do Python.
+
+   "d" ("float") [double]
+      Converte um double do C em um número ponto flutuante do Python.
+
+   "f`" ("float") [float]
+      Converte um float do C em um número ponto flutuante do Python.
+
+   "D" ("complex") [Py_complex *]
+      Converte uma estrutura "Py_complex" do C em um número complexo
+      do Python.
+
+   "O" (objeto) [PyObject*]
+      Passa um objeto Python intocado, mas cria uma nova *referência
+      forte* a ele (isto é, sua contagem de referências é incrementada
+      por um). Se o objeto passado é um ponteiro "NULL", assume-se que
+      isso foi causado porque a chamada que produziu o argumento
+      encontrou um erro e definiu uma exceção. Portanto,
+      "Py_BuildValue()" irá retornar "NULL" mas não irá levantar uma
+      exceção. Se nenhuma exceção foi levantada ainda, "SystemError" é
+      definida.
+
+   "S" (objeto) [PyObject *]
+      O mesmo que "O".
+
+   "N" (objeto) [PyObject *]
+      O mesmo que "O", exceto que não cria uma nova *referência
+      forte*. Útil quando o objeto é criado por uma chamada a um
+      construtor de objeto na lista de argumento.
+
+   "O&" (objeto) [*converter*, *anything*]
+      Converte *anything* para um objeto Python através de uma função
+      *converter*. A função é chamada com *anything* (que deve ser
+      compatível com o void*) como argumento e deve retornar um "novo"
+      objeto Python, ou "NULL" se um erro ocorreu.
+
+   "(items)" ("tuple") [*matching-items*]
+      Converte uma sequência de valores C para uma tupla Python com o
+      mesmo número de itens.
+
+   "[items]" ("list") [*matching-items*]
+      Converte uma sequência de valores C para uma lista Python com o
+      mesmo número de itens.
+
+   "{items}" ("dict") [*matching-items*]
+      Converte uma sequência de valores C para um dicionário Python.
+      Cada par de valores consecutivos do C adiciona um item ao
+      dicionário, servindo como chave e valor, respectivamente.
+
+   Se existir um erro na string de formatação, a exceção "SystemError"
+   é definida e "NULL" é retornado.
+
+PyObject *Py_VaBuildValue(const char *format, va_list vargs)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Idêntico a "Py_BuildValue()", exceto que aceita uma va_list ao
+   invés de um número variável de argumentos.

@@ -1,0 +1,46 @@
+Reflexão
+********
+
+PyObject *PyEval_GetBuiltins(void)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna um dicionário dos componentes internos no quadro de
+   execução atual ou o interpretador do estado do encadeamento, se
+   nenhum quadro estiver em execução no momento.
+
+PyObject *PyEval_GetLocals(void)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna um dicionário das variáveis locais no quadro de execução
+   atual ou "NULL" se nenhum quadro estiver sendo executado no
+   momento.
+
+PyObject *PyEval_GetGlobals(void)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna um dicionário das variáveis globais no quadro de execução
+   atual ou "NULL" se nenhum quadro estiver sendo executado no
+   momento.
+
+PyFrameObject *PyEval_GetFrame(void)
+    *Retorna valor: Referência emprestada.** Parte da ABI Estável.*
+
+   Retorna o quadro do estado atual da thread, que é "NULL" se nenhum
+   quadro estiver em execução no momento.
+
+   Veja também "PyThreadState_GetFrame()".
+
+const char *PyEval_GetFuncName(PyObject *func)
+    * Parte da ABI Estável.*
+
+   Retorna o nome de *func* se for uma função, classe ou objeto de
+   instância, senão o nome do tipo da *func*.
+
+const char *PyEval_GetFuncDesc(PyObject *func)
+    * Parte da ABI Estável.*
+
+   Retorna uma sequência de caracteres de descrição, dependendo do
+   tipo de *func*. Os valores de retorno incluem "()" para funções e
+   métodos, "construtor", "instância" e "objeto". Concatenado com o
+   resultado de "PyEval_GetFuncName()", o resultado será uma descrição
+   de *func*.

@@ -1,0 +1,123 @@
+Objetos Slice
+*************
+
+PyTypeObject PySlice_Type
+    * Parte da ABI Estável.*
+
+   Tipo de objeto para objetos fatia. Isso é o mesmo que "slice" na
+   camada Python.
+
+int PySlice_Check(PyObject *ob)
+
+   Retorna true se *ob* for um objeto fatia; *ob* não deve ser "NULL".
+   Esta função sempre tem sucesso.
+
+PyObject *PySlice_New(PyObject *start, PyObject *stop, PyObject *step)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna um novo objeto fatia com os valores fornecidos. Os
+   parâmetros *start*, *stop* e *step* são usados como os valores dos
+   atributos do objeto fatia com os mesmos nomes. Qualquer um dos
+   valores pode ser "NULL", caso em que "None" será usado para o
+   atributo correspondente. Retorna "NULL" se o novo objeto não puder
+   ser alocado.
+
+int PySlice_GetIndices(PyObject *slice, Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step)
+    * Parte da ABI Estável.*
+
+   Recupera os índices de início, parada e intermediário do objeto
+   fatia *slice*, presumindo uma sequência de comprimento *length*.
+   Trata índices maiores que *length* como erros.
+
+   Retorna "0" em caso de sucesso e "-1" em caso de erro sem exceção
+   definida (a menos que um dos índices não fosse "None" e falhou ao
+   ser convertido para um inteiro, neste caso "-1" é retornado com uma
+   exceção definida).
+
+   Você provavelmente não deseja usar esta função.
+
+   Alterado na versão 3.2: O tipo de parâmetro para o parâmetro
+   *slice* era antes de "PySliceObject*".
+
+int PySlice_GetIndicesEx(PyObject *slice, Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step, Py_ssize_t *slicelength)
+    * Parte da ABI Estável.*
+
+   Substituição utilizável para "PySlice_GetIndices()". Recupera os
+   índices de início, parada e intermediário do objeto fatia *slice*
+   presumindo uma sequência de comprimento *length* e armazena o
+   comprimento da fatia em *slicelength*. Índices fora dos limites são
+   cortados de maneira consistente com o tratamento de fatias normais.
+
+   Retorna "0" em caso de sucesso e "-1" em caso de erro com exceção
+   definida.
+
+   Nota:
+
+     Esta função não é considerada segura para sequências
+     redimensionáveis. Sua invocação deve ser substituída por uma
+     combinação de "PySlice_Unpack()" e "PySlice_AdjustIndices()"
+     sendo
+
+        if (PySlice_GetIndicesEx(slice, length, &start, &stop, &step, &slicelength) < 0) {
+            // return error
+        }
+
+     substituído por
+
+        if (PySlice_Unpack(slice, &start, &stop, &step) < 0) {
+            // return error
+        }
+        slicelength = PySlice_AdjustIndices(length, &start, &stop, step);
+
+   Alterado na versão 3.2: O tipo de parâmetro para o parâmetro
+   *slice* era antes de "PySliceObject*".
+
+   Alterado na versão 3.6.1: Se "Py_LIMITED_API" não estiver definido
+   ou estiver definido com um valor entre "0x03050400" e "0x03060000"
+   (não incluso) ou "0x03060100" ou mais alto,
+   "PySlice_GetIndicesEx()" é implementado como uma macro usando
+   "PySlice_Unpack()" e "PySlice_AdjustIndices()". Os argumentos
+   *start*, *stop* e *step* são avaliados mais de uma vez.
+
+   Obsoleto desde a versão 3.6.1: Se "Py_LIMITED_API" estiver definido
+   para um valor menor que "0x03050400" ou entre "0x03060000" e
+   "0x03060100" (não incluso), "PySlice_GetIndicesEx()" é uma função
+   descontinuada.
+
+int PySlice_Unpack(PyObject *slice, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   Extrai os membros de dados de início, parada e intermediário de um
+   objeto fatia como C inteiros. Reduz silenciosamente os valores
+   maiores do que "PY_SSIZE_T_MAX" para "PY_SSIZE_T_MAX", aumenta
+   silenciosamente os valores de início e parada menores que
+   "PY_SSIZE_T_MIN" para "PY_SSIZE_T_MIN", e silenciosamente aumenta
+   os valores de intermediário menores que "-PY_SSIZE_T_MAX" para
+   "-PY_SSIZE_T_MAX".
+
+   Retorna "-1" em caso de erro, "0" em caso de sucesso.
+
+   Novo na versão 3.6.1.
+
+Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step)
+    * Parte da ABI Estável desde a versão 3.7.*
+
+   Ajusta os índices de fatias inicial/final presumindo uma sequência
+   do comprimento especificado. Índices fora dos limites são cortados
+   de maneira consistente com o tratamento de fatias normais.
+
+   Retorna o comprimento da fatia. Sempre bem-sucedido. Não chama o
+   código Python.
+
+   Novo na versão 3.6.1.
+
+
+Objeto Ellipsis
+===============
+
+PyObject *Py_Ellipsis
+
+   O objeto Python "Ellipsis". Este objeto não tem métodos. Como
+   "Py_None", é um objeto singleton imortal.
+
+   Alterado na versão 3.12: "Py_Ellipsis" é imortal.

@@ -1,0 +1,218 @@
+Manual de referência da API Python/C
+************************************
+
+Este manual documenta a API usada por programadores C e C++ que
+desejam escrever módulos de extensões ou embutir Python. É um
+complemento para Estendendo e Incorporando o Interpretador Python, que
+descreve os princípios gerais da escrita de extensões mas não
+documenta as funções da API em detalhes.
+
+* Introdução
+
+  * Padrões de codificação
+
+  * Arquivos de inclusão
+
+  * Macros úteis
+
+  * Objetos, tipos e contagens de referências
+
+  * Exceções
+
+  * Incorporando Python
+
+  * Compilações de depuração
+
+* Estabilidade da API C
+
+  * API C Instável
+
+  * Interface Binária de Aplicação Estável
+
+  * Considerações da plataforma
+
+  * Conteúdo da API Limitada
+
+* A camada de Mais Alto Nível
+
+* Contagem de Referências
+
+* Manipulando Exceções
+
+  * Impressão e limpeza
+
+  * Lançando exceções
+
+  * Emitindo advertências
+
+  * Consultando o indicador de erro
+
+  * Tratamento de sinal
+
+  * Classes de exceção
+
+  * Objeto Exceção
+
+  * Objetos de exceção Unicode
+
+  * Controle de recursão
+
+  * Exceções Padrão
+
+  * Categorias de aviso padrão
+
+* Utilitários
+
+  * Utilitários do Sistema Operacional
+
+  * System Functions
+
+  * Process Control
+
+  * Importando módulos
+
+  * Suporte a *marshalling* de dados
+
+  * Análise de argumentos e construção de valores
+
+  * Conversão e formação de strings
+
+  * API do PyHash
+
+  * Reflexão
+
+  * Registro de codec e funções de suporte
+
+  * Support for Perf Maps
+
+* Camada de Objetos Abstratos
+
+  * Protocolo de objeto
+
+  * Protocolo de chamada
+
+  * Protocolo de número
+
+  * Protocolo de sequência
+
+  * Protocolo de mapeamento
+
+  * Protocolo Iterador
+
+  * Protocolo de Buffer
+
+  * Protocolo de Buffer Antigo
+
+* Camada de Objetos Concretos
+
+  * Objetos Fundamentais
+
+  * Objetos Numéricos
+
+  * Objetos Sequência
+
+  * Coleções
+
+  * Objetos Função
+
+  * Outros Objetos
+
+* Inicialização, Finalização e Threads
+
+  * Antes da Inicialização do Python
+
+  * Variáveis de configuração global
+
+  * Inicializando e encerrando o interpretador
+
+  * Process-wide parameters
+
+  * Thread State and the Global Interpreter Lock
+
+  * Sub-interpreter support
+
+  * Notificações assíncronas
+
+  * Profiling and Tracing
+
+  * Advanced Debugger Support
+
+  * Thread Local Storage Support
+
+* Configuração de Inicialização do Python
+
+  * Exemplo
+
+  * PyWideStringList
+
+  * PyStatus
+
+  * PyPreConfig
+
+  * Preinitialize Python with PyPreConfig
+
+  * PyConfig
+
+  * Initialization with PyConfig
+
+  * Isolated Configuration
+
+  * Configuração do Python
+
+  * Python Path Configuration
+
+  * Py_RunMain()
+
+  * Py_GetArgcArgv()
+
+  * Multi-Phase Initialization Private Provisional API
+
+* Gerenciamento de Memória
+
+  * Visão Geral
+
+  * Allocator Domains
+
+  * Raw Memory Interface
+
+  * Interface da Memória
+
+  * Alocadores de objeto
+
+  * Alocadores de memória padrão
+
+  * Alocadores de memória
+
+  * Debug hooks on the Python memory allocators
+
+  * The pymalloc allocator
+
+  * tracemalloc C API
+
+  * Exemplos
+
+* Suporte a implementação de Objetos
+
+  * Alocando Objetos na Pilha
+
+  * Estruturas Comuns de Objetos
+
+  * Objetos tipo
+
+  * Number Object Structures
+
+  * Mapping Object Structures
+
+  * Sequence Object Structures
+
+  * Buffer Object Structures
+
+  * Async Object Structures
+
+  * Slot Type typedefs
+
+  * Exemplos
+
+  * Suporte a Coleta Cíclica de Lixo
+
+* API e Versionamento de ABI

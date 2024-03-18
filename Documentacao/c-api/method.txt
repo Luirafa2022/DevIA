@@ -1,0 +1,84 @@
+Objetos de Método de Instância
+******************************
+
+Um método de instância é um wrapper para um "PyCFunction" e a nova
+maneira de vincular um "PyCFunction" a um objeto de classe. Ele
+substitui a chamada anterior "PyMethod_New(func, NULL, class)".
+
+PyTypeObject PyInstanceMethod_Type
+
+   Esta instância de "PyTypeObject" representa o tipo de método de
+   instância Python. Não é exposto a programas Python.
+
+int PyInstanceMethod_Check(PyObject *o)
+
+   Retorna verdadeiro se *o* é um objeto de método de instância (tem
+   tipo "PyInstanceMethod_Type"). O parâmetro não deve ser "NULL".
+   Esta função sempre tem sucesso.
+
+PyObject *PyInstanceMethod_New(PyObject *func)
+    *Retorna valor: Nova referência.*
+
+   Retorna um novo objeto de método de instância, com *func* sendo
+   qualquer objeto chamável. *func* é a função que será chamada quando
+   o método de instância for chamado.
+
+PyObject *PyInstanceMethod_Function(PyObject *im)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o objeto função associado ao método de instância *im*.
+
+PyObject *PyInstanceMethod_GET_FUNCTION(PyObject *im)
+    *Retorna valor: Referência emprestada.*
+
+   Versão macro de "PyInstanceMethod_Function()" que evita a
+   verificação de erros.
+
+
+Objetos método
+**************
+
+Métodos são objetos função vinculados. Os métodos são sempre
+associados a uma instância de uma classe definida pelo usuário.
+Métodos não vinculados (métodos vinculados a um objeto de classe) não
+estão mais disponíveis.
+
+PyTypeObject PyMethod_Type
+
+   Esta instância de "PyTypeObject" representa o tipo de método
+   Python. Isso é exposto a programas Python como "types.MethodType".
+
+int PyMethod_Check(PyObject *o)
+
+   Retorna verdadeiro se *o* é um objeto de método (tem tipo
+   "PyMethod_Type"). O parâmetro não deve ser "NULL". Esta função
+   sempre tem sucesso.
+
+PyObject *PyMethod_New(PyObject *func, PyObject *self)
+    *Retorna valor: Nova referência.*
+
+   Retorna um novo objeto de método, com *func* sendo qualquer objeto
+   chamável e *self* a instância à qual o método deve ser vinculado.
+   *func* é a função que será chamada quando o método for chamado.
+   *self* não deve ser "NULL".
+
+PyObject *PyMethod_Function(PyObject *meth)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna o objeto função associado ao método *meth*.
+
+PyObject *PyMethod_GET_FUNCTION(PyObject *meth)
+    *Retorna valor: Referência emprestada.*
+
+   Versão macro de "PyMethod_Function()" que evita a verificação de
+   erros.
+
+PyObject *PyMethod_Self(PyObject *meth)
+    *Retorna valor: Referência emprestada.*
+
+   Retorna a instância associada com o método *meth*.
+
+PyObject *PyMethod_GET_SELF(PyObject *meth)
+    *Retorna valor: Referência emprestada.*
+
+   Versão macro de "PyMethod_Self()" que evita a verificação de erros.

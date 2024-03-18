@@ -1,0 +1,161 @@
+Capsules
+********
+
+Consulte Providing a C API for an Extension Module para obter mais
+informações sobre o uso desses objetos.
+
+Novo na versão 3.1.
+
+type PyCapsule
+
+   Este subtipo de "PyObject" representa um valor opaco, útil para
+   módulos de extensão C que precisam passar um valor opaco (como
+   ponteiro void*) através do código Python para outro código C . É
+   frequentemente usado para disponibilizar um ponteiro de função C
+   definido em um módulo para outros módulos, para que o mecanismo de
+   importação regular possa ser usado para acessar APIs C definidas em
+   módulos carregados dinamicamente.
+
+type PyCapsule_Destructor
+    * Parte da ABI Estável.*
+
+   O tipo de um retorno de chamada destruidor para uma cápsula.
+   Definido como:
+
+      typedef void (*PyCapsule_Destructor)(PyObject *);
+
+   Veja "PyCapsule_New()" para a semântica dos retornos de chamada
+   PyCapsule_Destructor.
+
+int PyCapsule_CheckExact(PyObject *p)
+
+   Retorna true se seu argumento é um "PyCapsule". Esta função sempre
+   tem sucesso.
+
+PyObject *PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Cria um "PyCapsule" que encapsula o *ponteiro*. O argumento
+   *pointer* pode não ser "NULL".
+
+   Em caso de falha, define uma exceção e retorna "NULL".
+
+   A string *name* pode ser "NULL" ou um ponteiro para uma string C
+   válida. Se não for "NULL", essa string deverá sobreviver à cápsula.
+   (Embora seja permitido liberá-lo dentro do *descructor*.)
+
+   Se o argumento *destructor* não for "NULL", ele será chamado com a
+   cápsula como argumento quando for destruído.
+
+   Se esta cápsula for armazenada como um atributo de um módulo, o
+   *name* deve ser especificado como "modulename.attributename". Isso
+   permitirá que outros módulos importem a cápsula usando
+   "PyCapsule_Import()".
+
+void *PyCapsule_GetPointer(PyObject *capsule, const char *name)
+    * Parte da ABI Estável.*
+
+   Recupera o *pointer* armazenado na cápsula. Em caso de falha,
+   define uma exceção e retorna "NULL".
+
+   O parâmetro *name* deve ser comparado exatamente com o nome
+   armazenado na cápsula. Se o nome armazenado na cápsula for "NULL",
+   o *name* passado também deve ser "NULL". Python usa a função C
+   "strcmp()" para comparar nomes de cápsulas.
+
+PyCapsule_Destructor PyCapsule_GetDestructor(PyObject *capsule)
+    * Parte da ABI Estável.*
+
+   Retorna o destruidor atual armazenado na cápsula. Em caso de falha,
+   define uma exceção e retorna "NULL".
+
+   É legal para uma cápsula ter um destruidor "NULL". Isso torna um
+   código de retorno "NULL" um tanto ambíguo; use
+   "PyCapsule_IsValid()" ou "PyErr_Occurred()" para desambiguar.
+
+void *PyCapsule_GetContext(PyObject *capsule)
+    * Parte da ABI Estável.*
+
+   Retorna o contexto atual armazenado na cápsula. Em caso de falha,
+   define uma exceção e retorna "NULL".
+
+   É legal para uma cápsula ter um contexto "NULL". Isso torna um
+   código de retorno "NULL" um tanto ambíguo; use
+   "PyCapsule_IsValid()" ou "PyErr_Occurred()" para desambiguar.
+
+const char *PyCapsule_GetName(PyObject *capsule)
+    * Parte da ABI Estável.*
+
+   Retorna o nome atual armazenado na cápsula. Em caso de falha,
+   define uma exceção e retorna "NULL".
+
+   É legal para uma cápsula ter um nome "NULL". Isso torna um código
+   de retorno "NULL" um tanto ambíguo; use "PyCapsule_IsValid()" ou
+   "PyErr_Occurred()" para desambiguar.
+
+void *PyCapsule_Import(const char *name, int no_block)
+    * Parte da ABI Estável.*
+
+   Importa um ponteiro para um objeto C de um atributo de cápsula em
+   um módulo. O parâmetro *name* deve especificar o nome completo do
+   atributo, como em "module.attribute". O *name* armazenado na
+   cápsula deve corresponder exatamente a essa string.
+
+   Retorna o ponteiro interno *pointer* da cápsula com sucesso. Em
+   caso de falha, define uma exceção e retorna "NULL".
+
+   Alterado na versão 3.3: *no_block* não tem mais efeito.
+
+int PyCapsule_IsValid(PyObject *capsule, const char *name)
+    * Parte da ABI Estável.*
+
+   Determina se *capsule* é ou não uma cápsula válida. Uma cápsula
+   válida é diferente de "NULL", passa "PyCapsule_CheckExact()",
+   possui um ponteiro diferente de "NULL" armazenado e seu nome
+   interno corresponde ao parâmetro *name*. (Consulte
+   "PyCapsule_GetPointer()" para obter informações sobre como os nomes
+   das cápsulas são comparados.)
+
+   Em outras palavras, se "PyCapsule_IsValid()" retornar um valor
+   verdadeiro, as chamadas para qualquer um dos acessadores (qualquer
+   função que comece com "PyCapsule_Get") terão êxito garantido.
+
+   Retorna um valor diferente de zero se o objeto for válido e
+   corresponder ao nome passado. Retorna "0" caso contrário. Esta
+   função não falhará.
+
+int PyCapsule_SetContext(PyObject *capsule, void *context)
+    * Parte da ABI Estável.*
+
+   Define o ponteiro de contexto dentro de *capsule* para *context*.
+
+   Retorna "0" em caso de sucesso. Retorna diferente de zero e define
+   uma exceção em caso de falha.
+
+int PyCapsule_SetDestructor(PyObject *capsule, PyCapsule_Destructor destructor)
+    * Parte da ABI Estável.*
+
+   Define o destrutor dentro de *capsule* para *destructor*.
+
+   Retorna "0" em caso de sucesso. Retorna diferente de zero e define
+   uma exceção em caso de falha.
+
+int PyCapsule_SetName(PyObject *capsule, const char *name)
+    * Parte da ABI Estável.*
+
+   Define o nome dentro de *capsule* como *name*. Se não for "NULL", o
+   nome deve sobreviver à cápsula. Se o *name* anterior armazenado na
+   cápsula não era "NULL", nenhuma tentativa será feita para
+   liberá-lo.
+
+   Retorna "0" em caso de sucesso. Retorna diferente de zero e define
+   uma exceção em caso de falha.
+
+int PyCapsule_SetPointer(PyObject *capsule, void *pointer)
+    * Parte da ABI Estável.*
+
+   Define o ponteiro nulo dentro de *capsule* para *pointer*. O
+   ponteiro não pode ser "NULL".
+
+   Retorna "0" em caso de sucesso. Retorna diferente de zero e define
+   uma exceção em caso de falha.

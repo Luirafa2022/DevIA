@@ -1,0 +1,177 @@
+Protocolo de sequência
+**********************
+
+int PySequence_Check(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Return "1" if the object provides the sequence protocol, and "0"
+   otherwise. Note that it returns "1" for Python classes with a
+   "__getitem__()" method, unless they are "dict" subclasses, since in
+   general it is impossible to determine what type of keys the class
+   supports.  This function always succeeds.
+
+Py_ssize_t PySequence_Size(PyObject *o)
+Py_ssize_t PySequence_Length(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Retorna o número de objetos em sequência *o* em caso de sucesso e
+   "-1" em caso de falha. Isso é equivalente à expressão Python
+   "len(o)".
+
+PyObject *PySequence_Concat(PyObject *o1, PyObject *o2)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna a concatenação de *o1* e *o2* em caso de sucesso, e "NULL"
+   em caso de falha. Este é o equivalente da expressão Python "o1 +
+   o2".
+
+PyObject *PySequence_Repeat(PyObject *o, Py_ssize_t count)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna o resultado da repetição do objeto sequência *o* *count*
+   vezes ou "NULL" em caso de falha. Este é o equivalente da expressão
+   Python "o * count".
+
+PyObject *PySequence_InPlaceConcat(PyObject *o1, PyObject *o2)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna a concatenação de *o1* e *o2* em caso de sucesso, e "NULL"
+   em caso de falha. A operação é feita *no local* quando *o1*
+   suportar. Este é o equivalente da expressão Python "o1 += o2".
+
+PyObject *PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna o resultado da repetição do objeto sequência *o* *count*
+   vezes ou "NULL" em caso de falha. A operação é feita *localmente*
+   quando *o* suportar. Este é o equivalente da expressão Python "o *=
+   count".
+
+PyObject *PySequence_GetItem(PyObject *o, Py_ssize_t i)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna o elemento *i* de *o* ou "NULL" em caso de falha. Este é o
+   equivalente da expressão Python "o[i]".
+
+PyObject *PySequence_GetSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna a fatia do objeto sequência *o* entre *i1* e *i2*, ou
+   "NULL" em caso de falha. Este é o equivalente da expressão Python
+   "o[i1:i2]".
+
+int PySequence_SetItem(PyObject *o, Py_ssize_t i, PyObject *v)
+    * Parte da ABI Estável.*
+
+   Atribui o objeto *v* ao elemento *i* de *o*. Levanta uma exceção e
+   retorna "-1" em caso de falha; retorna "0" em caso de sucesso. Isso
+   é equivalente à instrução Python "o[i]=v". Esta função *não* rouba
+   uma referência a *v*.
+
+   If *v* is "NULL", the element is deleted, but this feature is
+   deprecated in favour of using "PySequence_DelItem()".
+
+int PySequence_DelItem(PyObject *o, Py_ssize_t i)
+    * Parte da ABI Estável.*
+
+   Exclui o elemento *i* do objeto *o*. Retorna "-1" em caso de falha.
+   Isso é equivalente à instrução Python "del o[i]".
+
+int PySequence_SetSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2, PyObject *v)
+    * Parte da ABI Estável.*
+
+   Atribui o objeto sequência *v* à fatia no objeto sequência *o* de
+   *i1* a *i2*. Isso é equivalente à instrução Python "o[i1:i2] = v".
+
+int PySequence_DelSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2)
+    * Parte da ABI Estável.*
+
+   Exclui a fatia no objeto sequência *o* de *i1* a *i2*. Retorna "-1"
+   em caso de falha. Isso é equivalente à instrução Python "del
+   o[i1:i2]".
+
+Py_ssize_t PySequence_Count(PyObject *o, PyObject *value)
+    * Parte da ABI Estável.*
+
+   Return the number of occurrences of *value* in *o*, that is, return
+   the number of keys for which "o[key] == value".  On failure, return
+   "-1".  This is equivalent to the Python expression
+   "o.count(value)".
+
+int PySequence_Contains(PyObject *o, PyObject *value)
+    * Parte da ABI Estável.*
+
+   Determine if *o* contains *value*.  If an item in *o* is equal to
+   *value*, return "1", otherwise return "0". On error, return "-1".
+   This is equivalent to the Python expression "value in o".
+
+Py_ssize_t PySequence_Index(PyObject *o, PyObject *value)
+    * Parte da ABI Estável.*
+
+   Return the first index *i* for which "o[i] == value".  On error,
+   return "-1".    This is equivalent to the Python expression
+   "o.index(value)".
+
+PyObject *PySequence_List(PyObject *o)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Return a list object with the same contents as the sequence or
+   iterable *o*, or "NULL" on failure.  The returned list is
+   guaranteed to be new.  This is equivalent to the Python expression
+   "list(o)".
+
+PyObject *PySequence_Tuple(PyObject *o)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Return a tuple object with the same contents as the sequence or
+   iterable *o*, or "NULL" on failure.  If *o* is a tuple, a new
+   reference will be returned, otherwise a tuple will be constructed
+   with the appropriate contents.  This is equivalent to the Python
+   expression "tuple(o)".
+
+PyObject *PySequence_Fast(PyObject *o, const char *m)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Return the sequence or iterable *o* as an object usable by the
+   other "PySequence_Fast*" family of functions. If the object is not
+   a sequence or iterable, raises "TypeError" with *m* as the message
+   text. Returns "NULL" on failure.
+
+   The "PySequence_Fast*" functions are thus named because they assume
+   *o* is a "PyTupleObject" or a "PyListObject" and access the data
+   fields of *o* directly.
+
+   As a CPython implementation detail, if *o* is already a sequence or
+   list, it will be returned.
+
+Py_ssize_t PySequence_Fast_GET_SIZE(PyObject *o)
+
+   Returns the length of *o*, assuming that *o* was returned by
+   "PySequence_Fast()" and that *o* is not "NULL".  The size can also
+   be retrieved by calling "PySequence_Size()" on *o*, but
+   "PySequence_Fast_GET_SIZE()" is faster because it can assume *o* is
+   a list or tuple.
+
+PyObject *PySequence_Fast_GET_ITEM(PyObject *o, Py_ssize_t i)
+    *Retorna valor: Referência emprestada.*
+
+   Return the *i*th element of *o*, assuming that *o* was returned by
+   "PySequence_Fast()", *o* is not "NULL", and that *i* is within
+   bounds.
+
+PyObject **PySequence_Fast_ITEMS(PyObject *o)
+
+   Return the underlying array of PyObject pointers.  Assumes that *o*
+   was returned by "PySequence_Fast()" and *o* is not "NULL".
+
+   Note, if a list gets resized, the reallocation may relocate the
+   items array. So, only use the underlying array pointer in contexts
+   where the sequence cannot change.
+
+PyObject *PySequence_ITEM(PyObject *o, Py_ssize_t i)
+    *Retorna valor: Nova referência.*
+
+   Return the *i*th element of *o* or "NULL" on failure. Faster form
+   of "PySequence_GetItem()" but without checking that
+   "PySequence_Check()" on *o* is true and without adjustment for
+   negative indices.

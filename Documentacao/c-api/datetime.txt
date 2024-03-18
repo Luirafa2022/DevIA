@@ -1,0 +1,302 @@
+Objetos DateTime
+****************
+
+Various date and time objects are supplied by the "datetime" module.
+Before using any of these functions, the header file "datetime.h" must
+be included in your source (note that this is not included by
+"Python.h"), and the macro "PyDateTime_IMPORT" must be invoked,
+usually as part of the module initialisation function.  The macro puts
+a pointer to a C structure into a static variable, "PyDateTimeAPI",
+that is used by the following macros.
+
+type PyDateTime_Date
+
+   This subtype of "PyObject" represents a Python date object.
+
+type PyDateTime_DateTime
+
+   This subtype of "PyObject" represents a Python datetime object.
+
+type PyDateTime_Time
+
+   This subtype of "PyObject" represents a Python time object.
+
+type PyDateTime_Delta
+
+   This subtype of "PyObject" represents the difference between two
+   datetime values.
+
+PyTypeObject PyDateTime_DateType
+
+   This instance of "PyTypeObject" represents the Python date type; it
+   is the same object as "datetime.date" in the Python layer.
+
+PyTypeObject PyDateTime_DateTimeType
+
+   This instance of "PyTypeObject" represents the Python datetime
+   type; it is the same object as "datetime.datetime" in the Python
+   layer.
+
+PyTypeObject PyDateTime_TimeType
+
+   This instance of "PyTypeObject" represents the Python time type; it
+   is the same object as "datetime.time" in the Python layer.
+
+PyTypeObject PyDateTime_DeltaType
+
+   This instance of "PyTypeObject" represents Python type for the
+   difference between two datetime values; it is the same object as
+   "datetime.timedelta" in the Python layer.
+
+PyTypeObject PyDateTime_TZInfoType
+
+   This instance of "PyTypeObject" represents the Python time zone
+   info type; it is the same object as "datetime.tzinfo" in the Python
+   layer.
+
+Macro para acesso ao singleton UTC:
+
+PyObject *PyDateTime_TimeZone_UTC
+
+   Retorna um singleton do fuso horário representando o UTC, o mesmo
+   objeto que "datetime.timezone.utc".
+
+   Novo na versão 3.7.
+
+Macros de verificação de tipo:
+
+int PyDate_Check(PyObject *ob)
+
+   Return true if *ob* is of type "PyDateTime_DateType" or a subtype
+   of "PyDateTime_DateType".  *ob* must not be "NULL".  This function
+   always succeeds.
+
+int PyDate_CheckExact(PyObject *ob)
+
+   Retorna true se *ob* for do tipo "PyDateTime_DateType". *ob* não
+   deve ser "NULL". Esta função sempre tem sucesso.
+
+int PyDateTime_Check(PyObject *ob)
+
+   Return true if *ob* is of type "PyDateTime_DateTimeType" or a
+   subtype of "PyDateTime_DateTimeType".  *ob* must not be "NULL".
+   This function always succeeds.
+
+int PyDateTime_CheckExact(PyObject *ob)
+
+   Retorna true se *ob* for do tipo "PyDateTime_DateTimeType". *ob*
+   não deve ser "NULL". Esta função sempre tem sucesso.
+
+int PyTime_Check(PyObject *ob)
+
+   Return true if *ob* is of type "PyDateTime_TimeType" or a subtype
+   of "PyDateTime_TimeType".  *ob* must not be "NULL".  This function
+   always succeeds.
+
+int PyTime_CheckExact(PyObject *ob)
+
+   Retorna true se *ob* for do tipo "PyDateTime_TimeType". *ob* não
+   deve ser "NULL". Esta função sempre tem sucesso.
+
+int PyDelta_Check(PyObject *ob)
+
+   Return true if *ob* is of type "PyDateTime_DeltaType" or a subtype
+   of "PyDateTime_DeltaType".  *ob* must not be "NULL".  This function
+   always succeeds.
+
+int PyDelta_CheckExact(PyObject *ob)
+
+   Retorna true se *ob* for do tipo "PyDateTime_DeltaType". *ob* não
+   deve ser "NULL". Esta função sempre tem sucesso.
+
+int PyTZInfo_Check(PyObject *ob)
+
+   Return true if *ob* is of type "PyDateTime_TZInfoType" or a subtype
+   of "PyDateTime_TZInfoType".  *ob* must not be "NULL".  This
+   function always succeeds.
+
+int PyTZInfo_CheckExact(PyObject *ob)
+
+   Retorna true se *ob* for do tipo "PyDateTime_TZInfoType". *ob* não
+   deve ser "NULL". Esta função sempre tem sucesso.
+
+Macros para criar objetos:
+
+PyObject *PyDate_FromDate(int year, int month, int day)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.date" com o ano, mês e dia
+   especificados.
+
+PyObject *PyDateTime_FromDateAndTime(int year, int month, int day, int hour, int minute, int second, int usecond)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.datetime" com o ano, mês, dia, hora,
+   minuto, segundo, microssegundo especificados.
+
+PyObject *PyDateTime_FromDateAndTimeAndFold(int year, int month, int day, int hour, int minute, int second, int usecond, int fold)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.datetime" com o ano, mês, dia, hora,
+   minuto, segundo, microssegundo e a dobra especificados.
+
+   Novo na versão 3.6.
+
+PyObject *PyTime_FromTime(int hour, int minute, int second, int usecond)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.time" com a hora, minuto, segundo e
+   microssegundo especificados.
+
+PyObject *PyTime_FromTimeAndFold(int hour, int minute, int second, int usecond, int fold)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.time" com a hora, minuto, segundo,
+   microssegundo e a dobra especificados.
+
+   Novo na versão 3.6.
+
+PyObject *PyDelta_FromDSU(int days, int seconds, int useconds)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.timedelta" representando o número
+   especificado de dias, segundos e microssegundos. A normalização é
+   realizada para que o número resultante de microssegundos e segundos
+   esteja nos intervalos documentados para objetos de
+   "datetime.timedelta".
+
+PyObject *PyTimeZone_FromOffset(PyObject *offset)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.timezone" com um deslocamento fixo sem
+   nome representado pelo argumento *offset*.
+
+   Novo na versão 3.7.
+
+PyObject *PyTimeZone_FromOffsetAndName(PyObject *offset, PyObject *name)
+    *Retorna valor: Nova referência.*
+
+   Retorna um objeto "datetime.timezone" com um deslocamento fixo
+   representado pelo argumento *offset* e com tzname *name*.
+
+   Novo na versão 3.7.
+
+Macros to extract fields from date objects.  The argument must be an
+instance of "PyDateTime_Date", including subclasses (such as
+"PyDateTime_DateTime").  The argument must not be "NULL", and the type
+is not checked:
+
+int PyDateTime_GET_YEAR(PyDateTime_Date *o)
+
+   Retorna o ano, como um inteiro positivo.
+
+int PyDateTime_GET_MONTH(PyDateTime_Date *o)
+
+   Retorna o mês, como um inteiro de 1 a 12.
+
+int PyDateTime_GET_DAY(PyDateTime_Date *o)
+
+   Retorna o dia, como um inteiro de 1 a 31.
+
+Macros to extract fields from datetime objects.  The argument must be
+an instance of "PyDateTime_DateTime", including subclasses. The
+argument must not be "NULL", and the type is not checked:
+
+int PyDateTime_DATE_GET_HOUR(PyDateTime_DateTime *o)
+
+   Retorna a hora, como um inteiro de 0 a 23.
+
+int PyDateTime_DATE_GET_MINUTE(PyDateTime_DateTime *o)
+
+   Retorna o minuto, como um inteiro de 0 a 59.
+
+int PyDateTime_DATE_GET_SECOND(PyDateTime_DateTime *o)
+
+   Retorna o segundo, como um inteiro de 0 a 59.
+
+int PyDateTime_DATE_GET_MICROSECOND(PyDateTime_DateTime *o)
+
+   Retorna o microssegundo, como um inteiro de 0 a 999999.
+
+int PyDateTime_DATE_GET_FOLD(PyDateTime_DateTime *o)
+
+   Retorna a dobra, como um inteiro de 0 a 1.
+
+   Novo na versão 3.6.
+
+PyObject *PyDateTime_DATE_GET_TZINFO(PyDateTime_DateTime *o)
+
+   Retorna o tzinfo (que pode ser "None").
+
+   Novo na versão 3.10.
+
+Macros to extract fields from time objects.  The argument must be an
+instance of "PyDateTime_Time", including subclasses. The argument must
+not be "NULL", and the type is not checked:
+
+int PyDateTime_TIME_GET_HOUR(PyDateTime_Time *o)
+
+   Retorna a hora, como um inteiro de 0 a 23.
+
+int PyDateTime_TIME_GET_MINUTE(PyDateTime_Time *o)
+
+   Retorna o minuto, como um inteiro de 0 a 59.
+
+int PyDateTime_TIME_GET_SECOND(PyDateTime_Time *o)
+
+   Retorna o segundo, como um inteiro de 0 a 59.
+
+int PyDateTime_TIME_GET_MICROSECOND(PyDateTime_Time *o)
+
+   Retorna o microssegundo, como um inteiro de 0 a 999999.
+
+int PyDateTime_TIME_GET_FOLD(PyDateTime_Time *o)
+
+   Retorna a dobra, como um inteiro de 0 a 1.
+
+   Novo na versão 3.6.
+
+PyObject *PyDateTime_TIME_GET_TZINFO(PyDateTime_Time *o)
+
+   Retorna o tzinfo (que pode ser "None").
+
+   Novo na versão 3.10.
+
+Macros to extract fields from time delta objects.  The argument must
+be an instance of "PyDateTime_Delta", including subclasses. The
+argument must not be "NULL", and the type is not checked:
+
+int PyDateTime_DELTA_GET_DAYS(PyDateTime_Delta *o)
+
+   Retorna o número de dias, como um inteiro de -999999999 a
+   999999999.
+
+   Novo na versão 3.3.
+
+int PyDateTime_DELTA_GET_SECONDS(PyDateTime_Delta *o)
+
+   Retorna o número de segundos, como um inteiro de 0 a 86399.
+
+   Novo na versão 3.3.
+
+int PyDateTime_DELTA_GET_MICROSECONDS(PyDateTime_Delta *o)
+
+   Retorna o número de microssegundos, como um inteiro de 0 a 999999.
+
+   Novo na versão 3.3.
+
+Macros para a conveniência de módulos implementando a API de DB:
+
+PyObject *PyDateTime_FromTimestamp(PyObject *args)
+    *Retorna valor: Nova referência.*
+
+   Cria e retorna um novo objeto "datetime.datetime", com uma tupla de
+   argumentos adequada para passar para
+   "datetime.datetime.fromtimestamp()".
+
+PyObject *PyDate_FromTimestamp(PyObject *args)
+    *Retorna valor: Nova referência.*
+
+   Cria e retorna um novo objeto "datetime.date", com uma tupla de
+   argumentos adequada para passar para
+   "datetime.date.fromtimestamp()".

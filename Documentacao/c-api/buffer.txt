@@ -1,0 +1,541 @@
+Protocolo de Buffer
+*******************
+
+Certos objetos disponíveis em Python envolvem o acesso a um vetor ou
+*buffer* de memória subjacente. Esses objetos incluem as "bytes" e
+"bytearray" embutidas, e alguns tipos de extensão como "array.array".
+As bibliotecas de terceiros podem definir seus próprios tipos para
+fins especiais, como processamento de imagem ou análise numérica.
+
+Embora cada um desses tipos tenha sua própria semântica, eles
+compartilham a característica comum de serem suportados por um buffer
+de memória possivelmente grande. É desejável, em algumas situações,
+acessar esse buffer diretamente e sem cópia intermediária.
+
+Python fornece essa facilidade no nível C sob a forma de protocolo de
+buffer. Este protocolo tem dois lados:
+
+* do lado do produtor, um tipo pode exportar uma "interface de buffer"
+  que permite que objetos desse tipo exponham informações sobre o
+  buffer subjacente. Esta interface é descrita na seção Buffer Object
+  Structures;
+
+* do lado do consumidor, vários meios estão disponíveis para obter o
+  ponteiro para os dados subjacentes de um objeto (por exemplo, um
+  parâmetro de método).
+
+Objetos simples como "bytes" e "bytearray" expõem seu buffer
+subjacente em uma forma orientada a byte. Outras formas são possíveis;
+por exemplo, os elementos expostos por uma "array.array" podem ser
+valores de vários bytes.
+
+Um exemplo de interface de um consumidor de buffer é o método
+"write()" de objetos arquivo: qualquer objeto que possa exportar uma
+série de bytes por meio da interface de buffer pode ser gravado em um
+arquivo. Enquanto o "write()" precisa apenas de acesso de somente
+leitura ao conteúdo interno do objeto passado, outros métodos, como
+"readinto()", precisam de acesso de somente escrita ao conteúdo
+interno. A interface de buffer permite que o objetos possam permitir
+ou rejeitar a exportação para buffers de leitura e escrita ou somente
+leitura.
+
+Existem duas maneiras para um consumidor da interface de buffer
+adquirir um buffer em um objeto alvo:
+
+* chamada de "PyObject_GetBuffer()" com os parâmetros certos;
+
+* chamada de "PyArg_ParseTuple()" (ou um dos seus irmãos) com um dos
+  códigos de formatação "y*", "w*" ou "s*".
+
+Em ambos os casos, "PyBuffer_Release()" deve ser chamado quando o
+buffer não é mais necessário. A falta de tal pode levar a várias
+questões, tais como vazamentos de recursos.
+
+
+Estrutura de Buffer
+===================
+
+As estruturas de buffer (ou simplesmente "buffers") são úteis como uma
+maneira de expor os dados binários de outro objeto para o programador
+Python. Eles também podem ser usados como um mecanismo de cópia
+silenciosa. Usando sua capacidade de fazer referência a um bloco de
+memória, é possível expor facilmente qualquer dado ao programador
+Python. A memória pode ser uma matriz grande e constante em uma
+extensão C, pode ser um bloco bruto de memória para manipulação antes
+de passar para uma biblioteca do sistema operacional, ou pode ser
+usado para transmitir dados estruturados no formato nativo e formato
+de memória.
+
+Ao contrário da maioria dos tipos de dados expostos pelo interpretador
+Python, os buffers não são ponteiros "PyObject" mas sim estruturas C
+simples. Isso permite que eles sejam criados e copiados de forma muito
+simples. Quando um invólucro genérico em torno de um buffer é
+necessário, um objeto memoryview pode ser criado.
+
+Para obter instruções curtas sobre como escrever um objeto exportador,
+consulte Buffer Object Structures. Para obter um buffer, veja
+"PyObject_GetBuffer()".
+
+type Py_buffer
+    * Parte da ABI Estável (incluindo todos os membros) desde a versão
+   3.11.*
+
+   void *buf
+
+      Um ponteiro para o início da estrutura lógica descrita pelos
+      campos do buffer. Este pode ser qualquer local dentro do bloco
+      de memória física subjacente do exportador. Por exemplo, com
+      negativo "strides" o valor pode apontar para o final do bloco de
+      memória.
+
+      Para vetores *contíguos*, o valor aponta para o início do bloco
+      de memória.
+
+   PyObject *obj
+
+      Uma nova referência ao objeto sendo exporta. A referência
+      pertence ao consumidor e é automaticamente liberada (por
+      exemplo, a contagem de referências é decrementada) e é atribuída
+      para "NULL"  por "PyBuffer_Release()". O campo é equivalmente ao
+      valor de retorno de qualquer função do padrão C-API.
+
+      Como um caso especial, para buffers *temporários* que são
+      encapsulados por "PyMemoryView_FromBuffer()" ou
+      "PyBuffer_FillInfo()" esse campo é "NULL". Em geral, objetos
+      exportadores NÃO DEVEM usar esse esquema.
+
+   Py_ssize_t len
+
+      "product(shape) * itemsize". Para matrizes contíguas, este é o
+      comprimento do bloco de memória subjacente. Para matrizes não
+      contíguas, é o comprimento que a estrutura lógica teria se fosse
+      copiado para uma representação contígua.
+
+      Acessando "((char *)buf)[0] up to ((char *)buf)[len-1]" só é
+      válido se o buffer tiver sido obtido por uma solicitação que
+      garanta a contiguidade. Na maioria dos casos, esse pedido será
+      "PyBUF_SIMPLE" ou "PyBUF_WRITABLE".
+
+   int readonly
+
+      Um indicador de se o buffer é somente leitura. Este campo é
+      controlado pelo sinalizador "PyBUF_WRITABLE".
+
+   Py_ssize_t itemsize
+
+      O tamanho do item em bytes de um único elemento. O mesmo que o
+      valor de "struct.calcsize()" chamado em valores não "NULL" de
+      "format".
+
+      Exceção importante: Se um consumidor requisita um buffer sem
+      sinalizador "PyBUF_FORMAT", "format" será definido como "NULL",
+      mas "itemsize" ainda terá seu valor para o formato original.
+
+      Se "shape" está presente, a igualdade "product(shape) * itemsize
+      == len" ainda é válida e o usuário pode usar "itemsize" para
+      navegar o buffer.
+
+      Se "shape" é "NULL" como resultado de uma "PyBUF_SIMPLE" ou uma
+      requisição "PyBUF_WRITABLE", o consumidor deve ignorar
+      "itemsize" e assumir "itemsize == 1".
+
+   const char *format
+
+      Uma string terminada por *NUL* no estilo de sintaxe de módulo
+      "struct" descrevendo os conteúdos de um único item. Se isso é
+      "NULL", ""B"" (unsigned bytes) é assumido.
+
+      Este campo é controlado pelo sinalizador "PyBUF_FORMAT".
+
+   int ndim
+
+      O número de dimensões de memória representado como um array
+      n-dimensional. Se for "0", "buf" aponta para um único elemento
+      representando um escalar. Neste caso, "shape", "strides" e
+      "suboffsets" DEVEM ser "NULL". O número máximo de dimensões é
+      dado por "PyBUF_MAX_NDIM".
+
+   Py_ssize_t *shape
+
+      Uma matriz de "Py_ssize_t" do comprimento "ndim" indicando a
+      forma da memória como uma matriz n-dimensional. Observe que a
+      forma "shape[0] * ... * shape[ndim-1] * itemsize" DEVE ser igual
+      a "len".
+
+      Os valores da forma são restritos a "shape[n] >= 0". The case
+      "shape[n] == 0" requer atenção especial. Veja complex arrays
+      para mais informações.
+
+      A forma de acesso a matriz é de somente leitura para o usuário.
+
+   Py_ssize_t *strides
+
+      Um vetor de "Py_ssize_t" de comprimento "ndim" dando o número de
+      bytes para saltar para obter um novo elemento em cada dimensão.
+
+      Os valores de Stride podem ser qualquer número inteiro. Para
+      arrays regulares, os passos são geralmente positivos, mas um
+      consumidor DEVE ser capaz de lidar com o caso "strides[n] <= 0".
+      Veja complex arrays para mais informações.
+
+      A matriz de passos é somente leitura para o consumidor.
+
+   Py_ssize_t *suboffsets
+
+      Uma matriz de "Py_ssize_t" de comprimento "ndim". Se
+      "suboffsets[n] >= 0", os valores armazenados ao longo da n-ésima
+      dimensão são ponteiros e o valor suboffset determina quantos
+      bytes para adicionar a cada ponteiro após desreferenciar. Um
+      valor de suboffset que é negativo indica que não deve ocorrer
+      desreferenciação (caminhando em um bloco de memória contíguo).
+
+      Se todos os subconjuntos forem negativos (ou seja, não é
+      necessário fazer referência), então este campo deve ser "NULL"
+      (o valor padrão).
+
+      Esse tipo de representação de matriz é usado pela Python Imaging
+      Library (PIL). Veja complex arrays para obter mais informações
+      sobre como acessar elementos dessa matriz.a matriz.
+
+      A matriz de subconjuntos é somente leitura para o consumidor.
+
+   void *internal
+
+      Isso é para uso interno pelo objeto exportador. Por exemplo,
+      isso pode ser re-moldado como um número inteiro pelo exportador
+      e usado para armazenar bandeiras sobre se os conjuntos de forma,
+      passos e suboffsets devem ou não ser liberados quando o buffer é
+      liberado. O consumidor NÃO DEVE alterar esse valor.
+
+Constantes:
+
+PyBUF_MAX_NDIM
+
+   O número máximo de dimensões que a memória representa. Exportadores
+   DEVEM respeitar esse limite, consumidores de buffers multi-
+   dimensionais DEVEM ser capazes de liader com até "PyBUF_MAX_NDIM"
+   dimensões. Atualmente definido como 64.
+
+
+Tipos de solicitação do buffer
+==============================
+
+Os buffers geralmente são obtidos enviando uma solicitação de buffer
+para um objeto exportador via "PyObject_GetBuffer()". Uma vez que a
+complexidade da estrutura lógica da memória pode variar drasticamente,
+o consumidor usa o argumento *flags* para especificar o tipo de buffer
+exato que pode manipular.
+
+Todos os campos "Py_buffer" são definidos de forma não-ambígua pelo
+tipo de requisição.
+
+
+campos independentes do pedido
+------------------------------
+
+Os seguintes campos não são influenciados por *flags* e devem sempre
+ser preenchidos com os valores corretos: "obj", "buf", "len",
+"itemsize", "ndim".
+
+
+apenas em formato
+-----------------
+
+   PyBUF_WRITABLE
+
+      Controla o campo "readonly". Se configurado, o exportador DEVE
+      fornecer um buffer gravável ou então reportar falha. Caso
+      contrário, o exportador pode fornecer um buffer de somente
+      leitura ou gravável, mas a escolha DEVE ser consistente para
+      todos os consumidores.
+
+   PyBUF_FORMAT
+
+      Controla o campo "format". Se configurado, este campo DEVE ser
+      preenchido corretamente. Caso contrário, este campo DEVE ser
+      "NULL".
+
+:"PyBUF_WRITABLE" pode ser |'d para qualquer um dos sinalizadores na
+próxima seção. Uma vez que "PyBUF_WRITABLE" é definido como 0,
+"PyBUF_WRITABLE" pode ser usado como uma bandeira autônoma para
+solicitar um buffer simples gravável.
+
+"PyBUF_FORMAT" pode ser |'d para qualquer um dos sinalizadores, exceto
+"PyBUF_SIMPLE". O último já implica o formato "B" (bytes não
+assinados).
+
+
+forma, avanços, suboffsets
+--------------------------
+
+As bandeiras que controlam a estrutura lógica da memória estão
+listadas em ordem decrescente de complexidade. Observe que cada
+bandeira contém todos os bits das bandeiras abaixo.
+
++-------------------------------+---------+-----------+--------------+
+| Solicitação                   | Forma   | Avanços   | subconjuntos |
+|===============================|=========|===========|==============|
+| PyBUF_INDIRECT                | sim     | sim       | se           |
+|                               |         |           | necessário   |
++-------------------------------+---------+-----------+--------------+
+| PyBUF_STRIDES                 | sim     | sim       | NULL         |
++-------------------------------+---------+-----------+--------------+
+| PyBUF_ND                      | sim     | NULL      | NULL         |
++-------------------------------+---------+-----------+--------------+
+| PyBUF_SIMPLE                  | NULL    | NULL      | NULL         |
++-------------------------------+---------+-----------+--------------+
+
+
+requisições contíguas
+---------------------
+
+*contiguity* do C ou Fortran podem ser explicitamente solicitadas, com
+ou sem informação de avanço. Sem informação de avanço, o buffer deve
+ser C-contíguo.
+
++-------------------------------------+---------+-----------+--------------+----------+
+| Solicitação                         | Forma   | Avanços   | subconjuntos | contig   |
+|=====================================|=========|===========|==============|==========|
+| PyBUF_C_CONTIGUOUS                  | sim     | sim       | NULL         | C        |
++-------------------------------------+---------+-----------+--------------+----------+
+| PyBUF_F_CONTIGUOUS                  | sim     | sim       | NULL         | F        |
++-------------------------------------+---------+-----------+--------------+----------+
+| PyBUF_ANY_CONTIGUOUS                | sim     | sim       | NULL         | C ou F   |
++-------------------------------------+---------+-----------+--------------+----------+
+| "PyBUF_ND"                          | sim     | NULL      | NULL         | C        |
++-------------------------------------+---------+-----------+--------------+----------+
+
+
+requisições compostas
+---------------------
+
+Todas as requisições possíveis foram completamente definidas por
+alguma combinação dos sinalizadores na seção anterior. Por
+conveniência, o protocolo do buffer fornece combinações frequentemente
+utilizadas como sinalizadores únicos.
+
+Na seguinte tabela *U* significa contiguidade indefinida. O consumidor
+deve chamar "PyBuffer_IsContiguous()" para determinar a contiguidade.
+
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| Solicitação                     | Forma   | Avanços   | subconjuntos | contig   | readonly   | formato  |
+|=================================|=========|===========|==============|==========|============|==========|
+| PyBUF_FULL                      | sim     | sim       | se           | U        | 0          | sim      |
+|                                 |         |           | necessário   |          |            |          |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_FULL_RO                   | sim     | sim       | se           | U        | 1 ou 0     | sim      |
+|                                 |         |           | necessário   |          |            |          |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_RECORDS                   | sim     | sim       | NULL         | U        | 0          | sim      |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_RECORDS_RO                | sim     | sim       | NULL         | U        | 1 ou 0     | sim      |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_STRIDED                   | sim     | sim       | NULL         | U        | 0          | NULL     |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_STRIDED_RO                | sim     | sim       | NULL         | U        | 1 ou 0     | NULL     |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_CONTIG                    | sim     | NULL      | NULL         | C        | 0          | NULL     |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+| PyBUF_CONTIG_RO                 | sim     | NULL      | NULL         | C        | 1 ou 0     | NULL     |
++---------------------------------+---------+-----------+--------------+----------+------------+----------+
+
+
+Vetores Complexos
+=================
+
+
+Estilo NumPy: forma e avanços
+-----------------------------
+
+A estrutura lógica de vetores do estilo NumPy é definida por
+"itemsize", "ndim", "shape" e "strides".
+
+Se "ndim == 0", a localização da memória apontada para "buf" é
+interpretada como um escalar de tamanho "itemsize". Nesse caso, ambos
+"shape" e "strides" são "NULL".
+
+Se "strides" é "NULL", o vetor é interpretado como um vetor C
+n-dimensional padrão. Caso contrário, o consumidor deve acessar um
+vetor n-dimensional como a seguir:
+
+   ptr = (char *)buf + indices[0] * strides[0] + ... + indices[n-1] * strides[n-1];
+   item = *((typeof(item) *)ptr);
+
+Como notado acima, "buf" pode apontar para qualquer localização dentro
+do bloco de memória em si. Um exportador pode verificar a validade de
+um buffer com essa função:
+
+   def verify_structure(memlen, itemsize, ndim, shape, strides, offset):
+       """Verify that the parameters represent a valid array within
+          the bounds of the allocated memory:
+              char *mem: start of the physical memory block
+              memlen: length of the physical memory block
+              offset: (char *)buf - mem
+       """
+       if offset % itemsize:
+           return False
+       if offset < 0 or offset+itemsize > memlen:
+           return False
+       if any(v % itemsize for v in strides):
+           return False
+
+       if ndim <= 0:
+           return ndim == 0 and not shape and not strides
+       if 0 in shape:
+           return True
+
+       imin = sum(strides[j]*(shape[j]-1) for j in range(ndim)
+                  if strides[j] <= 0)
+       imax = sum(strides[j]*(shape[j]-1) for j in range(ndim)
+                  if strides[j] > 0)
+
+       return 0 <= offset+imin and offset+imax+itemsize <= memlen
+
+
+Estilo-PIL: forma, avanços e suboffsets
+---------------------------------------
+
+Além dos itens normais, uma matriz em estilo PIL pode conter ponteiros
+que devem ser seguidos para se obter o próximo elemento em uma
+dimensão. Por exemplo, a matriz tridimensional em C "char v[2][2][3]"
+também pode ser vista como um vetor de 2 ponteiros para duas matrizes
+bidimensionais: "char (*v[2])[2][3]". Na representação por suboffsets,
+esses dois ponteiros podem ser embutidos no início de "buf", apontando
+para duas matrizes "char x[2][3]" que podem estar localizadas em
+qualquer lugar na memória.
+
+Esta é uma função que retorna um ponteiro para o elemento em uma
+matriz N-D apontada por um índice N-dimensional onde existem ambos
+passos e subconjuntos não-"NULL":
+
+   void *get_item_pointer(int ndim, void *buf, Py_ssize_t *strides,
+                          Py_ssize_t *suboffsets, Py_ssize_t *indices) {
+       char *pointer = (char*)buf;
+       int i;
+       for (i = 0; i < ndim; i++) {
+           pointer += strides[i] * indices[i];
+           if (suboffsets[i] >=0 ) {
+               pointer = *((char**)pointer) + suboffsets[i];
+           }
+       }
+       return (void*)pointer;
+   }
+
+
+Funções relacionadas ao Buffer
+==============================
+
+int PyObject_CheckBuffer(PyObject *obj)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Retorna "1" se *obj* oferece suporte à interface de buffer, se não,
+   "0". Quando "1" é retornado, isso não garante que
+   "PyObject_GetBuffer()" será bem sucedida. Esta função é sempre bem
+   sucedida.
+
+int PyObject_GetBuffer(PyObject *exporter, Py_buffer *view, int flags)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Envia uma requisição ao *exporter* para preencher a *view* conforme
+   especificado por *flags*. Se o exporter não conseguir prover um
+   buffer do tipo especificado, ele DEVE levantar "BufferError",
+   definir "view->obj" para "NULL" e retornar "-1".
+
+   Em caso de sucesso, preenche *view*, define "view->obj" para uma
+   nova referência para *exporter* e retorna 0. No caso de provedores
+   de buffer encadeados que redirecionam requisições para um único
+   objeto, "view->obj" DEVE se referir a este objeto em vez de
+   *exporter* (Veja Buffer Object Structures).
+
+   Chamadas bem sucedidas para "PyObject_GetBuffer()" devem ser
+   emparelhadas a chamadas para  "PyBuffer_Release()", similar para
+   "malloc()" e "free()". Assim, após o consumidor terminar com o
+   buffer, "PyBuffer_Release()" deve ser chamado exatamente uma vez.
+
+void PyBuffer_Release(Py_buffer *view)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Libera o buffer de *view* e libera o *strong reference* (por
+   exemplo, decrementa o contador de referências) para o objeto de
+   suporte da view, "view->obj". Esta função DEVE ser chamada quando o
+   buffer não estiver mais sendo usado, ou o vazamento de referências
+   pode acontecer.
+
+   É um erro chamar essa função em um buffer que não foi obtido via
+   "PyObject_GetBuffer()".
+
+Py_ssize_t PyBuffer_SizeFromFormat(const char *format)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Retorna o "itemsize" implícito de "format". Em erro, levantar e
+   exceção e retornar -1.
+
+   Novo na versão 3.9.
+
+int PyBuffer_IsContiguous(const Py_buffer *view, char order)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Retorna "1" se a memória definida pela *view* é *contígua* no
+   estilo C (*order* é "'C'") ou no estilo Fortran (*order* é "'F'")
+   ou qualquer outra (*order* é "'A'"). Retorna "0" caso contrário.
+   Essa função é sempre bem sucedida.
+
+void *PyBuffer_GetPointer(const Py_buffer *view, const Py_ssize_t *indices)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Recebe a área de memória apontada pelos *indices* dentro da *view*
+   dada. *indices* deve apontar para um array de "view->ndim" índices.
+
+int PyBuffer_FromContiguous(const Py_buffer *view, const void *buf, Py_ssize_t len, char fort)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Copia *len* bytes contíguos de *buf* para *view*. *fort* pode ser
+   "'C'" ou "'F'" (para ordenação estilo C ou estilo Fortran). Retorna
+   "0" em caso de sucesso e "-1" em caso de erro.
+
+int PyBuffer_ToContiguous(void *buf, const Py_buffer *src, Py_ssize_t len, char order)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Copia *len* bytes de *src* para sua representação contígua em
+   *buf*. *order* pode ser "'C'" ou "'F'" ou "'A'" (para ordenação
+   estilo C, Fortran ou qualquer uma). O retorno é "0" em caso de
+   sucesso e "-1" em caso de falha.
+
+   Esta função falha se *len* != *src->len*.
+
+int PyObject_CopyData(PyObject *dest, PyObject *src)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Copia os dados do buffer *src* para o buffer *dest*. Pode converter
+   entre buffers de estilo C e/ou estilo Fortran.
+
+   "0" é retornado em caso de sucesso, "-1" em caso de erro.
+
+void PyBuffer_FillContiguousStrides(int ndims, Py_ssize_t *shape, Py_ssize_t *strides, int itemsize, char order)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Preenche o array *strides* com byte-strides de um array *contíguo*
+   (estilo C se *order* é "'C'" ou estilo Fortran se *order* for
+   "'F'") da forma dada com o número dado de bytes por elemento.
+
+int PyBuffer_FillInfo(Py_buffer *view, PyObject *exporter, void *buf, Py_ssize_t len, int readonly, int flags)
+    * Parte da ABI Estável desde a versão 3.11.*
+
+   Manipula requisições de buffer para um exportador que quer expor
+   *buf* de tamanho *len* com capacidade de escrita definida de acordo
+   com *readonly*. *buf* é interpretada como uma sequência de bytes
+   sem sinal.
+
+   O argumento *flags* indica o tipo de requisição. Esta função sempre
+   preenche *view* como especificado por *flags*, a não ser que *buf*
+   seja designado como somente leitura e "PyBUF_WRITABLE" esteja
+   definido em *flags*.
+
+   Em caso de sucesso, defina "view->obj" como um novo referência para
+   *exporter* e retorna 0. Caso contrário, levante "BufferError" ,
+   defina "view->obj" para "NULL" e retorne "-1" ;
+
+   Se esta função é usada como parte de um getbufferproc, *exporter*
+   DEVE ser definida para o objeto de exportação e *flags* deve ser
+   passado sem modificações. Caso contrário, *exporter* DEVE ser
+   "NULL".

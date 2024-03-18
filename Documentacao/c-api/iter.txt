@@ -1,0 +1,78 @@
+Protocolo Iterador
+******************
+
+Existem duas funções especificas para trabalhar com iteradores.
+
+int PyIter_Check(PyObject *o)
+    * Parte da ABI Estável desde a versão 3.8.*
+
+   Retorna valor diferente de zero se o objeto *o* puder ser passado
+   com segurança para "PyIter_Next()", e "0" caso contrário. Esta
+   função sempre é bem-sucedida.
+
+int PyAIter_Check(PyObject *o)
+    * Parte da ABI Estável desde a versão 3.10.*
+
+   Retorna valor diferente de zero se o objeto *o* fornecer o
+   protocolo "AsyncIterator" e "0" caso contrário. Esta função sempre
+   é bem-sucedida.
+
+   Novo na versão 3.10.
+
+PyObject *PyIter_Next(PyObject *o)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Retorna o próximo valor do iterador *o*. O objeto deve ser um
+   iterador de acordo com "PyIter_Check()" (cabe ao chamador verificar
+   isso). Se não houver valores restantes, retorna "NULL" sem nenhuma
+   exceção definida. Se ocorrer um erro ao recuperar o item, retorna
+   "NULL" e passa a exceção.
+
+Para escrever um laço que itere sobre um iterador, o código C deve ser
+algo como isto:
+
+   PyObject *iterator = PyObject_GetIter(obj);
+   PyObject *item;
+
+   if (iterator == NULL) {
+       /* propagate error */
+   }
+
+   while ((item = PyIter_Next(iterator))) {
+       /* do something with item */
+       ...
+       /* release reference when done */
+       Py_DECREF(item);
+   }
+
+   Py_DECREF(iterator);
+
+   if (PyErr_Occurred()) {
+       /* propagate error */
+   }
+   else {
+       /* continue doing useful work */
+   }
+
+type PySendResult
+
+   O valor de enum usado para representar diferentes resultados de
+   "PyIter_Send()".
+
+   Novo na versão 3.10.
+
+PySendResult PyIter_Send(PyObject *iter, PyObject *arg, PyObject **presult)
+    * Parte da ABI Estável desde a versão 3.10.*
+
+   Envia o valor *arg* para o iterador *iter*. Retorna:
+
+   * "PYGEN_RETURN" se o iterador retornar. O valor de retorno é
+     retornado via *presult*.
+
+   * "PYGEN_NEXT" se o iterador render. O valor preduzido é retornado
+     via *presult*.
+
+   * "PYGEN_ERROR" se o iterador tiver levantado uma exceção.
+     *presult* é definido como "NULL".
+
+   Novo na versão 3.10.

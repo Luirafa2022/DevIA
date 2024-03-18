@@ -1,0 +1,415 @@
+Protocolo de chamada
+********************
+
+O CPython permite dois protocolos de chamada: *tp_call* e vectorcall.
+
+
+O protocolo *tp_call*
+=====================
+
+Instâncias de classe que definem "tp_call" são chamáveis. A assinatura
+do slot é:
+
+   PyObject *tp_call(PyObject *callable, PyObject *args, PyObject *kwargs);
+
+Uma chamada é feita usando uma tupla para os argumentos posicionais e
+um dicionário para os argumentos nomeados, similar a "callable(*args,
+**kwargs)" em Python. *args* não pode ser nulo (utilize uma tupla
+vazia se não houver argumentos), mas *kwargs* pode ser *NULL* se não
+houver argumentos nomeados.
+
+Esta convenção não é somente usada por *tp_call*: "tp_new" e "tp_init"
+também passam argumento dessa forma.
+
+Para chamar um objeto, use "PyObject_Call()" ou outra call API.
+
+
+O protocolo vectorcall
+======================
+
+Novo na versão 3.9.
+
+O protocolo vectorcall foi introduzido pela **PEP 590** como um
+protocolo adicional para tornar invocações mais eficientes.
+
+Como regra de bolso. CPython vai preferir o vectorcall para invocações
+internas se o chamável suportar. Entretanto, isso não é uma regra
+rígida. Ademais, alguma extensões de terceiros usam  diretamente
+*tp_call* (em vez de utilizar "PyObject_Call()"). Portanto, uma classe
+que suporta vectorcall precisa também implementar "tp_call". Além
+disso, o chamável precisa se comportar da mesma forma independe de
+qual protocolo é utilizado. A forma recomendada de alcançar isso é
+definindo "tp_call" para "PyVectorcall_Call()". Vale a pena repetir:
+
+Aviso:
+
+  Uma classe que suporte vectorcall também **precisa** implementar
+  "tp_call" com a mesma semântica.
+
+Alterado na versão 3.12: The "Py_TPFLAGS_HAVE_VECTORCALL" flag is now
+removed from a class when the class's "__call__()" method is
+reassigned. (This internally sets "tp_call" only, and thus may make it
+behave differently than the vectorcall function.) In earlier Python
+versions, vectorcall should only be used with "immutable" or static
+types.
+
+Uma classe não deve implementar vectorcall se for mais lento que
+*tp_call*. Por exemplo, se o chamador precisa converter os argumentos
+para uma tupla args e um dicionário kwargs de qualquer forma, então
+não é necessário implementar vectorcall.
+
+Classes can implement the vectorcall protocol by enabling the
+"Py_TPFLAGS_HAVE_VECTORCALL" flag and setting "tp_vectorcall_offset"
+to the offset inside the object structure where a *vectorcallfunc*
+appears. This is a pointer to a function with the following signature:
+
+typedef PyObject *(*vectorcallfunc)(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+    * Parte da ABI Estável desde a versão 3.12.*
+
+* *callable* é o objeto sendo chamado.
+
+* *args* é um array C formado pelos argumentos posicionais seguidos de
+     valores dos argumentos nomeados. Este pode ser *NULL* se não
+     existirem argumentos.
+
+* *nargsf* é o número de argumentos posicionais somado á possível
+     "PY_VECTORCALL_ARGUMENTS_OFFSET" flag. To get the actual number
+     of positional arguments from *nargsf*, use
+     "PyVectorcall_NARGS()".
+
+* *kwnames* é uma tupla contendo os nomes dos argumentos nomeados;
+     em outras palavras, as chaves do dicionário kwargs. Estes nomes
+     devem ser strings (instâncias de "str" ou uma subclasse) e eles
+     devem ser únicos. Se não existem argumentos nomeados, então
+     *kwnames* deve então ser *NULL*.
+
+PY_VECTORCALL_ARGUMENTS_OFFSET
+    * Parte da ABI Estável desde a versão 3.12.*
+
+   Se esse sinalizador é definido em um argumento *nargsf* do
+   vectorcall, deve ser permitido ao chamado temporariamente mudar
+   "args[-1]". Em outras palavras, *args* aponta para o argumento 1
+   (não 0) no vetor alocado. O chamado deve restaurar o valor de
+   "args[-1]" antes de retornar.
+
+   Para  "PyObject_VectorcallMethod()", este sinalizador significa que
+   "args[0]" pode ser alterado.
+
+   Whenever they can do so cheaply (without additional allocation),
+   callers are encouraged to use "PY_VECTORCALL_ARGUMENTS_OFFSET".
+   Doing so will allow callables such as bound methods to make their
+   onward calls (which include a prepended *self* argument) very
+   efficiently.
+
+   Novo na versão 3.8.
+
+Para invocar um objeto que implementa vectorcall, utilize a função
+call API  como qualquer outra invocável. "PyObject_Vectorcall()" será
+normalmente mais eficiente.
+
+Nota:
+
+  No CPython 3.8, a API vectorcall e funções relacionadas estavam
+  disponíveis provisoriamente sob nomes com um sublinhado inicial:
+  "_PyObject_Vectorcall", "_Py_TPFLAGS_HAVE_VECTORCALL",
+  "_PyObject_VectorcallMethod", "_PyVectorcall_Function",
+  "_PyObject_CallOneArg", "_PyObject_CallMethodNoArgs",
+  "_PyObject_CallMethodOneArg". Além disso, "PyObject_VectorcallDict"
+  estava disponível como "_PyObject_FastCallDict". Os nomes antigos
+  ainda estão definidos como apelidos para os novos nomes sem o
+  sublinhado.
+
+
+Controle de recursão
+--------------------
+
+Quando utilizando *tp_call*, invocadores não precisam se preocupar
+sobre recursão: CPython usa "Py_EnterRecursiveCall()" e
+"Py_LeaveRecursiveCall()" para chamadas utilizando *tp_call*.
+
+Por questão de eficiência, este não é o caso de chamadas utilizando o
+vectorcall: o que chama deve utilizar *Py_EnterRecursiveCall* e
+*Py_LeaveRecursiveCall* se necessário.
+
+
+API de suporte à chamada de vetores
+-----------------------------------
+
+Py_ssize_t PyVectorcall_NARGS(size_t nargsf)
+    * Parte da ABI Estável desde a versão 3.12.*
+
+   Dado um argumento de chamada de vetor *nargsf*, retorna o número
+   real de argumentos. Atualmente equivalente a:
+
+      (Py_ssize_t)(nargsf & ~PY_VECTORCALL_ARGUMENTS_OFFSET)
+
+   Entretanto, a função "PyVectorcall_NARGS" deve ser usada para
+   permitir para futuras extensões.
+
+   Novo na versão 3.8.
+
+vectorcallfunc PyVectorcall_Function(PyObject *op)
+
+   Se *op* não suporta o protocolo de chamada de vetor (seja porque o
+   tipo ou a instância específica não suportam), retorne *NULL*. Se
+   não, retorne o ponteiro da função chamada de vetor armazenado em
+   *op*. Esta função nunca levanta uma exceção.
+
+   É mais útil checar se *op* suporta ou não chamada de vetor, o que
+   pode ser feito checando "PyVectorcall_Function(op) != NULL".
+
+   Novo na versão 3.9.
+
+PyObject *PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *dict)
+    * Parte da ABI Estável desde a versão 3.12.*
+
+   Chama o "vectorcallfunc" de *callable* com argumentos posicionais e
+   nomeados dados em uma tupla e dicionário, respectivamente.
+
+   This is a specialized function, intended to be put in the "tp_call"
+   slot or be used in an implementation of "tp_call". It does not
+   check the "Py_TPFLAGS_HAVE_VECTORCALL" flag and it does not fall
+   back to "tp_call".
+
+   Novo na versão 3.8.
+
+
+API de chamada de objetos
+=========================
+
+Várias funções estão disponíveis para chamar um objeto Python. Cada
+uma converte seus argumentos para uma convenção suportada pelo objeto
+chamado – seja *tp_call* ou chamada de vetor. Para fazer o mínimo
+possível de conversões, escolha um que melhor se adapte ao formato de
+dados que você tem disponível.
+
+A tabela a seguir resume as funções disponíveis; por favor, veja a
+documentação individual para detalhes.
+
++--------------------------------------------+--------------------+----------------------+-----------------+
+| Função                                     | chamável           | args                 | kwargs          |
+|============================================|====================|======================|=================|
+| "PyObject_Call()"                          | "PyObject *"       | tupla                | dict/"NULL"     |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallNoArgs()"                    | "PyObject *"       | ---                  | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallOneArg()"                    | "PyObject *"       | 1 objeto             | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallObject()"                    | "PyObject *"       | tupla/"NULL"         | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallFunction()"                  | "PyObject *"       | formato              | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallMethod()"                    | obj + "char*"      | formato              | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallFunctionObjArgs()"           | "PyObject *"       | variádica            | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallMethodObjArgs()"             | obj + nome         | variádica            | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallMethodNoArgs()"              | obj + nome         | ---                  | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_CallMethodOneArg()"              | obj + nome         | 1 objeto             | ---             |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_Vectorcall()"                    | "PyObject *"       | vectorcall           | vectorcall      |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_VectorcallDict()"                | "PyObject *"       | vectorcall           | dict/"NULL"     |
++--------------------------------------------+--------------------+----------------------+-----------------+
+| "PyObject_VectorcallMethod()"              | arg + nome         | vectorcall           | vectorcall      |
++--------------------------------------------+--------------------+----------------------+-----------------+
+
+PyObject *PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chama um objeto Python chamável de *callable*, com argumentos dados
+   pela tupla *args*, e argumentos nomeados dados pelo dicionário
+   *kwargs*.
+
+   *args* não deve ser *NULL*; use uma tupla vazia se não precisar de
+   argumentos. Se nenhum argumento nomeado é necessário, *kwargs* pode
+   ser *NULL*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Esse é o equivalente da expressão Python: "callable(*args,
+   **kwargs)".
+
+PyObject *PyObject_CallNoArgs(PyObject *callable)
+    *Retorna valor: Nova referência.** Parte da ABI Estável desde a
+   versão 3.10.*
+
+   Chama um objeto Python chamável de *callable* sem nenhum argumento.
+   É o jeito mais eficiente de chamar um objeto Python sem nenhum
+   argumento.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_CallOneArg(PyObject *callable, PyObject *arg)
+    *Retorna valor: Nova referência.*
+
+   Chama um objeto Python chamável de *callable* com exatamente 1
+   argumento posicional *arg* e nenhum argumento nomeado.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_CallObject(PyObject *callable, PyObject *args)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chama um objeto Python chamável de *callable* com argumentos dados
+   pela tupla *args*. Se nenhum argumento é necessário, *args* pode
+   ser *NULL*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Este é o equivalente da expressão Python: "callable(*args)".
+
+PyObject *PyObject_CallFunction(PyObject *callable, const char *format, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chama um objeto Python chamável de *callable*, com um número
+   variável de argumentos C. Os argumentos C são descritos usando uma
+   string de estilo no formato "Py_BuildValue()". O formato pode ser
+   *NULL*, indicando que nenhum argumento foi provido.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Este é o equivalente da expressão Python: "callable(*args)".
+
+   Note que se você apenas passa argumentos PyObject*,
+   "PyObject_CallFunctionObjArgs()" é uma alternativa mais rápida.
+
+   Alterado na versão 3.4: O tipo de *format* foi mudado de "char *".
+
+PyObject *PyObject_CallMethod(PyObject *obj, const char *name, const char *format, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chame o método chamado *name* do objeto *obj* com um número
+   variável de argumentos C. Os argumentos C são descritos com uma
+   string de formato "Py_BuildValue()" que deve produzir uma tupla.
+
+   O formato pode ser *NULL*, indicado que nenhum argumento foi
+   provido.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Este é o equivalente da expressão Python: "obj.name(arg1, arg2,
+   ...)".
+
+   Note que se você apenas passa argumentos PyObject*,
+   "PyObject_CallMethodObjArgs()" é uma alternativa mais rápida.
+
+   Alterado na versão 3.4: Os tipos de *name* e *format* foram mudados
+   de "char *".
+
+PyObject *PyObject_CallFunctionObjArgs(PyObject *callable, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chama um objeto Python chamável de *callable*, com um número
+   variável de argumentos PyObject*. Os argumentos são providos como
+   um número variável de parâmetros seguidos por um *NULL*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Este é o equivalente da expressão Python: "callable(arg1, arg2,
+   ...)".
+
+PyObject *PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
+    *Retorna valor: Nova referência.** Parte da ABI Estável.*
+
+   Chame um método do objeto Python *obj*, onde o nome do método é
+   dado como um objeto string Python em *name*. É chamado com um
+   número variável de argumentos PyObject*. Os argumentos são providos
+   como um número variável de parâmetros seguidos por um *NULL*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+PyObject *PyObject_CallMethodNoArgs(PyObject *obj, PyObject *name)
+
+   Chama um método do objeto Python *obj* sem argumentos, onde o nome
+   do método é fornecido como um objeto string do Python em *name*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_CallMethodOneArg(PyObject *obj, PyObject *name, PyObject *arg)
+
+   Chama um método do objeto Python *obj* com um argumento posicional
+   *arg*, onde o nome do método é fornecido como um objeto string do
+   Python em *name*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_Vectorcall(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+    * Parte da ABI Estável desde a versão 3.12.*
+
+   Chama um objeto Python chamável *callable*. Os argumentos são os
+   mesmos de "vectorcallfunc". Se *callable* tiver suporte a
+   vectorcall, isso chamará diretamente a função vectorcall armazenada
+   em *callable*.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_VectorcallDict(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwdict)
+
+   Chama *callable* com argumentos posicionais passados exatamente
+   como no protocolo vectorcall, mas com argumentos nomeados passados
+   como um dicionário *kwdict*. O array *args* contém apenas os
+   argumentos posicionais.
+
+   Independentemente de qual protocolo é usado internamente, uma
+   conversão de argumentos precisa ser feita. Portanto, esta função só
+   deve ser usada se o chamador já tiver um dicionário pronto para
+   usar para os argumentos nomeados, mas não uma tupla para os
+   argumentos posicionais.
+
+   Novo na versão 3.9.
+
+PyObject *PyObject_VectorcallMethod(PyObject *name, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+    * Parte da ABI Estável desde a versão 3.12.*
+
+   Call a method using the vectorcall calling convention. The name of
+   the method is given as a Python string *name*. The object whose
+   method is called is *args[0]*, and the *args* array starting at
+   *args[1]* represents the arguments of the call. There must be at
+   least one positional argument. *nargsf* is the number of positional
+   arguments including *args[0]*, plus
+   "PY_VECTORCALL_ARGUMENTS_OFFSET" if the value of "args[0]" may
+   temporarily be changed. Keyword arguments can be passed just like
+   in "PyObject_Vectorcall()".
+
+   If the object has the "Py_TPFLAGS_METHOD_DESCRIPTOR" feature, this
+   will call the unbound method object with the full *args* vector as
+   arguments.
+
+   Retorna o resultado da chamada em sucesso, ou levanta uma exceção e
+   retorna *NULL* em caso de falha.
+
+   Novo na versão 3.9.
+
+
+API de suporte a chamadas
+=========================
+
+int PyCallable_Check(PyObject *o)
+    * Parte da ABI Estável.*
+
+   Determine se o objeto *o* é chamável. Devolva "1" se o objeto é
+   chamável e "0" caso contrário. Esta função sempre tem êxito.
