@@ -1,0 +1,139 @@
+Estendendo e Incorporando o Interpretador Python
+************************************************
+
+Neste documento descreveremos o desenvolvimento de módulos com C ou
+C++ para adicionar recursos ao interpretador Python criando novos
+módulos. Esses módulos podem não somente definir novas funções, mas
+também novos tipos de objetos e seu conjunto de métodos. O documento
+também descreve como incorporar o interpretador Python em outro
+aplicativo, de forma a utilizá-lo como sendo um idiota estendido. Por
+fim, estudaremos como podemos compilar e fazer a vinculação dos
+módulos de extensão para que estes possam ser carregados dinamicamente
+(em tempo de execução) pelo interpretador, caso o sistema operacional
+subjacente suportar esse recurso.
+
+Este documento pressupõe conhecimentos básicos sobre Python. Para uma
+introdução informal à linguagem, consulte O tutorial de Python. A
+Referência da Linguagem Python fornece uma definição mais formal da
+linguagem. A Biblioteca Padrão do Python documenta os tipos, funções e
+módulos de objetos existentes (embutidos e escritos em Python) que dão
+à linguagem sua ampla gama de aplicações.
+
+Para uma descrição detalhada de toda a API Python/C, consulte o Manual
+de referência da API Python/C separado.
+
+
+Ferramentas de terceiros recomendadas
+=====================================
+
+Esse guia cobre apenas as ferramentas básicas para a criação de
+extensões fornecidas como parte desta versão do CPython. Ferramentas
+de terceiros como Cython, cffi, SWIG e Numba oferecem abordagens mais
+simples e sofisticadas para criar extensões C e C++ para Python.
+
+Ver também:
+
+  Guia do Usuário de Empacotamento do Python: Extensões Binárias
+     O Guia do Usuário de Empacotamento do Python não abrange apenas
+     várias ferramentas disponíveis que simplificam a criação de
+     extensões binárias, mas também discute os vários motivos pelos
+     quais a criação de um módulo de extensão pode ser desejável em
+     primeiro lugar.
+
+
+Criando extensões sem ferramentas de terceiros
+==============================================
+
+Esta seção do guia aborda a criação de extensões C e C++ sem
+assistência de ferramentas de terceiros. Destina-se principalmente aos
+criadores dessas ferramentas, em vez de ser uma maneira recomendada de
+criar suas próprias extensões C.
+
+* 1. Estendendo Python com C ou C++
+
+  * 1.1. Um Exemplo Simples
+
+  * 1.2. Intermezzo: Errors and Exceptions
+
+  * 1.3. Back to the Example
+
+  * 1.4. The Module's Method Table and Initialization Function
+
+  * 1.5. Compilation and Linkage
+
+  * 1.6. Calling Python Functions from C
+
+  * 1.7. Extracting Parameters in Extension Functions
+
+  * 1.8. Keyword Parameters for Extension Functions
+
+  * 1.9. Building Arbitrary Values
+
+  * 1.10. Contagens de referências
+
+  * 1.11. Writing Extensions in C++
+
+  * 1.12. Providing a C API for an Extension Module
+
+* 2. Definindo Tipos de Extensão: Tutorial
+
+  * 2.1. O básico
+
+  * 2.2. Adicionando dados e métodos ao exemplo básico
+
+  * 2.3. Fornecendo controle mais preciso sobre atributos de dados
+
+  * 2.4. Apoiando a coleta de lixo cíclica
+
+  * 2.5. Criando subclasses de outros tipos
+
+* 3. Defining Extension Types: Assorted Topics
+
+  * 3.1. Finalization and De-allocation
+
+  * 3.2. Object Presentation
+
+  * 3.3. Attribute Management
+
+  * 3.4. Object Comparison
+
+  * 3.5. Abstract Protocol Support
+
+  * 3.6. Weak Reference Support
+
+  * 3.7. More Suggestions
+
+* 4. Construindo extensões C e C++
+
+  * 4.1. Construindo extensões C e C ++ com setuptools
+
+* 5. Construindo Extensões C e C++ no Windows
+
+  * 5.1. Uma abordagem de livro de receitas
+
+  * 5.2. Diferenças entre o Unix e o Windows
+
+  * 5.3. Usando DLLs na prática
+
+
+Incorporando o tempo de execução do CPython em uma aplicação maior
+==================================================================
+
+Às vezes, em vez de criar uma extensão que é executada dentro do
+interpretador Python como a aplicação principal, é desejável
+incorporar o tempo de execução do CPython em uma aplicação maior. Esta
+seção aborda alguns dos detalhes envolvidos para fazer isso com êxito.
+
+* 1. Incorporando o Python numa Outra Aplicação
+
+  * 1.1. Very High Level Embedding
+
+  * 1.2. Beyond Very High Level Embedding: An overview
+
+  * 1.3. Pure Embedding
+
+  * 1.4. Extending Embedded Python
+
+  * 1.5. Embedding Python in C++
+
+  * 1.6. Compiling and Linking under Unix-like systems

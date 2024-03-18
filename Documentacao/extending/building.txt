@@ -1,0 +1,49 @@
+4. Construindo extensões C e C++
+********************************
+
+Uma extensão C para CPython é uma biblioteca compartilhada (por
+exemplo, um arquivo ".so" no Linux, ".pyd" no Windows), que exporta
+uma *função de inicialização*.
+
+Para ser importável, a biblioteca compartilhada deve estar disponível
+em "PYTHONPATH", e deve ser nomeada após o nome do módulo, com uma
+extensão apropriada. Ao usar setuptools, o nome do arquivo correto é
+gerado automaticamente.
+
+A função de inicialização tem a assinatura:
+
+PyObject *PyInit_modulename(void)
+
+Ela retorna um módulo totalmente inicializado ou uma instância de
+"PyModuleDef". Veja Inicializando módulos C para detalhes.
+
+Para módulos com nomes somente ASCII, a função deve ser nomeada
+"PyInit_<nomemódulo>", com "<nomemódulo>" substituído pelo nome do
+módulo. Ao usar Inicialização multifásica, nomes de módulos não ASCII
+são permitidos. Neste caso, o nome da função de inicialização é
+"PyInitU_<nomemódulo>", com "<nomemódulo>" codificado usando a
+codificação *punycode* do Python com hifenes substituídos por
+sublinhados. Em Python:
+
+   def initfunc_name(name):
+       try:
+           suffix = b'_' + name.encode('ascii')
+       except UnicodeEncodeError:
+           suffix = b'U_' + name.encode('punycode').replace(b'-', b'_')
+       return b'PyInit' + suffix
+
+É possível exportar vários módulos de uma única biblioteca
+compartilhada, definindo várias funções de inicialização. No entanto,
+importá-los requer o uso de links simbólicos ou um importador
+personalizado, porque por padrão apenas a função correspondente ao
+nome do arquivo é encontrada. Veja a seção  *"Multiple modules in one
+library"* na **PEP 489** para detalhes.
+
+
+4.1. Construindo extensões C e C ++ com setuptools
+==================================================
+
+O Python 3.12 e mais recente não vêm mais com distutils. Consulte a
+documentação "setuptools" em
+https://setuptools.readthedocs.io/en/latest/setuptools.html para saber
+mais sobre como construir e distribuir extensões C/C++ com setuptools.
