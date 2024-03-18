@@ -93,29 +93,29 @@ class MainWindow(QWidget):
         self.setStyleSheet("""
             QWidget {
                 background-color: #f6f6f6;
-                color: #000000;
+                color: #121212;
             }
             QLineEdit {
                 background-color: #ffffff;
-                color: #000000;
-                border: 1px solid #cccccc;
+                color: #121212;
+                border: 1px solid #949494;
                 border-radius: 10px;
                 padding: 5px;
             }
             QPushButton {
                 background-color: #e2e2e2;
-                color: #000000;
-                border: 1px solid #cccccc;
+                color: #121212;
+                border: 1px solid #949494;
                 border-radius: 10px;
                 padding: 5px;
             }
             QPushButton:hover {
-                background-color: #cccccc;
+                background-color: #949494;
             }
             QListWidget {
                 background-color: #ffffff;
-                color: #000000;
-                border: 1px solid #cccccc;
+                color: #121212;
+                border: 1px solid #949494;
                 border-radius: 10px;
                 padding: 10px;
             }
@@ -126,7 +126,7 @@ class MainWindow(QWidget):
                 margin-bottom: 5px;
             }
             QListWidget::item:selected {
-                background-color: #cccccc;
+                background-color: #949494;
             }
         """)
         
