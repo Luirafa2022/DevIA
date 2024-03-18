@@ -1,0 +1,24 @@
+"tkinter.colorchooser" --- Diálogo de escolha de cor
+****************************************************
+
+**Código-fonte:** Lib/tkinter/colorchooser.py
+
+======================================================================
+
+O módulo "tkinter.colorchooser" fornece a classe "Chooser" como uma
+interface para o diálogo do seletor de cores nativo. "Chooser"
+implementa uma janela de diálogo de escolha de cores modal. A classe
+"Chooser" herda da classe "Dialog".
+
+class tkinter.colorchooser.Chooser(master=None, **options)
+
+tkinter.colorchooser.askcolor(color=None, **options)
+
+   Cria um diálogo de escolha de cores. Uma chamada para esse método
+   mostrará a janela, aguardará o usuário fazer uma seleção e
+   retornará a cor selecionada (ou "None") ao chamador.
+
+Ver também:
+
+  Módulo "tkinter.commondialog"
+     Módulo de diálkogo padrão do Tkinter

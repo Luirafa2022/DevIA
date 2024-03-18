@@ -1,0 +1,1085 @@
+"tkinter" --- Interface Python para Tcl/Tk
+******************************************
+
+**Código-fonte:** Lib/tkinter/__init__.py
+
+======================================================================
+
+O pacote "tkinter" ("Tk interface") é a interface padrão do Python e
+faz parte do kit de ferramentas Tcl/Tk GUI. Tanto o Tk quanto o
+"tkinter" estão disponíveis na maioria das plataformas Unix, incluindo
+macOS, bem como em sistemas Windows.
+
+Executar "python -m tkinter" na linha de comando deve abrir uma janela
+demonstrando uma interface Tk simples, informando que "tkinter" está
+apropriadamente instalado em seu sistema, e também mostrando qual
+versão do Tcl/Tk está instalado, para que você possa ler a
+documentação do Tcl/Tk específica para essa versão.
+
+Tkinter tem suporte a uma gama de versões Tcl/Tk, compiladas com ou
+sem suporte a thread. O lançamento oficial do binário Python agrupa
+Tcl/Tk 8.6 em thread. Veja o código-fonte do módulo "_tkinter" para
+mais informações sobre as versões suportadas.
+
+O Tkinter não é um invólucro fino, mas adiciona uma boa quantidade de
+sua própria lógica para tornar a experiência mais pythônica. Esta
+documentação se concentrará nessas adições e mudanças, e consulte a
+documentação oficial do Tcl/Tk para detalhes que não foram alterados.
+
+Nota:
+
+  Tcl/Tk 8.5 (2007) introduziu um conjunto moderno de componentes de
+  interface de usuário para ser usados com a nova API. As APIs antigas
+  e novas ainda estão disponíveis. A maioria da documentação que você
+  encontrará online ainda usa a API antiga e pode estar desatualizada.
+
+Ver também:
+
+  * TkDocs
+       Um extenso tutorial sobre como criar interfaces de usuário com
+       o Tkinter. Explica conceitos chave, e ilustra as abordagens
+       recomendadas usando a API moderna.
+
+  * Referência do Tkinter 8.5: uma GUI para Python
+       Documentação de referência para Tkinter 8.5 detalhando classes,
+       métodos e opções disponíveis.
+
+  Recursos Tcl/Tk:
+
+  * Comandos Tk
+       Referência abrangente para cada um dos comandos Tcl/Tk
+       subjacentes usados pelo Tkinter.
+
+  * Tcl/Tk Website
+       Documentação adicional e links para o desenvolvimento do core
+       do Tcl/Tk.
+
+  Livros:
+
+  * Modern Tkinter for Busy Python Developers
+       Por Mark Roseman. (ISBN 978-1999149567)
+
+  * Python GUI programming with Tkinter
+       por Alan D. Moore. (ISBN 978-1788835886)
+
+  * Programming Python
+       Por Mark Lutz; tem uma excelente cobertura sobre o Tkinter.
+       (ISBN 978-0596158101)
+
+  * Tcl and the Tk Toolkit (2nd edition)
+       Por John Ousterhout, criador do Tcl/Tk, e Ken Jones; não cobre
+       o Tkinter. (ISBN 978-0321336330)
+
+
+Arquitetura
+===========
+
+Tcl/Tk não é uma biblioteca única mas consiste em alguns módulos
+distintos, cada um com sua própria funcionalidade e sua própria
+documentação oficial. As versões binárias do Python também incluem um
+módulo adicional junto com ele.
+
+Tcl
+   Tcl é uma linguagem de programação interpretada dinâmica, assim
+   como Python. Embora possa ser usado sozinho como uma linguagem de
+   programação de propósito geral, é mais comumente embutido em
+   aplicativos C como um mecanismo de script ou uma interface para o
+   kit de ferramentas Tk. A biblioteca Tcl tem uma interface C para
+   criar e gerenciar uma ou mais instâncias de um interpretador Tcl,
+   executar comandos e scripts Tcl nessas instâncias e adicionar
+   comandos personalizados implementados em Tcl ou C. Cada
+   interpretador tem uma fila de eventos, e há instalações para enviar
+   eventos e processá-los. Ao contrário do Python, o modelo de
+   execução do Tcl é projetado em torno da multitarefa cooperativa, e
+   o Tkinter faz a ponte entre essa diferença (veja Modelo de
+   threading para detalhes).
+
+Tk
+   Tk é um pacote Tcl  implementado em C que adiciona comandos
+   personalizados para criar e manipular widgets GUI. Cada objeto "Tk"
+   incorpora sua própria instância do interpretador Tcl com Tk
+   carregado nele. Os widgets do Tk são muito personalizáveis, embora
+   ao custo de uma aparência desatualizada. Tk usa a fila de eventos
+   do Tcl para gerar e processar eventos da GUI.
+
+Ttk
+   Themed Tk (Ttk) é uma família mais recente de widgets Tk que
+   fornecem uma aparência muito melhor em diferentes plataformas do
+   que muitos dos widgets Tk clássicos. O Ttk é distribuído como parte
+   do Tk, começando com o Tk versão 8.5. As ligações Python são
+   fornecidas em um módulo separado, "tkinter.ttk".
+
+Internamente, Tk e Ttk usam recursos do sistema operacional, ou seja,
+Xlib no Unix/X11, Cocoa no macOS, GDI no Windows.
+
+Quando sua aplicação Python usa uma classe do Tkinter, por exemplo,
+para criar um widget, o módulo "tkinter" primeiro monta uma sequência
+de comando Tcl/Tk. Ele passa essa sequência de comando Tcl para um
+módulo binário interno "_tkinter", que então chama o interpretador Tcl
+para avaliá-lo. O interpretador Tcl então chamará os pacotes Tk e/ou
+Ttk, que por sua vez farão chamadas para Xlib, Cocoa ou GDI.
+
+
+Módulos Tkinter
+===============
+
+O suporte para Tkinter está espalhado por vários módulos. A maioria
+dos aplicativos precisará do módulo "tkinter" principal, bem como do
+módulo "tkinter.ttk", que fornece o conjunto de widgets temáticos
+modernos e a API:
+
+   from tkinter import *
+   from tkinter import ttk
+
+class tkinter.Tk(screenName=None, baseName=None, className='Tk', useTk=True, sync=False, use=None)
+
+   Construa um Tk widget de alto nível, sendo esse, geralmente, a
+   janela principal de uma aplicação, e inicialize um interpretador
+   Tcl para esse widget. Cada instância tem seu próprio interpretador
+   Tcl associado.
+
+   A classe "Tk" normalmente é instanciada usando todos os valores
+   padrão. No entanto, os seguintes argumentos nomeados são
+   reconhecidos atualmente:
+
+   *screenName*
+      Quando fornecido (como uma string), define a variável de
+      ambiente "DISPLAY". (Somente X11)
+
+   *baseName*
+      Nome do arquivo de perfil. Por padrão, *baseName* é derivado do
+      nome do programa ("sys.argv[0]").
+
+   *className*
+      Nome da classe widget. Usado como um arquivo de perfil e também
+      como o nome com o qual Tcl é invocado (*argv0* em *interp*).
+
+   *useTk*
+      Se "True", inicialize o subsistema Tk. A função "tkinter.Tcl()"
+      define isso como "False".
+
+   *sync*
+      Se "True", execute todos os comandos do servidor X de forma
+      síncrona, para que os erros sejam relatados imediatamente. Pode
+      ser usado para depuração. (Somente X11)
+
+   *use*
+      Especifica o *id* da janela na qual inserir a aplicação, em vez
+      de criá-la como uma janela de nível superior separada. O *id*
+      deve ser especificado da mesma forma que o valor da opção -use
+      para widgets de nível superior (ou seja, tem um formato como o
+      retornado por "winfo_id()").
+
+      Observe que em algumas plataformas isso só funcionará
+      corretamente se *id* se referir a um frame Tk ou nível superior
+      que tenha sua opção -container habilitada.
+
+   "Tk" lê e interpreta os arquivos de perfil, chamados
+   ".*className*.tcl" e ".*baseName*.tcl", por meio do interpretador
+   Tcl e chama "exec()" no conteúdo de ".*className*.py" e
+   ".*baseName*.py". O caminho para os arquivos de perfil encontra-se
+   na variável de ambiente "HOME" ou, se não estiver definida, então
+   "os.curdir".
+
+   tk
+
+      Objeto da aplicação Tk criado ao instanciar "Tk". Isso fornece
+      acesso ao interpretador Tcl. Cada widget anexado à mesma
+      instância de "Tk" tem o mesmo valor para o atributo "tk".
+
+   master
+
+      O objeto widget que contém este widget. Para "Tk", o *master* é
+      "None" porque é a janela principal. Os termos *master* e
+      *parent* são semelhantes e às vezes usados alternadamente como
+      nome de argumento; No entanto, chamar "winfo_parent()" retorna
+      uma string com o nome do widget enquanto "master" retorna o
+      objeto. *parent*/*child* reflete a relação de árvore enquanto
+      *master*/*slave* reflete a estrutura do contêiner.
+
+   children
+
+      Descendentes diretos deste widget como um "dict" com os nomes do
+      widget filho como a chave e os objetos de instância filho como o
+      valor.
+
+tkinter.Tcl(screenName=None, baseName=None, className='Tk', useTk=False)
+
+   A função "Tcl()" é uma função fábrica que cria um objeto assim como
+   o criado pela classe "Tk", exceto por não inicializar o subsistema
+   Tk. Isto é útil quando executando o interpretador Tcl em um
+   ambiente onde não se quer criar janelas de alto nível externas, ou
+   quando não se pode (como em sistemas Unix/Linux sem um servidor X).
+   Um objeto criado pelo objeto "Tcl()" pode ter uma janela de alto
+   nível criada (e o subsistema Tk inicializado) chamando o método
+   "loadtk()".
+
+Os módulos que fornecem suporte ao Tk incluem:
+
+"tkinter"
+   Módulo principal Tkinter.
+
+"tkinter.colorchooser"
+   Caixa de diálogo para permitir que o usuário escolha uma cor.
+
+"tkinter.commondialog"
+   Classe base para os diálogos definidos nos outros módulos listados
+   aqui.
+
+"tkinter.filedialog"
+   Diálogos comuns para permitir ao usuário especificar um arquivo
+   para abrir ou salvar.
+
+"tkinter.font"
+   Utilitários para ajudar a trabalhar com fontes.
+
+"tkinter.messagebox"
+   Acesso às caixas de diálogo padrão do Tk.
+
+"tkinter.scrolledtext"
+   Componente de texto com uma barra de rolagem vertical integrada.
+
+"tkinter.simpledialog"
+   Diálogos básicos e funções de conveniência.
+
+"tkinter.ttk"
+   Conjunto de widgets temáticos introduzidos no Tk 8.5, fornecendo
+   alternativas modernas para muitos dos widgets clássicos no módulo
+   principal "tkinter".
+
+Módulos adicionais:
+
+"_tkinter"
+   Um módulo binário que contém a interface de baixo nível para
+   Tcl/Tk. Ele é importado automaticamente pelo módulo principal
+   "tkinter" e nunca deve ser usado diretamente. Geralmente é uma
+   biblioteca compartilhada (ou DLL), mas pode, em alguns casos, ser
+   vinculada estaticamente ao interpretador Python.
+
+"idlelib"
+   Ambiente Integrado de Desenvolvimento e Aprendizagem do Python
+   (IDLE). Baseado em "tkinter".
+
+"tkinter.constants"
+   Constantes simbólicas que podem ser usadas no lugar de strings ao
+   passar vários parâmetros para chamadas Tkinter. Este módulo é
+   importado automaticamente pelo módulo principal "tkinter".
+
+"tkinter.dnd"
+   (experimental) Suporte de arrastar e soltar para "tkinter". Será
+   descontinuado quando for substituído pelo Tk DND.
+
+"tkinter.tix"
+   (descontinuado) Um antigo pacote Tcl/Tk de terceiros que adiciona
+   um número significativo de novos widgets. Melhores alternativas
+   podem ser encontradas em "tkinter.ttk".
+
+"turtle"
+   Gráficos tartaruga em uma janela Tk.
+
+
+Preservador de vida Tkinter
+===========================
+
+Esta seção não foi projetada para ser um tutorial exaustivo sobre Tk
+ou Tkinter. Para isso, consulte um dos recursos externos mencionados
+anteriormente. Em vez disso, esta seção fornece uma orientação muito
+rápida sobre como é uma aplicação Tkinter, identifica os conceitos
+fundamentais do Tk e explica como o wrapper do Tkinter é estruturado.
+
+O restante desta seção ajudará a identificar as classes, métodos e
+opções que você precisará em uma aplicação Tkinter e onde encontrar
+documentação mais detalhada sobre isso, inclusive no guia de
+referência oficial do Tcl/Tk.
+
+
+Um programa Olá Mundo
+---------------------
+
+Começaremos a explorar o Tkinter através de uma simples aplicação
+"Hello World". Esta não é a menor aplicação que poderíamos escrever,
+mas tem o suficiente para ilustrar alguns conceitos-chave que você
+precisa saber.
+
+   from tkinter import *
+   from tkinter import ttk
+   root = Tk()
+   frm = ttk.Frame(root, padding=10)
+   frm.grid()
+   ttk.Label(frm, text="Hello World!").grid(column=0, row=0)
+   ttk.Button(frm, text="Quit", command=root.destroy).grid(column=1, row=0)
+   root.mainloop()
+
+Após as importações, a próxima linha será criar a instância da classe
+"Tk" que inicia Tk e cria o interpretador associado a Tcl. Ele também
+cria uma janela de nível superior, conhecida como janela raiz, que
+serve como a janela principal da aplicação.
+
+A linha a seguir cria um frame widget , que neste caso conterá um
+rótulo e um botão que criaremos a seguir. O frame se encaixa dentro da
+janela raiz.
+
+A próxima linha cria um rótulo widget contendo uma string de texto
+estático. O método "grid()" é utilizado para especificar o layout
+relativo (posição) do rótulo dentro do frame widget, semelhante a como
+as tabelas em HTML funcionam.
+
+Então um widget de botão é criado, e posicionado à direita do rótulo.
+Quando pressionado, irá chamar o método "destroy()" da janela raiz.
+
+Por fim, o método "destroy()" coloca tudo no display, e responde à
+entrada do usuário até que o programa termine.
+
+
+Conceitos importantes do Tk
+---------------------------
+
+Mesmo com este programa simples, os conceitos-chave do Tk podem ser
+mostrados:
+
+widgets
+   A interface de usuário do Tkinter é composta de *widgets*
+   individuais. Cada widget é representado como um objeto Python,
+   instanciado de classes como "ttk.Frame", "ttk.Label", e
+   "ttk.Button".
+
+hierarquia dos widgets
+   Os widgets são organizados em uma *hierarquia*. O rótulo e botão
+   estavam contidos em um frame, que por sua vez estava contido na
+   janela raiz. Quando criamos um widget *filho*, seu widget *pai* é
+   passado como primeiro argumento para o construtor do widget.
+
+opções de configuração
+   Widgets possuem *opções de configuração*, que modificam sua
+   aparência e comportamento, como o texto a ser exibido em um rótulo
+   ou botão. Diferentes classes de widgets terão diferentes conjuntos
+   de opções.
+
+gerenciamento de geometria
+   Os widgets não são automaticamente adicionados à interface de
+   usuário quando eles são criados. Um *gerenciador de geometria* como
+   "grid" controla onde na interface de usuário eles são colocados.
+
+loop de eventos
+   O Tkinter reage à entrada do usuário, muda de seu programa, e até
+   mesmo atualiza a tela somente ao executar ativamente um *loop de
+   eventos*. Se o seu programa não estiver executando o loop de
+   eventos, sua interface de usuário não será atualizada.
+
+
+Entendendo como Tkinter envolve Tcl/Tk
+--------------------------------------
+
+Quando a sua aplicação utiliza as classes e métodos do Tkinter,
+internamente o Tkinter está montando strings representando comandos
+Tcl/Tk e executando esses comandos no interpretador Tcl anexado à
+instância "Tk" de sua aplicação.
+
+Seja tentando navegar na documentação de referência, tentando
+encontrar o método ou opção certa, adaptando algum código existente ou
+depurando seu aplicativo Tkinter, há momentos em que será útil
+entender como são os comandos Tcl/Tk subjacentes.
+
+Para ilustrar, aqui está o equivalente Tcl/Tk da parte principal do
+script Tkinter acima.
+
+   ttk::frame .frm -padding 10
+   grid .frm
+   grid [ttk::label .frm.lbl -text "Hello World!"] -column 0 -row 0
+   grid [ttk::button .frm.btn -text "Quit" -command "destroy ."] -column 1 -row 0
+
+A sintaxe do Tcl é semelhante a muitas linguagens de shell, onde a
+primeira palavra é o comando a ser executado, seguido de argumentos
+para esse comando separados por espaços. Sem entrar em muitos
+detalhes, observe o seguinte:
+
+* Os comandos usados para criar widgets (como "ttk::frame")
+  correspondem a classes de widgets no Tkinter.
+
+* As opções de widget Tcl (como "-text") correspondem a argumentos
+  nomeados no Tkinter.
+
+* Widgets são referenciados por um *pathname* em Tcl (like
+  ".frm.btn"), enquanto o Tkinter não utiliza nomes, mas referências a
+  objetos.
+
+* O lugar de um widget na hierarquia widget é codificado em seu
+  pathname (hierárquico), que utiliza um "." (ponto) como um separador
+  de caminho. O pathname para a janela raiz é apenas "." (ponto). No
+  Tkinter, a hierarquia é definida não pelo pathname, mas pela
+  especificação do widget pai ao criar cada widget filho.
+
+* Operações que são implementadas como *comandos* separados em Tcl
+  (como "grid" ou "destroy") são representadas como *métodos* em
+  objetos de widget Tkinter. Como você verá em breve, em outras
+  ocasiões o Tcl usa o que parecem ser chamadas de método em objetos
+  widget, que espelham mais de perto o que seria usado no Tkinter.
+
+
+Como é que eu...? Que opção faz...?
+-----------------------------------
+
+Se você não tem certeza de como fazer algo no Tkinter e não consegue
+encontrá-lo imediatamente no tutorial ou na documentação de referência
+que está usando, existem algumas estratégias que podem ser úteis.
+
+Primeiro, lembre-se de que os detalhes de como os widgets individuais
+funcionam podem variar entre diferentes versões tanto do Tkinter
+quanto do Tcl/Tk. Se você estiver procurando por documentação,
+certifique-se de que corresponda às versões do Python e Tcl/Tk
+instaladas em seu sistema.
+
+Ao procurar como usar uma API, é útil saber o nome exato da classe,
+opção ou método que você está usando. A introspecção, seja em um
+console Python interativo ou com a "print()", pode ajudar a
+identificar o que você precisa.
+
+Para descobrir quais opções de configuração estão disponíveis em
+qualquer widget, chame o método "configure()", que retorna um
+dicionário contendo uma variedade de informações sobre cada objeto,
+incluindo seus valores padrão e atuais. Use "keys()" para obter apenas
+os nomes de cada opção.
+
+   btn = ttk.Button(frm, ...)
+   print(btn.configure().keys())
+
+Como a maioria dos widgets tem muitas opções de configuração em comum,
+pode ser útil descobrir quais são específicas para uma determinada
+classe de widget. Comparar a lista de opções com a de um widget mais
+simples, como um frame, é uma maneira de fazer isso.
+
+   print(set(btn.configure().keys()) - set(frm.configure().keys()))
+
+Da mesma forma, você pode encontrar os métodos disponíveis para um
+objeto widget usando a função padrão "dir()". Se você tentar, verá que
+existem mais de 200 métodos comuns de widget, então identificar
+aqueles específicos para uma classe de widget é útil.
+
+   print(dir(btn))
+   print(set(dir(btn)) - set(dir(frm)))
+
+
+Navegando no Manual de Referência Tcl/Tk
+----------------------------------------
+
+Como observado, o manual (páginas man) de referência oficial dos
+comandos Tk é frequentemente a descrição mais precisa do que operações
+específicas em widgets fazem. Mesmo quando você sabe o nome da opção
+ou método que você precisa, você ainda pode ter alguns lugares para
+procurar.
+
+Enquanto todas as operações no Tkinter são implementadas como chamadas
+de método em objetos de widget, você viu que muitas operações Tcl/Tk
+aparecem como comandos que recebem um caminho de widget como seu
+primeiro parâmetro, seguido de parâmetros opcionais, por exemplo.
+
+   destroy .
+   grid .frm.btn -column 0 -row 0
+
+Outros, no entanto, parecem mais com métodos chamados em um objeto
+widget (na verdade, quando você cria um widget em Tcl/Tk, ele cria um
+comando Tcl com o nome do caminho do widget, sendo o primeiro
+parâmetro desse comando o nome de um método a ser chamado).
+
+   .frm.btn invoke
+   .frm.lbl configure -text "Goodbye"
+
+Na documentação oficial de referência do Tcl/Tk, você encontrará a
+maioria das operações que se parecem com chamadas de método na página
+man de um widget específico (por exemplo, você encontrará o método
+"invoke()" na página man do ttk::button), enquanto as funções que
+recebem um widget como parâmetro geralmente têm sua própria página man
+(por exemplo, grid).
+
+Você encontrará muitas opções e métodos comuns nas páginas man options
+e ttk::widget, enquanto outros são encontrados na página man para uma
+classe de widget específica.
+
+Você também encontrará que muitos métodos do Tkinter têm nomes
+compostos, por exemplo, "winfo_x()", "winfo_height()",
+"winfo_viewable()". Você encontra documentação para todos eles na
+página man winfo.
+
+Nota:
+
+  De forma bem confusa, também existem métodos em todos os widgets do
+  Tkinter que na verdade não operam no widget, mas operam em um escopo
+  global, independente de qualquer widget. Exemplos são métodos para
+  acessar a área de transferência ou o sinal do sistema. (Eles são
+  implementados como métodos na classe base "Widget" da qual todos os
+  widgets do Tkinter herdam).
+
+
+Modelo de threading
+===================
+
+Python e Tcl/Tk têm modelos de threading muito diferentes, que
+"tkinter" tenta fazer a ponte. Se você usa threads, pode precisar
+estar ciente disso.
+
+Um interpretador Python pode ter muitas threads associados a ele. Em
+Tcl, várias threads podem ser criadas, mas cada thread tem uma
+instância de interpretador Tcl separada associada a ele. Threads
+também podem criar mais de uma instância do interpretador, embora cada
+instância do interpretador possa ser usada apenas pela thread que a
+criou.
+
+Cada objeto "Tk" criado por "tkinter" contém um interpretador Tcl. Ele
+também controla qual thread criou aquele interpretador. Chamadas para
+"tkinter" podem ser feitas a partir de qualquer thread do Python.
+Internamente, se uma chamada vier de um thread diferente daquele que
+criou o objeto "Tk", um evento é postado na fila de eventos do
+interpretador e, quando executado, o resultado é retornado ao thread
+de chamada do Python.
+
+As aplicações Tcl/Tk são normalmente orientadas a eventos, o que
+significa que após a inicialização, o interpretador executa um laço de
+eventos (ou seja "Tk.mainloop()") e responde aos eventos. Por ser de
+thread única, os tratadores de eventos devem responder rapidamente,
+caso contrário, bloquearão o processamento de outros eventos. Para
+evitar isso, quaisquer cálculos de longa execução não devem ser
+executados em um tratador de eventos, mas são divididos em pedaços
+menores usando temporizadores ou executados em outra thread. Isso é
+diferente de muitos kits de ferramentas de GUI em que a GUI é
+executada em um thread completamente separado de todo o código do
+aplicação, incluindo tratadores de eventos.
+
+Se o interpretador Tcl não estiver executando o laço de eventos e
+processando eventos, qualquer chamada "tkinter" feita de threads
+diferentes daquela que está executando o interpretador do Tcl irá
+falhar.
+
+Existem vários casos especiais:
+
+* Bibliotecas Tcl/Tk podem ser construídas de forma que não reconheçam
+  thread. Neste caso, "tkinter" chama a biblioteca da thread
+  originadora do Python, mesmo que seja diferente da thread que criou
+  o interpretador Tcl. Um bloqueio global garante que apenas uma
+  chamada ocorra por vez.
+
+* Enquanto "tkinter" permite que você crie mais de uma instância de um
+  objeto "Tk" (com seu próprio interpretador), todos os
+  interpretadores que fazem parte da mesma thread compartilham uma
+  fila de eventos comum, o que fica muito rápido. Na prática, não crie
+  mais de uma instância de "Tk" por vez. Caso contrário, é melhor
+  criá-los em threads separadas e garantir que você esteja executando
+  uma construção Tcl/Tk com reconhecimento de thread.
+
+* Bloquear manipuladores de eventos não é a única maneira de evitar
+  que o interpretador Tcl entre novamente no laço de eventos. É ainda
+  possível executar vários laços de eventos aninhados ou abandonar
+  totalmente o laço de eventos. Se você estiver fazendo algo
+  complicado quando se trata de eventos ou threads, esteja ciente
+  dessas possibilidades.
+
+* Existem algumas funções de seleção do "tkinter" que atualmente
+  funcionam apenas quando chamadas a partir da thread que criou o
+  interpretador Tcl.
+
+
+Referência Útil
+===============
+
+
+Opções de Definição
+-------------------
+
+As opções controlam coisas como a cor e a largura da borda de um
+widget. As opções podem ser definidas de três maneiras:
+
+No momento da criação do objeto, usando argumentos nomeados
+      fred = Button(self, fg="red", bg="blue")
+
+Após a criação do objeto, tratando o nome da opção como um índice de
+dicionário
+      fred["fg"] = "red"
+      fred["bg"] = "blue"
+
+Use o método config() para atualizar vários attrs posteriores à
+criação do objeto
+      fred.config(fg="red", bg="blue")
+
+Para uma explicação completa de uma dada opção e seu comportamento,
+veja as páginas man do Tk para o widget em questão.
+
+Note que as páginas man listam "OPÇÕES PADRÃO" e "OPÇÕES DE WIDGET
+ESPECÍFICO" para cada widget. A primeira é uma lista de opções que são
+comuns a vários widgets, e a segunda são opções que são
+idiossincráticas ao widget em particular. As Opções Padrão estão
+documentadas na página man *options(3)*.
+
+Nenhuma distinção entre as opções padrão e específicas de widget são
+feitas neste documento. Algumas opções não se aplicam a alguns tipos
+de widgets. A resposta de um dado widget a uma opção particular
+depende da classe do widget; botões possuem a opção "command",
+etiquetas não.
+
+As opções suportadas por um dado widget estão listadas na página man
+daquele widget, ou podem ser consultadas no tempo de execução chamando
+o método "config()" sem argumentos, ou chamando o método "keys()"
+daquele widget. O valor retornado por essas chamadas é um dicionário
+cujas chaves são os nomes das opções como uma string (por exemplo,
+"'relief'") e cujos valores são tuplas de 5 elementos.
+
+Algumas opções, como "bg" são sinônimos para opções comuns com nomes
+mais longos ("bg" é a abreviação de "background", ou plano de fundo em
+inglês). Passando o nome de uma opção abreviada ao método "config()"
+irá retornar uma tupla de 2 elementos, e não uma tupla de 5 elementos.
+A tupla de 2 elementos devolvida irá conter o nome do sinônimo e a
+opção "verdadeira" (como por exemplo em "('bg', 'background')").
+
++---------+-----------------------------------+----------------+
+| Índice  | Significado                       | Exemplo        |
+|=========|===================================|================|
+| 0       | nome da opção                     | "'relief'"     |
++---------+-----------------------------------+----------------+
+| 1       | nome da opção para buscas de      | "'relief'"     |
+|         | banco de dados                    |                |
++---------+-----------------------------------+----------------+
+| 2       | classe de opção para busca de     | "'Relief'"     |
+|         | banco de dados                    |                |
++---------+-----------------------------------+----------------+
+| 3       | valor padrão                      | "'raised'"     |
++---------+-----------------------------------+----------------+
+| 4       | valor atual                       | "'groove'"     |
++---------+-----------------------------------+----------------+
+
+Exemplo:
+
+   >>> print(fred.config())
+   {'relief': ('relief', 'relief', 'Relief', 'raised', 'groove')}
+
+É claro que o dicionário exibido irá incluir todas as opções
+disponíveis e seus valores. Isso foi apenas um exemplo.
+
+
+O Empacotador
+-------------
+
+O empacotador é um dos mecanismos de gerenciamento de geometria do Tk.
+Gerenciadores de geometria são utilizados para especificar as posições
+relativas dos widgets dentro dos seus contêineres - os seus *processos
+pai* mútuos. Em contraste ao mais incômodo *posicionador* (que é usado
+com menos frequência, e não falaremos dele aqui), o empacotador recebe
+a especificação de relacionamento qualitativo - *acima*, *à esquerda
+de*, *preenchimento*, etc. - e determina as coordenadas de posição
+exatas para você.
+
+O tamanho de qualquer widget *mestre* é determinado pelo tamanho dos
+"widgets escravos" internos. O empacotador é usado para controlar onde
+os widgets escravos aparecem dentro do mestre no qual são empacotados.
+Você pode empacotar widgets em quadros e quadros em outros quadros, a
+fim de obter o tipo de layout que deseja. Além disso, o arranjo é
+ajustado dinamicamente para acomodar alterações incrementais na
+configuração, uma vez que é empacotado.
+
+Note que os widgets não aparecem até que eles tenham sua geometria
+especificada pelo gerenciador de geometria. É um erro comum de
+iniciantes deixar a geometria de fora da especificação, então se
+surpreender que o widget é criado sendo que nada apareceu. O widget
+irá aparecer apenas quando tiver, por exemplo, o método método
+"pack()" do empacotador aplicado a ele.
+
+O método pack() pode ser chamado com pares de palavra reservada-
+opção/valor que controlam onde o widget deverá aparecer dentro do seu
+contêiner, e como deverá se comportar quando a janela da aplicação
+principal for redimensionada. Aqui estão alguns exemplos:
+
+   fred.pack()                     # defaults to side = "top"
+   fred.pack(side="left")
+   fred.pack(expand=1)
+
+
+Opções do Empacotador
+---------------------
+
+Para uma informação mais completa do empacotador e as opções que pode
+receber, veja as páginas man e a página 183 do livro do John
+Ousterhout.
+
+anchor
+   Tipo âncora. Denota onde o packer deverá posicionar cada ajudante
+   em seu pacote.
+
+expand
+   Booleano, "0" ou "1".
+
+fill
+   Valores legais: "'x'", "'y'", "'both'", "'none'".
+
+ipadx e ipady
+   Uma distância - designando o deslocamento interno de cada lado do
+   widget ajudante.
+
+padx and pady
+   Uma distância - designando o deslocamento externo de cada lado do
+   widget ajudante.
+
+side
+   Valores legais são: "'left'", "'right'", "'top'", "'bottom'".
+
+
+Acoplando Variáveis de Widgets
+------------------------------
+
+A definição do valor atual de alguns widgets (como widgets de entrada
+de texto) podem ser conectadas diretamente às variáveis da aplicação
+utilizando métodos especiais. Estas opções são "variable",
+"textvariable", "onvalue", "offvalue", e "value". A conexão funciona
+por ambos os lados: Se por algum motivo a variável se altera, o widget
+ao qual ela está conectada irá se atualizar para refletir este novo
+valor.
+
+Infelizmente, na atual implementação do "tkinter" não é possível
+passar uma variável Python arbitrária para um widget por uma opção
+"variable" ou "textvariable". Os únicos tipos de variáveis para as
+quais isso funciona são variáveis que são subclasses da classe chamada
+Variable, definida em "tkinter".
+
+Há muitas subclasses de Variable úteis já definidas: "StringVar",
+"IntVar", "DoubleVar", e "BooleanVar". Para ler o atual valor de uma
+variável, chame o método "get()" nelas, e para alterar o valor você
+deve chamar o método "set()". Se você seguir este protocolo, o widget
+irá sempre acompanhar os valores da variável, sem nenhuma intervenção
+da sua parte.
+
+Por exemplo:
+
+   import tkinter as tk
+
+   class App(tk.Frame):
+       def __init__(self, master):
+           super().__init__(master)
+           self.pack()
+
+           self.entrythingy = tk.Entry()
+           self.entrythingy.pack()
+
+           # Create the application variable.
+           self.contents = tk.StringVar()
+           # Set it to some value.
+           self.contents.set("this is a variable")
+           # Tell the entry widget to watch this variable.
+           self.entrythingy["textvariable"] = self.contents
+
+           # Define a callback for when the user hits return.
+           # It prints the current value of the variable.
+           self.entrythingy.bind('<Key-Return>',
+                                self.print_contents)
+
+       def print_contents(self, event):
+           print("Hi. The current entry content is:",
+                 self.contents.get())
+
+   root = tk.Tk()
+   myapp = App(root)
+   myapp.mainloop()
+
+
+O Gerenciador de Janela
+-----------------------
+
+No Tk, existe um comando utilitário, "wm", para interagir com o
+gerenciador de janelas. As opções do comando "wm" permitem que você
+controle coisas como títulos, localização, ícones bitmap, entre
+outros. No "tkinter", estes comandos foram implementados como métodos
+da classe "Wm" class. Widgets de mais alto nívelsão subclasses da
+classe "Wm" e portanto podem chamar os métodos "Wm" diretamente.
+
+Para chegar à janela de nível superior que contém um determinado
+widget, geralmente você pode apenas consultar o mestre do widget.
+Claro, se o widget foi compactado dentro de um quadro, o mestre não
+representará uma janela de nível superior. Para chegar à janela de
+nível superior que contém um widget arbitrário, você pode chamar o
+método "_root()". Este método começa com um sublinhado para denotar o
+fato de que esta função é parte da implementação, e não uma interface
+para a funcionalidade Tk.
+
+Aqui estão alguns exemplos de uso típico:
+
+   import tkinter as tk
+
+   class App(tk.Frame):
+       def __init__(self, master=None):
+           super().__init__(master)
+           self.pack()
+
+   # create the application
+   myapp = App()
+
+   #
+   # here are method calls to the window manager class
+   #
+   myapp.master.title("My Do-Nothing Application")
+   myapp.master.maxsize(1000, 400)
+
+   # start the program
+   myapp.mainloop()
+
+
+Opções de Tipos de Dados do Tk
+------------------------------
+
+anchor
+   Valores legais são os pontos cardeais: ""n"", ""ne"", ""e"",
+   ""se"", ""s"", ""sw"", ""w"", ""nw"", e também ""center"".
+
+bitmap
+   Há 8 bitmaps embutidos nomeados: "'error'", "'gray25'", "'gray50'",
+   "'hourglass'", "'info'", "'questhead'", "'question'", "'warning'".
+   Para especificar um nome de arquivo do bitmap X, passe o caminho
+   completo do arquivo, precedido pelo caractere "@", como em
+   ""@/usr/contrib/bitmap/gumby.bit"".
+
+booleano
+   Você pode passar os inteiros 0 ou 1 ou as strings ""yes"" ou
+   ""no"".
+
+função de retorno
+   Esta é uma função Python que não aceita argumentos. Por exemplo:
+
+      def print_it():
+          print("hi there")
+      fred["command"] = print_it
+
+cor
+   As cores podem ser fornecidas como nomes de cores X no arquivo
+   rgb.txt ou como strings representando valores RGB em intervalos de
+   4 bits: ""#RGB"", 8 bit: ""#RRGGBB"", 12 bit: ""#RRRGGGBBB"" ou 16
+   bit:  ""#RRRRGGGGBBBB"", onde R,G,B aqui representam qualquer
+   dígito hexadecimal legal. Veja a página 160 do livro de Ousterhout
+   para detalhes.
+
+cursor
+   Os nomes de cursor X padrão de "cursorfont.h" podem ser usados, sem
+   o prefixo "XC_". Por exemplo, para obter um cursor de mão
+   ("XC_hand2"), use a string ""hand2"". Você também pode especificar
+   um bitmap e um arquivo de máscara de sua preferência. Veja a página
+   179 do livro de Ousterhout.
+
+distance
+   As distâncias da tela podem ser especificadas em pixels ou
+   distâncias absolutas. Pixels são dados como números e distâncias
+   absolutas como strings, com os caracteres finais denotando
+   unidades: "c" para centímetros, "i" para polegadas, "m" para
+   milímetros, "p" para os pontos da impressora. Por exemplo, 3,5
+   polegadas é expresso como ""3.5i"".
+
+font
+   Tk usa um formato de nome de fonte de lista, como "{courier 10
+   bold}". Tamanhos de fonte com números positivos são medidos em
+   pontos; tamanhos com números negativos são medidos em pixels.
+
+geometria
+   Esta é uma string no formato "widthxheight", onde largura e altura
+   são medidas em pixels para a maioria dos widgets (em caracteres
+   para widgets que exibem texto). Por exemplo: "fred["geometry"] =
+   "200x100"".
+
+justify
+   Valores aceitos são as strings: ""left"", ""center"", ""right"" e
+   ""fill"".
+
+region
+   Esta é uma string com quatro elementos delimitados por espaço, cada
+   um dos quais a uma distância legal (veja acima). Por exemplo:  ""2
+   3 4 5"" e ""3i 2i 4.5i 2i"" e ""3c 2c 4c 10.43c"" são todas regiões
+   legais.
+
+relief
+   Determina qual será o estilo da borda de um widget. Os valores
+   legais são: ""raised"", ""sunken"", ""flat"", ""groove"" e
+   ""ridge"".
+
+scrollcommand
+   Este é quase sempre o método "set()" de algum widget da barra de
+   rolagem, mas pode ser qualquer método de widget que receba um único
+   argumento.
+
+wrap
+   Deve ser um de: ""none"", ""char"" ou ""word"".
+
+
+Ligações e Eventos
+------------------
+
+O método de ligação do comando widget permite que você observe certos
+eventos e tenha um acionamento de função de retorno de chamada quando
+esse tipo de evento ocorrer. A forma do método de ligação é:
+
+   def bind(self, sequence, func, add=''):
+
+sendo que:
+
+sequence
+   é uma string que denota o tipo de evento de destino. (Veja a página
+   man do *bind(3tk)* e a página 201 do livro de John Ousterhout,
+   *:title-reference:`Tcl and the Tk Toolkit (2nd edition)*, para mais
+   detalhes).
+
+func
+   é uma função Python, tendo um argumento, a ser invocada quando o
+   evento ocorre. Uma instância de evento será passada como argumento.
+   (As funções implantadas dessa forma são comumente conhecidas como
+   *funções de retorno*.)
+
+add
+   é opcional, tanto "''" ou "'+'". Passar uma string vazia indica que
+   essa ligação substitui todas as outras ligações às quais esse
+   evento está associado. Passar um "'+'" significa que esta função
+   deve ser adicionada à lista de funções ligadas a este tipo de
+   evento.
+
+Por exemplo:
+
+   def turn_red(self, event):
+       event.widget["activeforeground"] = "red"
+
+   self.button.bind("<Enter>", self.turn_red)
+
+Observe como o campo widget do evento está sendo acessado na função de
+retorno "turn_red()". Este campo contém o widget que capturou o evento
+X. A tabela a seguir lista os outros campos de evento que você pode
+acessar e como eles são denotados no Tk, o que pode ser útil ao se
+referir às páginas man do Tk.
+
++------+-----------------------+------+-----------------------+
+| Tk   | Campo de Eventos do   | Tk   | Campo de Eventos do   |
+|      | Tkinter               |      | Tkinter               |
+|======|=======================|======|=======================|
+| %f   | focus                 | %A   | char                  |
++------+-----------------------+------+-----------------------+
+| %h   | height                | %E   | send_event            |
++------+-----------------------+------+-----------------------+
+| %k   | keycode               | %K   | keysym                |
++------+-----------------------+------+-----------------------+
+| %s   | state                 | %N   | keysym_num            |
++------+-----------------------+------+-----------------------+
+| %t   | time                  | %T   | tipo                  |
++------+-----------------------+------+-----------------------+
+| %w   | width                 | %W   | widget                |
++------+-----------------------+------+-----------------------+
+| %x   | x                     | %X   | x_root                |
++------+-----------------------+------+-----------------------+
+| %y   | y                     | %Y   | y_root                |
++------+-----------------------+------+-----------------------+
+
+
+O Parâmetro index
+-----------------
+
+Vários widgets requerem que parâmetros de "indx" sejam passados. Eles
+são usados para apontar para um local específico em um widget Text, ou
+para caracteres específicos em um widget Entry, ou para itens de menu
+específicos em um widget Menu.
+
+Índices de widget de entrada (índice, índice de visualização, etc.)
+   Os widgets de entrada têm opções que se referem às posições dos
+   caracteres no texto exibido. Você pode acessar esses pontos
+   especiais em um widget de texto usando as seguintes funções
+   "tkinter":
+
+Índice de widget de texto
+   A notação de índice do widget de texto é muito rica e é melhor
+   detalhada nas páginas do manual Tk.
+
+Índices de menu (menu.invoke(), menu.entryconfig(), etc.)
+   Algumas opções e métodos de menus manipulam entradas de menu
+   específicas. Sempre que um índice de menu é necessário para uma
+   opção ou parâmetro, você pode passar:
+
+   * um número inteiro que se refere à posição numérica da entrada no
+     widget, contada do topo, começando com 0;
+
+   * a string ""active"", que se refere à posição do menu que está
+     atualmente sob o cursor;
+
+   * a string ""last"" que se refere ao último item do menu;
+
+   * Um inteiro precedido por "@", como em "@6", onde o inteiro é
+     interpretado como uma coordenada de pixel y no sistema de
+     coordenadas do menu;
+
+   * a string ""none"", que indica nenhuma entrada de menu, mais
+     frequentemente usada com menu.activate() para desativar todas as
+     entradas e, finalmente,
+
+   * uma string de texto cujo padrão corresponde ao rótulo da entrada
+     do menu, conforme varrido da parte superior do menu para a parte
+     inferior. Observe que este tipo de índice é considerado após
+     todos os outros, o que significa que as correspondências para
+     itens de menu rotulados como "last", "active" ou "none" podem ser
+     interpretadas como os literais acima, em vez disso.
+
+
+Imagens
+-------
+
+Imagens de diferentes formatos podem ser criadas por meio da subclasse
+correspondente de "tkinter.Image":
+
+* "BitmapImage" para imagens no formato XBM.
+
+* "PhotoImage" para imagens nos formatos PGM, PPM, GIF e PNG. O
+  suporte ao último foi adicionado a partir do Tk 8.6.
+
+Qualquer tipo de imagem é criado através da opção "file" ou "data"
+(outras opções também estão disponíveis).
+
+O objeto imagem pode então ser usado sempre que uma opção "image" há
+suporte em algum widget (por exemplo: rótulos, botões, menus). Nestes
+casos, o Tk não guardará uma referência à imagem. Quando a última
+referência Python ao objeto imagem for excluída, os dados da imagem
+também serão excluídos e o Tk exibirá uma caixa vazia onde quer que a
+imagem tenha sido usada.
+
+Ver também:
+
+  O pacote Pillow adiciona suporte para formatos como BMP, JPEG, TIFF
+  e WebP, entre outros.
+
+
+Tratadores de arquivos
+======================
+
+O Tk permite que você registre e cancele o registro de uma função de
+retorno que será chamada a partir do laço central do Tk quando uma E/S
+for possível em um descritor de arquivo. Apenas um tratador pode ser
+registrado por descritor de arquivo. Código de exemplo:
+
+   import tkinter
+   widget = tkinter.Tk()
+   mask = tkinter.READABLE | tkinter.WRITABLE
+   widget.tk.createfilehandler(file, mask, callback)
+   ...
+   widget.tk.deletefilehandler(file)
+
+Este recurso não está disponível no Windows.
+
+Já que você não sabe quantos bytes estão disponíveis para leitura,
+você pode não querer usar os métodos "read()" ou "readline()" de
+"BufferedIOBase" ou "TextIOBase", já que eles insistirão em ler uma
+quantidade predefinida de byts. Para sockets, os métodos "recv()" ou
+"recvfrom()" vão servir; para outros arquivos, use dados brutos ou
+"os.read(file.fileno(), maxbytecount)".
+
+Widget.tk.createfilehandler(file, mask, func)
+
+   Registra a função de retorno do tratador de arquivo *func*. O
+   argumento *file* pode ser um objeto com um método "fileno()" (como
+   um arquivo ou objeto soquete) ou um descritor de arquivo de
+   inteiro. O argumento *mask* é uma combinação OR de qualquer uma das
+   três constantes abaixo. O retorno de chamada é chamado da seguinte
+   maneira:
+
+      callback(file, mask)
+
+Widget.tk.deletefilehandler(file)
+
+   Cancela o registro de um tratador de arquivo.
+
+_tkinter.READABLE
+_tkinter.WRITABLE
+_tkinter.EXCEPTION
+
+   Constantes usadas nos argumentos *mask*.

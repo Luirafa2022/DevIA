@@ -1,0 +1,31 @@
+Serviços Específicos do MS Windows
+**********************************
+
+Este capítulo descreve módulos que estão disponíveis somente na
+plataformas MS Windows.
+
+* "msvcrt" --- Rotinas úteis do tempo de execução do MS VC++
+
+  * Operações com arquivos
+
+  * E/S de console
+
+  * Outras funções
+
+* "winreg" -- Registro de acesso do Windows
+
+  * Funções
+
+  * Constantes
+
+    * HKEY_* Constants
+
+    * Access Rights
+
+      * 64-bit Specific
+
+    * Value Types
+
+  * Registry Handle Objects
+
+* "winsound" --- Interface de reprodução de som para Windows

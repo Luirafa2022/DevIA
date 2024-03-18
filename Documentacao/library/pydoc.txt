@@ -1,0 +1,103 @@
+"pydoc" --- Gerador de documentação e sistema de ajuda online
+*************************************************************
+
+**Código-fonte:** Lib/pydoc.py
+
+======================================================================
+
+O módulo "pydoc" gera automaticamente a documentação dos módulos
+Python. A documentação pode ser apresentada como páginas de texto no
+console, servida em um navegador web ou salva em arquivos HTML.
+
+Para módulos, classes, funções e métodos, a documentação exibida é
+derivada da docstring (ou seja, o atributo "__doc__") do objeto, e
+recursivamente de seus membros documentáveis. Se não houver docstring,
+"pydoc" tenta obter uma descrição do bloco de linhas de comentário
+logo acima da definição da classe, função ou método no arquivo fonte,
+ou no topo do módulo (consulte "inspect.getcomments()").
+
+A função embutida "help()" invoca o sistema de ajuda online no
+interpretador interativo, que usa "pydoc" para gerar sua documentação
+como texto no console. A mesma documentação de texto também pode ser
+vista de fora do interpretador Python executando **pydoc** como um
+script no prompt de comando do sistema operacional. Por exemplo,
+executar
+
+   python -m pydoc sys
+
+em um prompt de console exibirá a documentação do módulo "sys", em um
+estilo semelhante às páginas de manual mostradas pelo comando Unix
+**man**. O argumento para **pydoc** pode ser o nome de uma função,
+módulo ou pacote, ou uma referência pontilhada a uma classe, método ou
+função dentro de um módulo ou módulo em um pacote. Se o argumento para
+**pydoc** parecer um caminho (ou seja, ele contém o separador de
+caminho para o seu sistema operacional, como uma barra no Unix) e se
+refere a um arquivo fonte Python existente, então a documentação é
+produzida para esse arquivo.
+
+Nota:
+
+  Para encontrar objetos e sua documentação, "pydoc" importa os
+  módulos a serem documentados. Portanto, qualquer código no nível do
+  módulo será executado nessa ocasião. Use uma proteção "if __name__
+  == '__main__':" para executar código apenas quando um arquivo é
+  chamado como um script e não apenas importado.
+
+Ao imprimir a saída para o console, **pydoc** tenta paginar a saída
+para facilitar a leitura. Se a variável de ambiente "PAGER" estiver
+definida, **pydoc** usará seu valor como um programa de paginação.
+
+Especificar um sinalizador "-w" antes do argumento fará com que a
+documentação HTML seja escrita em um arquivo no diretório atual, ao
+invés de exibir texto no console.
+
+Especificar um sinalizador "-k" antes do argumento irá pesquisar as
+linhas de sinopse de todos os módulos disponíveis para a palavra
+reservada fornecida como o argumento, novamente de uma maneira
+semelhante ao comando Unix **man**. A linha de sinopse de um módulo é
+a primeira linha de sua string de documentação.
+
+Você também pode usar **pydoc** para iniciar um servidor HTTP na
+máquina local que servirá a documentação para os navegadores web
+visitantes. **python -m pydoc -p 1234** irá iniciar um servidor HTTP
+na porta 1234, permitindo que você navegue pela documentação em
+"http://localhost:1234/" em seu navegador preferido. Especificar "0"
+como o número da porta irá selecionar uma porta não utilizada
+arbitrária.
+
+**python -m pydoc -n <hostname>** irá iniciar o servidor ouvindo no
+nome de host fornecido. Por padrão, o nome de host é "localhost", mas
+se você deseja que o servidor seja acessado por outras máquinas, você
+pode alterar o nome de host ao qual o servidor responde. Durante o
+desenvolvimento, isso é especialmente útil se você deseja executar o
+pydoc de dentro de um contêiner.
+
+**python -m pydoc -b** irá iniciar o servidor e, adicionalmente, abrir
+um navegador da web para uma página de índice do módulo. Cada página
+exibida tem uma barra de navegação na parte superior onde você pode
+escolher *Get* para obter ajuda em um item individual, *Search* para
+pesquisar todos os módulos com uma palavra reservada em sua linha de
+sinopse e ir para as páginas de índice do módulo em *Module index*,
+tópicos em *Topics* e palavras reservadas em *Keywords*.
+
+Quando **pydoc** gera documentação, ele usa o ambiente atual e o
+caminho para localizar os módulos. Assim, invocar **pydoc spam**
+documenta precisamente a versão do módulo que você obteria se
+iniciasse o interpretador Python e digitasse "import spam".
+
+Os documentos do módulo para os módulos principais são assumidos para
+residir em "https://docs.python.org/X.Y/library/" onde "X" e "Y" são
+os números de versão principal e secundária do interpretador Python.
+Isso pode ser substituído definindo a variável de ambiente
+"PYTHONDOCS" para uma URL diferente ou para um diretório local
+contendo as páginas do Manual de Referência da Biblioteca.
+
+Alterado na versão 3.2: Adicionada a opção "-b".
+
+Alterado na versão 3.3: A opção de linha de comando "-g" foi removida.
+
+Alterado na versão 3.4: "pydoc" agora usa "inspect.signature()" em vez
+de "inspect.getfullargspec()" para extrair informações de assinatura
+de chamáveis.
+
+Alterado na versão 3.7: Adicionada a opção "-n".

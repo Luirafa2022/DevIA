@@ -1,0 +1,155 @@
+"py_compile" --- Compila arquivos fonte do Python
+*************************************************
+
+**Código-fonte:** Lib/py_compile.py
+
+======================================================================
+
+O módulo "py_compile" fornece uma função para gerar um arquivo de
+bytecode a partir de um arquivo fonte, e outra função usada quando o
+arquivo fonte do módulo é chamado como um script.
+
+Embora nem sempre seja necessária, essa função pode ser útil ao
+instalar módulos para uso compartilhado, especialmente se alguns
+usuários não tiverem permissão para gravar os arquivos de cache de
+bytecodes no diretório que contém o código-fonte.
+
+exception py_compile.PyCompileError
+
+   Exceção levantada quando ocorre um erro ao tentar compilar o
+   arquivo.
+
+py_compile.compile(file, cfile=None, dfile=None, doraise=False, optimize=-1, invalidation_mode=PycInvalidationMode.TIMESTAMP, quiet=0)
+
+   Compile a source file to byte-code and write out the byte-code
+   cache file. The source code is loaded from the file named *file*.
+   The byte-code is written to *cfile*, which defaults to the **PEP
+   3147**/**PEP 488** path, ending in ".pyc". For example, if *file*
+   is "/foo/bar/baz.py" *cfile* will default to
+   "/foo/bar/__pycache__/baz.cpython-32.pyc" for Python 3.2.  If
+   *dfile* is specified, it is used instead of *file* as the name of
+   the source file from which source lines are obtained for display in
+   exception tracebacks. If *doraise* is true, a "PyCompileError" is
+   raised when an error is encountered while compiling *file*. If
+   *doraise* is false (the default), an error string is written to
+   "sys.stderr", but no exception is raised.  This function returns
+   the path to byte-compiled file, i.e. whatever *cfile* value was
+   used.
+
+   Os argumentos *doraise* e *quiet* determinam como os erros são
+   tratados durante a compilação do arquivo. Se *quiet* for 0 ou 1 e
+   *doraise* for false, o comportamento padrão será ativado: uma
+   string de erros será gravada em "sys.stderr" e a função retornará
+   "None" em vez de um caminho. Se *doraise* for verdadeiro, uma
+   "PyCompileError" será levantada. No entanto, se *quiet* for 2,
+   nenhuma mensagem será escrita e *doraise* não terá efeito.
+
+   Se o caminho que *cfile* se tornar (especificado ou computado
+   explicitamente) for um link simbólico ou um arquivo não regular,
+   "FileExistsError" será levantada. Isso serve como um aviso de que a
+   importação transformará esses caminhos em arquivos regulares se for
+   permitido gravar arquivos compilados em bytes nesses caminhos. Esse
+   é um efeito colateral da importação usando a renomeação de arquivo
+   para colocar o arquivo final compilado em bytecode para evitar
+   problemas de gravação simultânea de arquivos.
+
+   *optimize* controla o nível de otimização e é passado para a função
+   embutida "compile()". O padrão de "-1" seleciona o nível de
+   otimização do interpretador atual.
+
+   *invalidation_mode* deve ser um membro da enum
+   "PycInvalidationMode" e controla como o cache do bytecode gerado é
+   invalidado em tempo de execução. O padrão é
+   "PycInvalidationMode.CHECKED_HASH" se a variável de ambiente
+   "SOURCE_DATE_EPOCH" estiver configurada, caso contrário, o padrão é
+   "PycInvalidationMode.TIMESTAMP".
+
+   Alterado na versão 3.2: Alterado o valor padrão de *cfile* para
+   ficar em conformidade com a **PEP 3147**. O padrão anterior era
+   *file* + "'c'" ("'o'" se a otimização estivesse ativada). Também
+   foi adicionado o parâmetro *optimize*.
+
+   Alterado na versão 3.4: Alterado o código para usar "importlib"
+   para a gravação do arquivo de cache do bytecode. Isso significa que
+   a semântica de criação/gravação de arquivo agora corresponde ao que
+   "importlib" faz, por exemplo, permissões, semântica de gravação e
+   movimentação, etc. Também foi adicionada a ressalva de que
+   "FileExistsError" é levantada se *cfile* for um link simbólico ou
+   um arquivo não regular.
+
+   Alterado na versão 3.7: O parâmetro *invalidation_mode* foi
+   adicionado conforme especificado em **PEP 552**. Se a variável de
+   ambiente "SOURCE_DATE_EPOCH" estiver configurada,
+   *invalidation_mode* será forçado a
+   "PycInvalidationMode.CHECKED_HASH".
+
+   Alterado na versão 3.7.2: A variável de ambiente
+   "SOURCE_DATE_EPOCH" não substitui mais o valor do argumento
+   *invalidation_mode* e, em vez disso, determina seu valor padrão.
+
+   Alterado na versão 3.8: O parâmetro *quiet* foi adicionado.
+
+class py_compile.PycInvalidationMode
+
+   Uma enumeração de métodos possíveis que o interpretador pode usar
+   para determinar se um arquivo de bytecode está atualizado com um
+   arquivo fonte. O arquivo ".pyc" indica o modo de invalidação
+   desejado em seu cabeçalho. Veja Cached bytecode invalidation para
+   obter mais informações sobre como o Python invalida arquivos ".pyc"
+   em tempo de execução.
+
+   Novo na versão 3.7.
+
+   TIMESTAMP
+
+      O arquivo ".pyc" inclui o carimbo de data e hora e o tamanho do
+      arquivo fonte, que o Python comparará com os metadados do
+      arquivo fonte no tempo de execução para determinar se o arquivo
+      ".pyc" precisa ser gerado novamente.
+
+   CHECKED_HASH
+
+      O arquivo ".pyc" inclui um hash do conteúdo do arquivo fonte,
+      com o qual o Python comparará o fonte em tempo de execução para
+      determinar se o arquivo ".pyc" precisa ser gerado novamente.
+
+   UNCHECKED_HASH
+
+      Como "CHECKED_HASH", o arquivo ".pyc" inclui um hash do conteúdo
+      do arquivo fonte. No entanto, em tempo de execução, o Python
+      presumirá que o arquivo ".pyc" está atualizado e não validará o
+      ".pyc" contra o arquivo fonte.
+
+      Essa opção é útil quando os ".pycs" são atualizados por algum
+      sistema externo ao Python, como um sistema de compilação.
+
+
+Interface de Linha de Comando
+=============================
+
+This module can be invoked as a script to compile several source
+files.  The files named in *filenames* are compiled and the resulting
+bytecode is cached in the normal manner.  This program does not search
+a directory structure to locate source files; it only compiles files
+named explicitly. The exit status is nonzero if one of the files could
+not be compiled.
+
+<file> ... <fileN>
+-
+
+   Positional arguments are files to compile.  If "-" is the only
+   parameter, the list of files is taken from standard input.
+
+-q, --quiet
+
+   Suppress errors output.
+
+Alterado na versão 3.2: Added support for "-".
+
+Alterado na versão 3.10: Added support for "-q".
+
+Ver também:
+
+  Módulo "compileall"
+     Utilitários para compilar todos os arquivos fontes Python em uma
+     árvore de diretórios.

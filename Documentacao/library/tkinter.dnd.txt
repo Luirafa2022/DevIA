@@ -1,0 +1,72 @@
+"tkinter.dnd" --- Suporte para arrastar e soltar
+************************************************
+
+**Código-fonte:** Lib/tkinter/dnd.py
+
+======================================================================
+
+Nota:
+
+  Isto é experimental e deverá ser descontinuado quando for
+  substituído pelo Tk DND.
+
+O módulo "tkinter.dnd" fornece suporte de arrastar e soltar para
+objetos dentro de uma única aplicação, dentro da mesma janela ou entre
+janelas. Para permitir que um objeto seja arrastado, você deve criar
+uma associação de evento para ele que inicie o processo de arrastar e
+soltar. Normalmente, você associa um evento ButtonPress a uma função
+de retorno que você escreve (consulte Ligações e Eventos). A função
+deve chamar "dnd_start()", onde 'source' é o objeto a ser arrastado e
+'event' é o evento que invocou a chamada (o argumento para sua função
+de retorno).
+
+A seleção de um objeto de destino ocorre da seguinte forma:
+
+1. Pesquisa de cima para baixo da área sob o mouse para o widget alvo
+
+   * O widget alvo deve ter um atributo chamável *dnd_accept*
+
+   * Se *dnd_accept* não estiver presente ou retornar None, a pesquisa
+     vai para o widget pai
+
+   * Se nenhum widget de destino for encontrado, o objeto alvo é None
+
+2. Chamada para *<old_target>.dnd_leave(source, event)*
+
+3. Chamada para *<new_target>.dnd_enter(source, event)*
+
+4. Chamada para *<target>.dnd_commit(source, event)* para notificar
+   que soltou
+
+5. Chamada para *<source>.dnd_end(target, event)* para sinalizar o fim
+   do arrastar e soltar
+
+class tkinter.dnd.DndHandler(source, event)
+
+   A classe *DndHandler* trata de eventos de arrastar e soltar que
+   rastreiam eventos Motion e ButtonRelease na raiz do widget de
+   evento.
+
+   cancel(event=None)
+
+      Cancela o processo de arrastar e soltar.
+
+   finish(event, commit=0)
+
+      Executa o fim das funções de arrastar e soltar.
+
+   on_motion(event)
+
+      Inspeciona a área abaixo do mouse para objetos alvos enquanto o
+      arrasto é executado.
+
+   on_release(event)
+
+      Sinaliza o fim do arrasto quando o padrão de liberação for
+      acionado.
+
+tkinter.dnd.dnd_start(source, event)
+
+   Função de fábrica para processo de arrastar e soltar.
+
+Ver também: Ligações e Eventos

@@ -1,0 +1,738 @@
+"urllib.parse" --- Analisa URLs para componentes
+************************************************
+
+**Código-fonte:** Lib/urllib/parse.py
+
+======================================================================
+
+Este módulo define uma interface padrão para quebrar strings de
+Uniform Resource Locator (URL) em componentes (esquema de
+endereçamento, local de rede, caminho etc.), para combinar os
+componentes de volta em uma string de URL e para converter uma "URL
+relativo" em uma URL absoluta dado uma "URL base".
+
+The module has been designed to match the internet RFC on Relative
+Uniform Resource Locators. It supports the following URL schemes:
+"file", "ftp", "gopher", "hdl", "http", "https", "imap", "mailto",
+"mms", "news", "nntp", "prospero", "rsync", "rtsp", "rtsps", "rtspu",
+"sftp", "shttp", "sip", "sips", "snews", "svn", "svn+ssh", "telnet",
+"wais", "ws", "wss".
+
+O módulo "urllib.parse" define funções que se enquadram em duas
+grandes categorias: análise de URL e colocação de aspas na URL. Eles
+são abordados em detalhes nas seções a seguir.
+
+
+Análise de URL
+==============
+
+As funções de análise de URL se concentram na divisão de uma string de
+URL em seus componentes ou na combinação de componentes de URL em uma
+string de URL.
+
+urllib.parse.urlparse(urlstring, scheme='', allow_fragments=True)
+
+   Analisa uma URL em seis componentes, retornando uma *tupla nomeada*
+   de 6 itens. Isso corresponde à estrutura geral de uma URL:
+   "scheme://netloc/path;parameters?query#fragment". Cada item da
+   tupla é uma string, possivelmente vazia. Os componentes não são
+   divididos em partes menores (por exemplo, o netloc, ou local da
+   rede, é uma única string) e escapes % não são expandidos. Os
+   delimitadores conforme mostrado acima não fazem parte do resultado,
+   exceto por uma barra inicial no componente *path*, que é retido se
+   estiver presente. Por exemplo:
+
+      >>> from urllib.parse import urlparse
+      >>> urlparse("scheme://netloc/path;parameters?query#fragment")
+      ParseResult(scheme='scheme', netloc='netloc', path='/path;parameters', params='',
+                  query='query', fragment='fragment')
+      >>> o = urlparse("http://docs.python.org:80/3/library/urllib.parse.html?"
+      ...              "highlight=params#url-parsing")
+      >>> o
+      ParseResult(scheme='http', netloc='docs.python.org:80',
+                  path='/3/library/urllib.parse.html', params='',
+                  query='highlight=params', fragment='url-parsing')
+      >>> o.scheme
+      'http'
+      >>> o.netloc
+      'docs.python.org:80'
+      >>> o.hostname
+      'docs.python.org'
+      >>> o.port
+      80
+      >>> o._replace(fragment="").geturl()
+      'http://docs.python.org:80/3/library/urllib.parse.html?highlight=params'
+
+   Seguindo as especificações de sintaxe em **RFC 1808**, o urlparse
+   reconhece um netloc apenas se for introduzido apropriadamente por
+   '//'. Caso contrário, presume-se que a entrada seja uma URL
+   relativa e, portanto, comece com um componente de caminho.
+
+      >>> from urllib.parse import urlparse
+      >>> urlparse('//www.cwi.nl:80/%7Eguido/Python.html')
+      ParseResult(scheme='', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+                  params='', query='', fragment='')
+      >>> urlparse('www.cwi.nl/%7Eguido/Python.html')
+      ParseResult(scheme='', netloc='', path='www.cwi.nl/%7Eguido/Python.html',
+                  params='', query='', fragment='')
+      >>> urlparse('help/Python.html')
+      ParseResult(scheme='', netloc='', path='help/Python.html', params='',
+                  query='', fragment='')
+
+   O argumento *scheme* fornece o esquema de endereçamento padrão, a
+   ser usado apenas se o URL não especificar um. Deve ser do mesmo
+   tipo (texto ou bytes) que *urlstring*, exceto que o valor padrão
+   "''" é sempre permitido e é automaticamente convertido para "b''"
+   se apropriado.
+
+   Se o argumento *allow_fragments* for falso, os identificadores de
+   fragmento não serão reconhecidos. Em vez disso, eles são analisados
+   como parte do caminho, parâmetros ou componente de consulta, e
+   "fragment" é definido como a string vazia no valor de retorno.
+
+   O valor de retorno é uma *tupla nomeada*, o que significa que seus
+   itens podem ser acessados por índice ou como atributos nomeados,
+   que são:
+
+   +--------------------+---------+---------------------------+--------------------------+
+   | Atributo           | Índice  | Valor                     | Valor, se não presente   |
+   |====================|=========|===========================|==========================|
+   | "scheme"           | 0       | Especificador do esquema  | parâmetro *scheme*       |
+   |                    |         | da URL                    |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "netloc"           | 1       | Parte da localização na   | string vazia             |
+   |                    |         | rede                      |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "path"             | 2       | Caminho hierárquico       | string vazia             |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "params"           | 3       | Parâmetros para o último  | string vazia             |
+   |                    |         | elemento de caminho       |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "query"            | 4       | Componente da consulta    | string vazia             |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "fragment"         | 5       | Identificador do          | string vazia             |
+   |                    |         | fragmento                 |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "username"         |         | Nome do usuário           | "None"                   |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "password"         |         | Senha                     | "None"                   |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "hostname"         |         | Nome de máquina (em       | "None"                   |
+   |                    |         | minúsculo)                |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+   | "port"             |         | Número da porta como      | "None"                   |
+   |                    |         | inteiro, se presente      |                          |
+   +--------------------+---------+---------------------------+--------------------------+
+
+   Ler o atributo "port" irá levantar uma "ValueError" se uma porta
+   inválida for especificada no URL. Veja a seção Structured Parse
+   Results para mais informações sobre o objeto de resultado.
+
+   Colchetes sem correspondência no atributo "netloc" levantará uma
+   "ValueError".
+
+   Caracteres no atributo "netloc" que se decompõem sob a normalização
+   NFKC (como usado pela codificação IDNA) em qualquer um dos "/",
+   "?", "#", "@" ou ":" vai levantar uma "ValueError". Se a URL for
+   decomposta antes da análise, nenhum erro será levantado.
+
+   Como é o caso com todas as tuplas nomeadas, a subclasse tem alguns
+   métodos e atributos adicionais que são particularmente úteis. Um
+   desses métodos é "_replace()". O método "_replace()" retornará um
+   novo objeto ParseResult substituindo os campos especificados por
+   novos valores.
+
+      >>> from urllib.parse import urlparse
+      >>> u = urlparse('//www.cwi.nl:80/%7Eguido/Python.html')
+      >>> u
+      ParseResult(scheme='', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+                  params='', query='', fragment='')
+      >>> u._replace(scheme='http')
+      ParseResult(scheme='http', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+                  params='', query='', fragment='')
+
+   Aviso:
+
+     "urlparse()" does not perform validation.  See URL parsing
+     security for details.
+
+   Alterado na versão 3.2: Adicionados recursos de análise de URL
+   IPv6.
+
+   Alterado na versão 3.3: The fragment is now parsed for all URL
+   schemes (unless *allow_fragment* is false), in accordance with
+   **RFC 3986**.  Previously, an allowlist of schemes that support
+   fragments existed.
+
+   Alterado na versão 3.6: Números de porta fora do intervalo agora
+   levantam "ValueError", em vez de retornar "None".
+
+   Alterado na versão 3.8: Os caracteres que afetam a análise de
+   netloc sob normalização NFKC agora levantarão "ValueError".
+
+urllib.parse.parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace', max_num_fields=None, separator='&')
+
+   Analisa uma string de consulta fornecida como um argumento de
+   string (dados do tipo *application/x-www-form-urlencoded*). Os
+   dados são retornados como um dicionário. As chaves de dicionário
+   são os nomes de variáveis de consulta exclusivos e os valores são
+   listas de valores para cada nome.
+
+   O argumento opcional *keep_blank_values* é um sinalizador que
+   indica se os valores em branco em consultas codificadas por
+   porcentagem devem ser tratados como strings em branco. Um valor
+   verdadeiro indica que os espaços em branco devem ser mantidos como
+   strings em branco. O valor falso padrão indica que os valores em
+   branco devem ser ignorados e tratados como se não tivessem sido
+   incluídos.
+
+   O argumento opcional *strict_parsing* é um sinalizador que indica o
+   que fazer com os erros de análise. Se falsO (o padrão), os erros
+   são ignorados silenciosamente. Se verdadeiro, os erros levantam uma
+   exceção "ValueError".
+
+   Os parâmetros opcionais *encoding* e *errors* especificam como
+   decodificar sequências codificadas em porcentagem em caracteres
+   Unicode, conforme aceito pelo método "bytes.decode()".
+
+   O argumento opcional *max_num_fields* é o número máximo de campos a
+   serem lidos. Se definido, então levanta um "ValueError" se houver
+   mais de *max_num_fields* campos lidos.
+
+   O argumento opcional *separador* é o símbolo a ser usado para
+   separar os argumentos da consulta. O padrão é "&".
+
+   Use a função "urllib.parse.urlencode()" (com o parâmetro "doseq"
+   definido como "True") para converter esses dicionários em strings
+   de consulta.
+
+   Alterado na versão 3.2: Adicionado os parâmetros *encoding* e
+   *errors*.
+
+   Alterado na versão 3.8: Adicionado o parâmetro *max_num_fields*.
+
+   Alterado na versão 3.10: Added *separator* parameter with the
+   default value of "&". Python versions earlier than Python 3.10
+   allowed using both ";" and "&" as query parameter separator. This
+   has been changed to allow only a single separator key, with "&" as
+   the default separator.
+
+urllib.parse.parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace', max_num_fields=None, separator='&')
+
+   Parse a query string given as a string argument (data of type
+   *application/x-www-form-urlencoded*).  Data are returned as a list
+   of name, value pairs.
+
+   O argumento opcional *keep_blank_values* é um sinalizador que
+   indica se os valores em branco em consultas codificadas por
+   porcentagem devem ser tratados como strings em branco. Um valor
+   verdadeiro indica que os espaços em branco devem ser mantidos como
+   strings em branco. O valor falso padrão indica que os valores em
+   branco devem ser ignorados e tratados como se não tivessem sido
+   incluídos.
+
+   O argumento opcional *strict_parsing* é um sinalizador que indica o
+   que fazer com os erros de análise. Se falsO (o padrão), os erros
+   são ignorados silenciosamente. Se verdadeiro, os erros levantam uma
+   exceção "ValueError".
+
+   Os parâmetros opcionais *encoding* e *errors* especificam como
+   decodificar sequências codificadas em porcentagem em caracteres
+   Unicode, conforme aceito pelo método "bytes.decode()".
+
+   O argumento opcional *max_num_fields* é o número máximo de campos a
+   serem lidos. Se definido, então levanta um "ValueError" se houver
+   mais de *max_num_fields* campos lidos.
+
+   O argumento opcional *separador* é o símbolo a ser usado para
+   separar os argumentos da consulta. O padrão é "&".
+
+   Use the "urllib.parse.urlencode()" function to convert such lists
+   of pairs into query strings.
+
+   Alterado na versão 3.2: Adicionado os parâmetros *encoding* e
+   *errors*.
+
+   Alterado na versão 3.8: Adicionado o parâmetro *max_num_fields*.
+
+   Alterado na versão 3.10: Added *separator* parameter with the
+   default value of "&". Python versions earlier than Python 3.10
+   allowed using both ";" and "&" as query parameter separator. This
+   has been changed to allow only a single separator key, with "&" as
+   the default separator.
+
+urllib.parse.urlunparse(parts)
+
+   Construct a URL from a tuple as returned by "urlparse()". The
+   *parts* argument can be any six-item iterable. This may result in a
+   slightly different, but equivalent URL, if the URL that was parsed
+   originally had unnecessary delimiters (for example, a "?" with an
+   empty query; the RFC states that these are equivalent).
+
+urllib.parse.urlsplit(urlstring, scheme='', allow_fragments=True)
+
+   This is similar to "urlparse()", but does not split the params from
+   the URL. This should generally be used instead of "urlparse()" if
+   the more recent URL syntax allowing parameters to be applied to
+   each segment of the *path* portion of the URL (see **RFC 2396**) is
+   wanted.  A separate function is needed to separate the path
+   segments and parameters.  This function returns a 5-item *named
+   tuple*:
+
+      (addressing scheme, network location, path, query, fragment identifier).
+
+   The return value is a *named tuple*, its items can be accessed by
+   index or as named attributes:
+
+   +--------------------+---------+---------------------------+------------------------+
+   | Atributo           | Índice  | Valor                     | Valor, se não presente |
+   |====================|=========|===========================|========================|
+   | "scheme"           | 0       | Especificador do esquema  | parâmetro *scheme*     |
+   |                    |         | da URL                    |                        |
+   +--------------------+---------+---------------------------+------------------------+
+   | "netloc"           | 1       | Parte da localização na   | string vazia           |
+   |                    |         | rede                      |                        |
+   +--------------------+---------+---------------------------+------------------------+
+   | "path"             | 2       | Caminho hierárquico       | string vazia           |
+   +--------------------+---------+---------------------------+------------------------+
+   | "query"            | 3       | Componente da consulta    | string vazia           |
+   +--------------------+---------+---------------------------+------------------------+
+   | "fragment"         | 4       | Identificador do          | string vazia           |
+   |                    |         | fragmento                 |                        |
+   +--------------------+---------+---------------------------+------------------------+
+   | "username"         |         | Nome do usuário           | "None"                 |
+   +--------------------+---------+---------------------------+------------------------+
+   | "password"         |         | Senha                     | "None"                 |
+   +--------------------+---------+---------------------------+------------------------+
+   | "hostname"         |         | Nome de máquina (em       | "None"                 |
+   |                    |         | minúsculo)                |                        |
+   +--------------------+---------+---------------------------+------------------------+
+   | "port"             |         | Número da porta como      | "None"                 |
+   |                    |         | inteiro, se presente      |                        |
+   +--------------------+---------+---------------------------+------------------------+
+
+   Ler o atributo "port" irá levantar uma "ValueError" se uma porta
+   inválida for especificada no URL. Veja a seção Structured Parse
+   Results para mais informações sobre o objeto de resultado.
+
+   Colchetes sem correspondência no atributo "netloc" levantará uma
+   "ValueError".
+
+   Caracteres no atributo "netloc" que se decompõem sob a normalização
+   NFKC (como usado pela codificação IDNA) em qualquer um dos "/",
+   "?", "#", "@" ou ":" vai levantar uma "ValueError". Se a URL for
+   decomposta antes da análise, nenhum erro será levantado.
+
+   Following some of the WHATWG spec that updates RFC 3986, leading C0
+   control and space characters are stripped from the URL. "\n", "\r"
+   and tab "\t" characters are removed from the URL at any position.
+
+   Aviso:
+
+     "urlsplit()" does not perform validation.  See URL parsing
+     security for details.
+
+   Alterado na versão 3.6: Números de porta fora do intervalo agora
+   levantam "ValueError", em vez de retornar "None".
+
+   Alterado na versão 3.8: Os caracteres que afetam a análise de
+   netloc sob normalização NFKC agora levantarão "ValueError".
+
+   Alterado na versão 3.10: ASCII newline and tab characters are
+   stripped from the URL.
+
+   Alterado na versão 3.12: Leading WHATWG C0 control and space
+   characters are stripped from the URL.
+
+urllib.parse.urlunsplit(parts)
+
+   Combine the elements of a tuple as returned by "urlsplit()" into a
+   complete URL as a string. The *parts* argument can be any five-item
+   iterable. This may result in a slightly different, but equivalent
+   URL, if the URL that was parsed originally had unnecessary
+   delimiters (for example, a ? with an empty query; the RFC states
+   that these are equivalent).
+
+urllib.parse.urljoin(base, url, allow_fragments=True)
+
+   Construct a full ("absolute") URL by combining a "base URL"
+   (*base*) with another URL (*url*).  Informally, this uses
+   components of the base URL, in particular the addressing scheme,
+   the network location and (part of) the path, to provide missing
+   components in the relative URL.  For example:
+
+   >>> from urllib.parse import urljoin
+   >>> urljoin('http://www.cwi.nl/%7Eguido/Python.html', 'FAQ.html')
+   'http://www.cwi.nl/%7Eguido/FAQ.html'
+
+   The *allow_fragments* argument has the same meaning and default as
+   for "urlparse()".
+
+   Nota:
+
+     If *url* is an absolute URL (that is, it starts with "//" or
+     "scheme://"), the *url*'s hostname and/or scheme will be present
+     in the result.  For example:
+
+        >>> urljoin('http://www.cwi.nl/%7Eguido/Python.html',
+        ...         '//www.python.org/%7Eguido')
+        'http://www.python.org/%7Eguido'
+
+     If you do not want that behavior, preprocess the *url* with
+     "urlsplit()" and "urlunsplit()", removing possible *scheme* and
+     *netloc* parts.
+
+   Alterado na versão 3.5: Behavior updated to match the semantics
+   defined in **RFC 3986**.
+
+urllib.parse.urldefrag(url)
+
+   If *url* contains a fragment identifier, return a modified version
+   of *url* with no fragment identifier, and the fragment identifier
+   as a separate string.  If there is no fragment identifier in *url*,
+   return *url* unmodified and an empty string.
+
+   The return value is a *named tuple*, its items can be accessed by
+   index or as named attributes:
+
+   +--------------------+---------+---------------------------+------------------------+
+   | Atributo           | Índice  | Valor                     | Valor, se não presente |
+   |====================|=========|===========================|========================|
+   | "url"              | 0       | URL with no fragment      | string vazia           |
+   +--------------------+---------+---------------------------+------------------------+
+   | "fragment"         | 1       | Identificador do          | string vazia           |
+   |                    |         | fragmento                 |                        |
+   +--------------------+---------+---------------------------+------------------------+
+
+   See section Structured Parse Results for more information on the
+   result object.
+
+   Alterado na versão 3.2: Result is a structured object rather than a
+   simple 2-tuple.
+
+urllib.parse.unwrap(url)
+
+   Extract the url from a wrapped URL (that is, a string formatted as
+   "<URL:scheme://host/path>", "<scheme://host/path>",
+   "URL:scheme://host/path" or "scheme://host/path"). If *url* is not
+   a wrapped URL, it is returned without changes.
+
+
+URL parsing security
+====================
+
+The "urlsplit()" and "urlparse()" APIs do not perform **validation**
+of inputs.  They may not raise errors on inputs that other
+applications consider invalid.  They may also succeed on some inputs
+that might not be considered URLs elsewhere.  Their purpose is for
+practical functionality rather than purity.
+
+Instead of raising an exception on unusual input, they may instead
+return some component parts as empty strings. Or components may
+contain more than perhaps they should.
+
+We recommend that users of these APIs where the values may be used
+anywhere with security implications code defensively. Do some
+verification within your code before trusting a returned component
+part.  Does that "scheme" make sense?  Is that a sensible "path"?  Is
+there anything strange about that "hostname"?  etc.
+
+What constitutes a URL is not universally well defined.  Different
+applications have different needs and desired constraints.  For
+instance the living WHATWG spec describes what user facing web clients
+such as a web browser require. While **RFC 3986** is more general.
+These functions incorporate some aspects of both, but cannot be
+claimed compliant with either.  The APIs and existing user code with
+expectations on specific behaviors predate both standards leading us
+to be very cautious about making API behavior changes.
+
+
+Analisando bytes codificados em ASCII
+=====================================
+
+The URL parsing functions were originally designed to operate on
+character strings only. In practice, it is useful to be able to
+manipulate properly quoted and encoded URLs as sequences of ASCII
+bytes. Accordingly, the URL parsing functions in this module all
+operate on "bytes" and "bytearray" objects in addition to "str"
+objects.
+
+If "str" data is passed in, the result will also contain only "str"
+data. If "bytes" or "bytearray" data is passed in, the result will
+contain only "bytes" data.
+
+Attempting to mix "str" data with "bytes" or "bytearray" in a single
+function call will result in a "TypeError" being raised, while
+attempting to pass in non-ASCII byte values will trigger
+"UnicodeDecodeError".
+
+To support easier conversion of result objects between "str" and
+"bytes", all return values from URL parsing functions provide either
+an "encode()" method (when the result contains "str" data) or a
+"decode()" method (when the result contains "bytes" data). The
+signatures of these methods match those of the corresponding "str" and
+"bytes" methods (except that the default encoding is "'ascii'" rather
+than "'utf-8'"). Each produces a value of a corresponding type that
+contains either "bytes" data (for "encode()" methods) or "str" data
+(for "decode()" methods).
+
+Applications that need to operate on potentially improperly quoted
+URLs that may contain non-ASCII data will need to do their own
+decoding from bytes to characters before invoking the URL parsing
+methods.
+
+The behaviour described in this section applies only to the URL
+parsing functions. The URL quoting functions use their own rules when
+producing or consuming byte sequences as detailed in the documentation
+of the individual URL quoting functions.
+
+Alterado na versão 3.2: URL parsing functions now accept ASCII encoded
+byte sequences
+
+
+Structured Parse Results
+========================
+
+The result objects from the "urlparse()", "urlsplit()"  and
+"urldefrag()" functions are subclasses of the "tuple" type. These
+subclasses add the attributes listed in the documentation for those
+functions, the encoding and decoding support described in the previous
+section, as well as an additional method:
+
+urllib.parse.SplitResult.geturl()
+
+   Return the re-combined version of the original URL as a string.
+   This may differ from the original URL in that the scheme may be
+   normalized to lower case and empty components may be dropped.
+   Specifically, empty parameters, queries, and fragment identifiers
+   will be removed.
+
+   For "urldefrag()" results, only empty fragment identifiers will be
+   removed. For "urlsplit()" and "urlparse()" results, all noted
+   changes will be made to the URL returned by this method.
+
+   The result of this method remains unchanged if passed back through
+   the original parsing function:
+
+   >>> from urllib.parse import urlsplit
+   >>> url = 'HTTP://www.Python.org/doc/#'
+   >>> r1 = urlsplit(url)
+   >>> r1.geturl()
+   'http://www.Python.org/doc/'
+   >>> r2 = urlsplit(r1.geturl())
+   >>> r2.geturl()
+   'http://www.Python.org/doc/'
+
+The following classes provide the implementations of the structured
+parse results when operating on "str" objects:
+
+class urllib.parse.DefragResult(url, fragment)
+
+   Concrete class for "urldefrag()" results containing "str" data. The
+   "encode()" method returns a "DefragResultBytes" instance.
+
+   Novo na versão 3.2.
+
+class urllib.parse.ParseResult(scheme, netloc, path, params, query, fragment)
+
+   Concrete class for "urlparse()" results containing "str" data. The
+   "encode()" method returns a "ParseResultBytes" instance.
+
+class urllib.parse.SplitResult(scheme, netloc, path, query, fragment)
+
+   Concrete class for "urlsplit()" results containing "str" data. The
+   "encode()" method returns a "SplitResultBytes" instance.
+
+The following classes provide the implementations of the parse results
+when operating on "bytes" or "bytearray" objects:
+
+class urllib.parse.DefragResultBytes(url, fragment)
+
+   Concrete class for "urldefrag()" results containing "bytes" data.
+   The "decode()" method returns a "DefragResult" instance.
+
+   Novo na versão 3.2.
+
+class urllib.parse.ParseResultBytes(scheme, netloc, path, params, query, fragment)
+
+   Concrete class for "urlparse()" results containing "bytes" data.
+   The "decode()" method returns a "ParseResult" instance.
+
+   Novo na versão 3.2.
+
+class urllib.parse.SplitResultBytes(scheme, netloc, path, query, fragment)
+
+   Concrete class for "urlsplit()" results containing "bytes" data.
+   The "decode()" method returns a "SplitResult" instance.
+
+   Novo na versão 3.2.
+
+
+URL Quoting
+===========
+
+The URL quoting functions focus on taking program data and making it
+safe for use as URL components by quoting special characters and
+appropriately encoding non-ASCII text. They also support reversing
+these operations to recreate the original data from the contents of a
+URL component if that task isn't already covered by the URL parsing
+functions above.
+
+urllib.parse.quote(string, safe='/', encoding=None, errors=None)
+
+   Replace special characters in *string* using the "%*xx*" escape.
+   Letters, digits, and the characters "'_.-~'" are never quoted. By
+   default, this function is intended for quoting the path section of
+   a URL. The optional *safe* parameter specifies additional ASCII
+   characters that should not be quoted --- its default value is
+   "'/'".
+
+   *string* may be either a "str" or a "bytes" object.
+
+   Alterado na versão 3.7: Moved from **RFC 2396** to **RFC 3986** for
+   quoting URL strings. "~" is now included in the set of unreserved
+   characters.
+
+   The optional *encoding* and *errors* parameters specify how to deal
+   with non-ASCII characters, as accepted by the "str.encode()"
+   method. *encoding* defaults to "'utf-8'". *errors* defaults to
+   "'strict'", meaning unsupported characters raise a
+   "UnicodeEncodeError". *encoding* and *errors* must not be supplied
+   if *string* is a "bytes", or a "TypeError" is raised.
+
+   Note that "quote(string, safe, encoding, errors)" is equivalent to
+   "quote_from_bytes(string.encode(encoding, errors), safe)".
+
+   Example: "quote('/El Niño/')" yields "'/El%20Ni%C3%B1o/'".
+
+urllib.parse.quote_plus(string, safe='', encoding=None, errors=None)
+
+   Like "quote()", but also replace spaces with plus signs, as
+   required for quoting HTML form values when building up a query
+   string to go into a URL. Plus signs in the original string are
+   escaped unless they are included in *safe*.  It also does not have
+   *safe* default to "'/'".
+
+   Example: "quote_plus('/El Niño/')" yields "'%2FEl+Ni%C3%B1o%2F'".
+
+urllib.parse.quote_from_bytes(bytes, safe='/')
+
+   Like "quote()", but accepts a "bytes" object rather than a "str",
+   and does not perform string-to-bytes encoding.
+
+   Example: "quote_from_bytes(b'a&\xef')" yields "'a%26%EF'".
+
+urllib.parse.unquote(string, encoding='utf-8', errors='replace')
+
+   Replace "%*xx*" escapes with their single-character equivalent. The
+   optional *encoding* and *errors* parameters specify how to decode
+   percent-encoded sequences into Unicode characters, as accepted by
+   the "bytes.decode()" method.
+
+   *string* may be either a "str" or a "bytes" object.
+
+   *encoding* defaults to "'utf-8'". *errors* defaults to "'replace'",
+   meaning invalid sequences are replaced by a placeholder character.
+
+   Example: "unquote('/El%20Ni%C3%B1o/')" yields "'/El Niño/'".
+
+   Alterado na versão 3.9: *string* parameter supports bytes and str
+   objects (previously only str).
+
+urllib.parse.unquote_plus(string, encoding='utf-8', errors='replace')
+
+   Like "unquote()", but also replace plus signs with spaces, as
+   required for unquoting HTML form values.
+
+   *string* must be a "str".
+
+   Example: "unquote_plus('/El+Ni%C3%B1o/')" yields "'/El Niño/'".
+
+urllib.parse.unquote_to_bytes(string)
+
+   Replace "%*xx*" escapes with their single-octet equivalent, and
+   return a "bytes" object.
+
+   *string* may be either a "str" or a "bytes" object.
+
+   If it is a "str", unescaped non-ASCII characters in *string* are
+   encoded into UTF-8 bytes.
+
+   Example: "unquote_to_bytes('a%26%EF')" yields "b'a&\xef'".
+
+urllib.parse.urlencode(query, doseq=False, safe='', encoding=None, errors=None, quote_via=quote_plus)
+
+   Convert a mapping object or a sequence of two-element tuples, which
+   may contain "str" or "bytes" objects, to a percent-encoded ASCII
+   text string.  If the resultant string is to be used as a *data* for
+   POST operation with the "urlopen()" function, then it should be
+   encoded to bytes, otherwise it would result in a "TypeError".
+
+   The resulting string is a series of "key=value" pairs separated by
+   "'&'" characters, where both *key* and *value* are quoted using the
+   *quote_via* function.  By default, "quote_plus()" is used to quote
+   the values, which means spaces are quoted as a "'+'" character and
+   '/' characters are encoded as "%2F", which follows the standard for
+   GET requests ("application/x-www-form-urlencoded").  An alternate
+   function that can be passed as *quote_via* is "quote()", which will
+   encode spaces as "%20" and not encode '/' characters.  For maximum
+   control of what is quoted, use "quote" and specify a value for
+   *safe*.
+
+   When a sequence of two-element tuples is used as the *query*
+   argument, the first element of each tuple is a key and the second
+   is a value. The value element in itself can be a sequence and in
+   that case, if the optional parameter *doseq* evaluates to "True",
+   individual "key=value" pairs separated by "'&'" are generated for
+   each element of the value sequence for the key.  The order of
+   parameters in the encoded string will match the order of parameter
+   tuples in the sequence.
+
+   The *safe*, *encoding*, and *errors* parameters are passed down to
+   *quote_via* (the *encoding* and *errors* parameters are only passed
+   when a query element is a "str").
+
+   To reverse this encoding process, "parse_qs()" and "parse_qsl()"
+   are provided in this module to parse query strings into Python data
+   structures.
+
+   Refer to urllib examples to find out how the
+   "urllib.parse.urlencode()" method can be used for generating the
+   query string of a URL or data for a POST request.
+
+   Alterado na versão 3.2: *query* supports bytes and string objects.
+
+   Alterado na versão 3.5: Added the *quote_via* parameter.
+
+Ver também:
+
+  WHATWG -  URL Living standard
+     Working Group for the URL Standard that defines URLs, domains, IP
+     addresses, the application/x-www-form-urlencoded format, and
+     their API.
+
+  **RFC 3986** - Uniform Resource Identifiers
+     This is the current standard (STD66). Any changes to urllib.parse
+     module should conform to this. Certain deviations could be
+     observed, which are mostly for backward compatibility purposes
+     and for certain de-facto parsing requirements as commonly
+     observed in major browsers.
+
+  **RFC 2732** - Format for Literal IPv6 Addresses in URL's.
+     This specifies the parsing requirements of IPv6 URLs.
+
+  **RFC 2396** - Uniform Resource Identifiers (URI): Generic Syntax
+     Document describing the generic syntactic requirements for both
+     Uniform Resource Names (URNs) and Uniform Resource Locators
+     (URLs).
+
+  **RFC 2368** - The mailto URL scheme.
+     Parsing requirements for mailto URL schemes.
+
+  **RFC 1808** - Relative Uniform Resource Locators
+     This Request For Comments includes the rules for joining an
+     absolute and a relative URL, including a fair number of "Abnormal
+     Examples" which govern the treatment of border cases.
+
+  **RFC 1738** - Uniform Resource Locators (URL)
+     This specifies the formal syntax and semantics of absolute URLs.

@@ -1,0 +1,208 @@
+Serviços de Tempo de Execução Python
+************************************
+
+Os módulos descritos neste capítulo oferecem uma ampla gama de
+serviços relacionados ao interpretador Python e sua interação com o
+ambiente. Aqui está uma visão geral:
+
+* "sys" --- Parâmetros e funções específicas do sistema
+
+* "sys.monitoring" --- Monitoramento de eventos de execução
+
+  * Identificadores de ferramenta
+
+    * Registro e uso de ferramentas
+
+  * Eventos
+
+    * Eventos locais
+
+    * Eventos auxiliares
+
+    * Outros eventos
+
+    * O evento STOP_ITERATION
+
+  * Ativação e desativação de eventos
+
+    * Definir eventos globalmente
+
+    * Eventos por objeto código
+
+    * Desativação de eventos
+
+  * Registro de funções de retorno de chamada
+
+    * Argumentos da função de retorno de chamada
+
+* "sysconfig" --- Fornece acesso às informações de configuração do
+  Python
+
+  * Variáveis de configuração
+
+  * Caminhos de instalação
+
+  * Esquema de usuário
+
+    * "posix_user"
+
+    * "nt_user"
+
+    * "osx_framework_user"
+
+  * Esquema de home
+
+    * "posix_home"
+
+  * Esquema de prefixo
+
+    * "posix_prefix"
+
+    * "nt"
+
+  * Funções de caminho de instalação
+
+  * Outras funções
+
+  * Usando o módulo "sysconfig" como um Script
+
+* "builtins" --- Objetos embutidos
+
+* "__main__" --- Ambiente de código principal
+
+  * "__name__ == '__main__'"
+
+    * O que é o "ambiente de código principal"?
+
+    * Uso idiomático
+
+    * Considerações sobre pacotes
+
+  * "__main__.py" em pacotes Python
+
+    * Uso idiomático
+
+  * "import __main__"
+
+* "warnings" --- Controle de avisos
+
+  * Categorias de avisos
+
+  * O filtro de avisos
+
+    * Describing Warning Filters
+
+    * Filtro de avisos padrão
+
+    * Overriding the default filter
+
+  * Temporarily Suppressing Warnings
+
+  * Testing Warnings
+
+  * Updating Code For New Versions of Dependencies
+
+  * Available Functions
+
+  * Available Context Managers
+
+* "dataclasses" --- Data Classes
+
+  * Conteúdo do módulo
+
+  * Processamento pós-inicialização
+
+  * Variáveis de classe
+
+  * Variáveis de inicialização apenas
+
+  * Frozen instances
+
+  * Herança
+
+  * Re-ordering of keyword-only parameters in "__init__()"
+
+  * Funções padrão de fábrica
+
+  * Valores padrão mutáveis
+
+  * Descriptor-typed fields
+
+* "contextlib" --- Utilities for "with"-statement contexts
+
+  * Utilitários
+
+  * Exemplos e receitas
+
+    * Supporting a variable number of context managers
+
+    * Catching exceptions from "__enter__" methods
+
+    * Cleaning up in an "__enter__" implementation
+
+    * Replacing any use of "try-finally" and flag variables
+
+    * Using a context manager as a function decorator
+
+  * Single use, reusable and reentrant context managers
+
+    * Reentrant context managers
+
+    * Gerenciadores de contexto reutilizáveis
+
+* "abc" --- Classes Base Abstratas
+
+* "atexit" --- Manipuladores de Saída
+
+  * Exemplo do "atexit"
+
+* "traceback" --- Print or retrieve a stack traceback
+
+  * "TracebackException" Objects
+
+  * "StackSummary" Objects
+
+  * "FrameSummary" Objects
+
+  * Exemplos de Traceback
+
+* "__future__" --- Definições de instruções de future
+
+  * Conteúdo do módulo
+
+* "gc" --- Interface para o coletor de lixo
+
+* "inspect" --- Inspeciona objetos vivos
+
+  * Tipos e membros
+
+  * Retrieving source code
+
+  * Introspecting callables with the Signature object
+
+  * Classes e funções
+
+  * A pilha to interpretador
+
+  * Fetching attributes statically
+
+  * Current State of Generators, Coroutines, and Asynchronous
+    Generators
+
+  * Code Objects Bit Flags
+
+  * Buffer flags
+
+  * Interface de linha de comando
+
+* "site" --- Gancho de configuração específico do site
+
+  * "sitecustomize"
+
+  * "usercustomize"
+
+  * Configuração Readline
+
+  * Conteúdo do módulo
+
+  * Interface de linha de comando

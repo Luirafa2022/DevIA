@@ -1,0 +1,114 @@
+"tomllib" --- Analisa arquivos TOML
+***********************************
+
+Novo na versão 3.11.
+
+**Código-fonte:** Lib/tomllib
+
+======================================================================
+
+Este módulo fornece uma interface para analisar TOML (Tom's Obvious
+Minimal Language, https://toml.io). Este módulo não oferece suporte
+para escrever TOML.
+
+Ver também:
+
+  O pacote Tomli-W é um editor de TOML que pode ser usado em conjunto
+  com este módulo, fornecendo uma API de escrita familiar aos usuários
+  da biblioteca padrão: módulos "marshal" e "picle".
+
+Ver também:
+
+  O pacote TOML Kit é uma biblioteca TOML de preservação de estilo com
+  capacidade de leitura e escrita. É uma substituição recomendada para
+  este módulo para edição de arquivos TOML já existentes.
+
+Este módulo define as seguintes funções:
+
+tomllib.load(fp, /, *, parse_float=float)
+
+   Lê um arquivo TOML. O primeiro argumento deve ser um objeto arquivo
+   binário e legível. Retorna um "dict". Converte tipos TOML para
+   Python usando esta tabela de conversão.
+
+   *parse_float* será chamado com a string de cada ponto flutuante
+   (float) do TOML a ser decodificado. Por padrão, isso é equivalente
+   a "float(num_str)". Isso pode ser usado para usar outro tipo de
+   dados ou analisador sintático para pontos flutuantes do TOML (por
+   exemplo, "decimal.Decimal"). O chamável não deve retornar um "dict"
+   ou um "list", senão uma exceção "ValueError" é levantada.
+
+   Uma exceção "TOMLDecodeError" será levantada no caso de um
+   documento TOML inválido.
+
+tomllib.loads(s, /, *, parse_float=float)
+
+   Carrega TOML de um objeto "str". Retorna um "dict". Converte tipos
+   TOML para Python usando esta tabela de conversão. O argumento
+   *parse_float* tem o mesmo significado que em "load()".
+
+   Uma exceção "TOMLDecodeError" será levantada no caso de um
+   documento TOML inválido.
+
+As seguintes exceções estão disponíveis:
+
+exception tomllib.TOMLDecodeError
+
+   Subclasse de "ValueError".
+
+
+Exemplos
+========
+
+Analisando um arquivo TOML:
+
+   import tomllib
+
+   with open("pyproject.toml", "rb") as f:
+       data = tomllib.load(f)
+
+Analisando uma string TOML:
+
+   import tomllib
+
+   toml_str = """
+   python-version = "3.11.0"
+   python-implementation = "CPython"
+   """
+
+   data = tomllib.loads(toml_str)
+
+
+Tabela de conversão
+===================
+
++--------------------+----------------------------------------------------------------------------------------+
+| TOML               | Python                                                                                 |
+|====================|========================================================================================|
+| documento TOML     | dict                                                                                   |
++--------------------+----------------------------------------------------------------------------------------+
+| string             | str                                                                                    |
++--------------------+----------------------------------------------------------------------------------------+
+| inteiro            | int                                                                                    |
++--------------------+----------------------------------------------------------------------------------------+
+| ponto flutuante    | ponto flutuante (configurável com *parse_float*)                                       |
++--------------------+----------------------------------------------------------------------------------------+
+| booleano           | bool                                                                                   |
++--------------------+----------------------------------------------------------------------------------------+
+| deslocamento de    | datetime.datetime (atributo de "tzinfo" definido com uma instância de                  |
+| data-hora          | "datetime.timezone")                                                                   |
++--------------------+----------------------------------------------------------------------------------------+
+| data-hora local    | datetime.datetime (atributo de "tzinfo" definido com "None")                           |
++--------------------+----------------------------------------------------------------------------------------+
+| data local         | datetime.date                                                                          |
++--------------------+----------------------------------------------------------------------------------------+
+| hora local         | datetime.time                                                                          |
++--------------------+----------------------------------------------------------------------------------------+
+| array              | lista                                                                                  |
++--------------------+----------------------------------------------------------------------------------------+
+| tabela             | dict                                                                                   |
++--------------------+----------------------------------------------------------------------------------------+
+| tabela inline      | dict                                                                                   |
++--------------------+----------------------------------------------------------------------------------------+
+| array de tabelas   | lista de dicionários                                                                   |
++--------------------+----------------------------------------------------------------------------------------+

@@ -1,0 +1,47 @@
+Módulos Substituídos
+********************
+
+Os módulos descritos neste capítulo são descontinuados e mantidos
+apenas para compatibilidade com versões anteriores. Eles foram
+substituídos por outros módulos.
+
+* "aifc" --- Lê e escreve arquivos AIFF e AIFC
+
+* "audioop" --- Manipulando dados de áudio original
+
+* "cgi" --- Suporte a Common Gateway Interface
+
+* "cgitb" --- Gerenciador de traceback (situação da pilha de execução)
+  para roteiros de CGI
+
+* "chunk" --- Read IFF chunked data
+
+* "crypt" --- Function to check Unix passwords
+
+* "imghdr" --- Determina o tipo de uma imagem
+
+* "mailcap" --- Mailcap file handling
+
+* "msilib" --- Read and write Microsoft Installer files
+
+* "nis" --- Interface para NIS da Sun (Yellow Pages)
+
+* "nntplib" --- NNTP protocol client
+
+* "optparse" --- Parser for command line options
+
+* "ossaudiodev" --- Access to OSS-compatible audio devices
+
+* "pipes" --- Interface to shell pipelines
+
+* "sndhdr" --- Determina o tipo de arquivos de som
+
+* "spwd" --- O banco de dados de senhas shadow
+
+* "sunau" --- Lê e escreve arquivos AU da Sun
+
+* "telnetlib" --- cliente Telnet
+
+* "uu" --- Codifica e decodifica arquivos uuencode
+
+* "xdrlib" --- Encode and decode XDR data

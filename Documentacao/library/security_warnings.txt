@@ -1,0 +1,46 @@
+Considerações de segurança
+**************************
+
+Os módulos a seguir têm considerações de segurança específicas:
+
+* "base64": considerações de segurança do base64 na **RFC 4648**
+
+* "cgi": considerações de segurança de CGI
+
+* "hashlib": todos os construtores usam um argumento somente-nomeado
+  "usedforsecurity", desativando algoritmos conhecidos não seguros e
+  bloqueados
+
+* "http.server" não é adequado para uso em produção, implementando
+  apenas verificações básicas de segurança. Veja as considerações de
+  segurança.
+
+* "logging": configuração do Logging usa eval()
+
+* "multiprocessing": Connection.recv() usa pickle
+
+* "pickle": Restringindo globais no pickle
+
+* "random" não deve ser usado para o propósito de segurança. Em vez
+  disso, use "secrets"
+
+* "shelve": shelve é baseado no pickle e, portanto, inadequado para
+  lidar com fontes não confiáveis
+
+* "ssl": Considerações de segurança de SSL/TLS
+
+* "subprocess": Considerações de segurança de Subprocess
+
+* "tempfile": mktemp foi descontinuado em razão de vulnerabilidade de
+  condições de corrida
+
+* "xml": Vulnerabilidades no XML
+
+* "zipfile": Arquivos .zip preparados de forma maliciosa podem causar
+  esgotamento do volume do disco
+
+A opção de linha de comando "-I" pode ser usada para executar o Python
+no modo isolado. Quando não pode ser usado, a opção "-P" ou a variável
+de ambiente "PYTHONSAFEPATH" pode ser usada para não preceder um
+caminho potencialmente inseguro para "sys.path" como o diretório
+atual, o diretório do script ou uma string vazia.

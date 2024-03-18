@@ -1,0 +1,146 @@
+"syslog" --- Rotinas da biblioteca syslog do Unix
+*************************************************
+
+======================================================================
+
+Este módulo fornece uma interface para as rotinas da biblioteca
+"syslog" do Unix. Consulte as páginas de manual do Unix para uma
+descrição detalhada do recurso "syslog".
+
+Disponibilidade: Unix, não Emscripten, não WASI.
+
+Este módulo é uma camada para a família de rotinas "syslog" do
+sistema. Uma biblioteca Python pura que pode se comunicar com um
+servidor syslog está disponível no módulo "logging.handlers" como
+"SysLogHandler".
+
+O módulo define as seguintes funções:
+
+syslog.syslog(message)
+syslog.syslog(priority, message)
+
+   Envia a string *message* para o registrador do sistema. Uma nova
+   linha final é adicionada, se necessário. Cada mensagem é marcada
+   com uma prioridade composta por um *facility* e um *level*. O
+   argumento opcional *priority*, cujo padrão é "LOG_INFO", determina
+   a prioridade da mensagem. Se a facilidade não está codificada em
+   *priority* usando o OU lógico ("LOG_INFO | LOG_USER"), o valor dado
+   na chamada "openlog()" é usado.
+
+   Se "openlog()" não foi chamado antes da chamada para "syslog()",
+   "openlog()" será chamado sem argumentos.
+
+   Levanta um evento de auditoria "syslog.syslog" com argumentos
+   "priority", "message".
+
+   Alterado na versão 3.2: Nas versões anteriores, "openlog()" não
+   seria chamado automaticamente se não fosse chamado antes da chamada
+   para "syslog()", adiando a implementação do syslog para chamar
+   "openlog()".
+
+   Alterado na versão 3.12: Esta função é restrita em
+   subinterpretadores. (Apenas o código que executa em vários
+   interpretadores é afetado e a restrição não é relevante para a
+   maioria dos usuários.) "openlog()" deve ser chamado no
+   interpretador principal antes de "syslog()" pode ser usado em um
+   subinterpretador. Caso contrário, vai levantar "RuntimeError".
+
+syslog.openlog([ident[, logoption[, facility]]])
+
+   As opções de log das chamadas subsequentes "syslog()" podem ser
+   definidas chamando "openlog()". "syslog()" irá chamar "openlog()"
+   sem argumentos se o log não estiver aberto no momento.
+
+   O argumento nomeado opcional *ident* é uma string que é prefixada a
+   cada mensagem, e o padrão é "sys.argv[0]" com os componentes do
+   caminho inicial removidos. O argumento nomeado opcional *logoption*
+   (o padrão é 0) é um campo de bits -- veja abaixo os valores
+   possíveis para combinar. O argumento nomeado opcional *facility* (o
+   padrão é "LOG_USER") define o recurso padrão para mensagens que não
+   possuem um recurso explicitamente codificado.
+
+   Levanta um evento de auditoria "syslog.openlog" com argumentos
+   "ident", "logoption", "facility".
+
+   Alterado na versão 3.2: Nas versões anteriores, os argumentos
+   nomeados não eram permitidos e *ident* era obrigatório.
+
+   Alterado na versão 3.12: Esta função é restrita em
+   subinterpretadores. (Apenas o código que executa em vários
+   interpretadores é afetado e a restrição não é relevante para a
+   maioria dos usuários.) Isso deve ser chamado no interpretador
+   principal.Vai levantar "RuntimeError" se chamado em um
+   subinterpretador.
+
+syslog.closelog()
+
+   Redefine os valores do módulo syslog e chama a biblioteca de
+   sistema "closelog()".
+
+   Isso faz com que o módulo se comporte como quando importado
+   inicialmente. Por exemplo, "openlog()" será chamado na primeira
+   chamada "syslog()" (se "openlog()" ainda não foi chamado), e
+   *ident* e outro "openlog()" os parâmetros são redefinidos para os
+   padrões.
+
+   Levanta um evento de auditoria "syslog.closelog" com nenhum
+   argumento.
+
+   Alterado na versão 3.12: Esta função é restrita em
+   subinterpretadores. (Apenas o código que executa em vários
+   interpretadores é afetado e a restrição não é relevante para a
+   maioria dos usuários.) Isso deve ser chamado no interpretador
+   principal.Vai levantar "RuntimeError" se chamado em um
+   subinterpretador.
+
+syslog.setlogmask(maskpri)
+
+   Define a máscara de prioridade como *maskpri* e retorna o valor da
+   máscara anterior. Chamadas para "syslog()" com um nível de
+   prioridade não definido em *maskpri* são ignoradas. O padrão é
+   registrar todas as prioridades. A função "LOG_MASK(pri)" calcula a
+   máscara para a prioridade individual *pri*. A função
+   "LOG_UPTO(pri)" calcula a máscara para todas as prioridades até e
+   incluindo *pri*.
+
+   Levanta um evento de auditoria "syslog.setlogmask" com argumento
+   "maskpri".
+
+O módulo define as seguintes constantes:
+
+Níveis de prioridade (alto a baixo):
+   "LOG_EMERG", "LOG_ALERT", "LOG_CRIT", "LOG_ERR", "LOG_WARNING",
+   "LOG_NOTICE", "LOG_INFO", "LOG_DEBUG".
+
+Facilidades:
+   "LOG_KERN", "LOG_USER", "LOG_MAIL", "LOG_DAEMON", "LOG_AUTH",
+   "LOG_LPR", "LOG_NEWS", "LOG_UUCP", "LOG_CRON", "LOG_SYSLOG",
+   "LOG_LOCAL0" até "LOG_LOCAL7" e, se definido em "<syslog.h>",
+   "LOG_AUTHPRIV".
+
+Opções de log:
+   "LOG_PID", "LOG_CONS", "LOG_NDELAY" e, se definido em "<syslog.h>",
+   "LOG_ODELAY", "LOG_NOWAIT" e "LOG_PERROR".
+
+
+Exemplos
+========
+
+
+Exemplo simples
+---------------
+
+Um conjunto simples de exemplos:
+
+   import syslog
+
+   syslog.syslog('Processing started')
+   if error:
+       syslog.syslog(syslog.LOG_ERR, 'Processing started')
+
+Um exemplo de configuração de algumas opções de log, isso incluiria o
+ID do processo nas mensagens registradas e escreveria as mensagens no
+recurso de destino usado para o log de correio:
+
+   syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_MAIL)
+   syslog.syslog('E-mail processing initiated...')

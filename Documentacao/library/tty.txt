@@ -1,0 +1,72 @@
+"tty" --- Funções de controle de terminal
+*****************************************
+
+**Código-fonte:** Lib/tty.py
+
+======================================================================
+
+O módulo "tty" define funções para colocar o tty nos modos de cbreak e
+não tratados (raw).
+
+Disponibilidade: Unix.
+
+Por requerer o módulo "termios", ele funcionará apenas no Unix.
+
+O módulo "tty" define as seguintes funções:
+
+tty.cfmakeraw(mode)
+
+   Converte a lista de atributos de tty *mode*, que é uma lista como a
+   retornada por "termios.tcgetattr()", para a de um tty em modo raw.
+
+   Novo na versão 3.12.
+
+tty.cfmakecbreak(mode)
+
+   Converte a lista de atributos de tty *mode*, que é uma lista como a
+   retornada por "termios.tcgetattr()", para a de um tty em modo
+   cbreak.
+
+   This clears the "ECHO" and "ICANON" local mode flags in *mode* as
+   well as setting the minimum input to 1 byte with no delay.
+
+   Novo na versão 3.12.
+
+   Alterado na versão 3.12.2: The "ICRNL" flag is no longer cleared.
+   This matches Linux and macOS "stty cbreak" behavior and what
+   "setcbreak()" historically did.
+
+tty.setraw(fd, when=termios.TCSAFLUSH)
+
+   Altera o modo do descritor de arquivo *fd* para raw. Se *when* for
+   omitido, o padrão é "termios.TCSAFLUSH", e é passado para
+   "termios.tcsetattr()". O retorna valor de "termios.tcgetattr()" é
+   salvo antes de definir *fd* para o modo raw; esse valor é
+   retornado.
+
+   Alterado na versão 3.12: O valor de retorno agora é o atributos
+   originais do tty, em vez de None.
+
+tty.setcbreak(fd, when=termios.TCSAFLUSH)
+
+   Altera o modo de descritor de arquivo *fd* para cbreak. Se *when*
+   for omitido, o padrão é "termios.TCSAFLUSH", e é passado para
+   "termios.tcsetattr()". O retorna valor de "termios.tcgetattr()" é
+   salvo antes de definir *fd* para o modo cbreak; esse valor é
+   retornado.
+
+   This clears the "ECHO" and "ICANON" local mode flags as well as
+   setting the minimum input to 1 byte with no delay.
+
+   Alterado na versão 3.12: O valor de retorno agora é o atributos
+   originais do tty, em vez de None.
+
+   Alterado na versão 3.12.2: The "ICRNL" flag is no longer cleared.
+   This restores the behavior of Python 3.11 and earlier as well as
+   matching what Linux, macOS, & BSDs describe in their "stty(1)" man
+   pages regarding cbreak mode.
+
+Ver também:
+
+  Módulo "termios"
+     Interface baixo nível para controle de terminal.

@@ -1,0 +1,187 @@
+"runpy" --- Localizando e executando módulos Python
+***************************************************
+
+**Código-fonte:** Lib/runpy.py
+
+======================================================================
+
+O módulo "runpy" é usado para localizar e executar módulos Python sem
+importá-los primeiro. Seu principal uso é implementar a opção de linha
+de comando "-m" que permite que os scripts sejam localizados usando o
+espaço de nomes do módulo Python em vez do sistema de arquivos.
+
+Observe que este *não* é um módulo isolado - todo o código é executado
+no processo atual, e quaisquer efeitos colaterais (como importações em
+cache de outros módulos) irão permanecer em vigor após o retorno da
+função.
+
+Além disso, quaisquer funções e classes definidas pelo código
+executado não têm garantia de funcionar corretamente após o retorno de
+uma função "runpy". Se essa limitação não for aceitável para um
+determinado caso de uso, "importlib" provavelmente será uma escolha
+mais adequada do que este módulo.
+
+O módulo "runpy" fornece duas funções:
+
+runpy.run_module(mod_name, init_globals=None, run_name=None, alter_sys=False)
+
+   Execute o código do módulo especificado e retorne o dicionário
+   global do módulo resultante. O código do módulo é localizado
+   primeiro usando o mecanismo de importação padrão (consulte **PEP
+   302** para detalhes) e então executado em um novo espaço de nomes
+   de módulo.
+
+   The *mod_name* argument should be an absolute module name. If the
+   module name refers to a package rather than a normal module, then
+   that package is imported and the "__main__" submodule within that
+   package is then executed and the resulting module globals
+   dictionary returned.
+
+   O argumento opcional de dicionário *init_globals* pode ser usado
+   para preencher previamente o dicionário global do módulo antes do
+   código ser executado. O dicionário fornecido não será alterado. Se
+   qualquer uma das variáveis globais especiais abaixo for definida no
+   dicionário fornecido, estas definições serão substituídas por
+   "run_module()".
+
+   As variáveis globais especiais "__name__", "__spec__", "__file__",
+   "__cached__", "__loader__" e "__package__" são definidas no
+   dicionário global antes que o código do módulo seja executado
+   (Observe que este é um conjunto mínimo de variáveis - outras
+   variáveis podem ser definidas implicitamente como um detalhe de
+   implementação do interpretador).
+
+   "__name__" é definido como *run_name* se este argumento opcional
+   não for "None", para "mod_name + '.__main__'" se o módulo nomeado
+   for um pacote e para o argumento *mod_name* caso contrário .
+
+   "__spec__" será definido adequadamente para o modo *efetivamente*
+   importado (isto é, "__spec__.name" vai sempre ser *mod_name* ou
+   "mod_name + '.__main__", nunca *run_name*).
+
+   "__file__", "__cached__", "__loader__" e "__package__" são
+   definidos como normal com base na especificação do módulo.
+
+   Se o argumento *alter_sys* for fornecido e for avaliado como
+   "True", então "sys.argv[0]" será atualizado com o valor de
+   "__file__" e "sys.modules[__name__]" é atualizado com um objeto de
+   módulo temporário para o módulo que está sendo executado. Ambos
+   "sys.argv[0]" e "sys.modules[__name__]" são restaurados para seus
+   valores originais antes que a função retorne.
+
+   Note that this manipulation of "sys" is not thread-safe. Other
+   threads may see the partially initialised module, as well as the
+   altered list of arguments. It is recommended that the "sys" module
+   be left alone when invoking this function from threaded code.
+
+   Ver também:
+
+     A opção "-m" oferece funcionalidade equivalente na linha de
+     comando.
+
+   Alterado na versão 3.1: Added ability to execute packages by
+   looking for a "__main__" submodule.
+
+   Alterado na versão 3.2: Adicionada a variável global "__cached__"
+   (veja **PEP 3147**).
+
+   Alterado na versão 3.4: Atualizado para aproveitar o recurso de
+   especificação do módulo adicionado por **PEP 451**. Isso permite
+   que "__cached__" seja configurado corretamente para módulos
+   executados desta forma, assim como garante que o nome real do
+   módulo esteja sempre acessível como "__spec__.name".
+
+   Alterado na versão 3.12: A definição de "__cached__", "__loader__"
+   e "__package__" foi descontinuada. Veja "ModuleSpec" para
+   alternativas.
+
+runpy.run_path(path_name, init_globals=None, run_name=None)
+
+   Execute the code at the named filesystem location and return the
+   resulting module globals dictionary. As with a script name supplied
+   to the CPython command line, the supplied path may refer to a
+   Python source file, a compiled bytecode file or a valid "sys.path"
+   entry containing a "__main__" module (e.g. a zipfile containing a
+   top-level "__main__.py" file).
+
+   For a simple script, the specified code is simply executed in a
+   fresh module namespace. For a valid "sys.path" entry (typically a
+   zipfile or directory), the entry is first added to the beginning of
+   "sys.path". The function then looks for and executes a "__main__"
+   module using the updated path. Note that there is no special
+   protection against invoking an existing "__main__" entry located
+   elsewhere on "sys.path" if there is no such module at the specified
+   location.
+
+   O argumento opcional de dicionário *init_globals* pode ser usado
+   para preencher previamente o dicionário global do módulo antes do
+   código ser executado. O dicionário fornecido não será alterado. Se
+   qualquer uma das variáveis globais especiais abaixo for definida no
+   dicionário fornecido, estas definições serão substituídas por
+   "run_path()".
+
+   As variáveis globais especiais "__name__", "__spec__", "__file__",
+   "__cached__", "__loader__" e "__package__" são definidas no
+   dicionário global antes que o código do módulo seja executado
+   (Observe que este é um conjunto mínimo de variáveis - outras
+   variáveis podem ser definidas implicitamente como um detalhe de
+   implementação do interpretador).
+
+   "__name__" é definido como *run_name* se este argumento opcional
+   não for "None" e como "'<run_path>'" caso contrário.
+
+   Se o caminho fornecido referenciar diretamente um arquivo de script
+   (seja como fonte ou como bytecode pré-compilado), então "__file__"
+   será definido para o caminho fornecido e "__spec__", "__cached__",
+   "__loader__" e "__package__" serão todos definidos como "None".
+
+   If the supplied path is a reference to a valid "sys.path" entry,
+   then "__spec__" will be set appropriately for the imported
+   "__main__" module (that is, "__spec__.name" will always be
+   "__main__"). "__file__", "__cached__", "__loader__" and
+   "__package__" will be set as normal based on the module spec.
+
+   A number of alterations are also made to the "sys" module. Firstly,
+   "sys.path" may be altered as described above. "sys.argv[0]" is
+   updated with the value of "path_name" and "sys.modules[__name__]"
+   is updated with a temporary module object for the module being
+   executed. All modifications to items in "sys" are reverted before
+   the function returns.
+
+   Note that, unlike "run_module()", the alterations made to "sys" are
+   not optional in this function as these adjustments are essential to
+   allowing the execution of "sys.path" entries. As the thread-safety
+   limitations still apply, use of this function in threaded code
+   should be either serialised with the import lock or delegated to a
+   separate process.
+
+   Ver também:
+
+     Opções de interface para funcionalidade equivalente na linha de
+     comando ("python path/to/script").
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.4: Updated to take advantage of the module
+   spec feature added by **PEP 451**. This allows "__cached__" to be
+   set correctly in the case where "__main__" is imported from a valid
+   "sys.path" entry rather than being executed directly.
+
+   Alterado na versão 3.12: A definição de "__cached__", "__loader__"
+   e "__package__" foi descontinuada.
+
+Ver também:
+
+  **PEP 338** -- Executando módulos como scripts
+     PEP escrita e implementada por Nick Coghlan.
+
+  **PEP 366** -- Importações relativas explícitas do módulo principal
+     PEP escrita e implementada por Nick Coghlan.
+
+  **PEP 451** -- Um tipo ModuleSpec para o sistema de importação
+     PEP escrita e implementada por Eric Snow
+
+  Linha de comando e ambiente - Detalhes da linha de comando do
+  CPython
+
+  A função "importlib.import_module()"

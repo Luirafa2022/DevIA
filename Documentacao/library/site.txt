@@ -1,0 +1,259 @@
+"site" --- Gancho de configuração específico do site
+****************************************************
+
+**Código-fonte:** Lib/site.py
+
+======================================================================
+
+**Este módulo é importado automaticamente durante a inicialização.** A
+importação automática pode ser suprimida usando a opção "-S" do
+interpretador.
+
+Importing this module will append site-specific paths to the module
+search path and add a few builtins, unless "-S" was used.  In that
+case, this module can be safely imported with no automatic
+modifications to the module search path or additions to the builtins.
+To explicitly trigger the usual site-specific additions, call the
+"main()" function.
+
+Alterado na versão 3.3: A importação do módulo usado para acionar a
+manipulação de caminhos, mesmo ao usar "-S".
+
+It starts by constructing up to four directories from a head and a
+tail part. For the head part, it uses "sys.prefix" and
+"sys.exec_prefix"; empty heads are skipped.  For the tail part, it
+uses the empty string and then "lib/site-packages" (on Windows) or
+"lib/python*X.Y*/site-packages" (on Unix and macOS).  For each of the
+distinct head-tail combinations, it sees if it refers to an existing
+directory, and if so, adds it to "sys.path" and also inspects the
+newly added path for configuration files.
+
+Alterado na versão 3.5: Suporte para o diretório "site-python" foi
+removido.
+
+Se um arquivo chamado "pyvenv.cfg" existir em um diretório acima,
+então sys.executable, sys.prefix e sys.exec_prefix serão configurados
+para esse diretório e também será verificado se há site-packages
+(sys.base_prefix e sys.base_exec_prefix será sempre os prefixos
+"reais" da instalação do Python). Se "pyvenv.cfg" (um arquivo de
+configuração de autoinicialização) contiver a chave "include-system-
+site-packages" configurada para algo diferente de "true" (sem
+distinção entre maiúsculas e minúsculas), os prefixos no nível do
+sistema não serão pesquisados quanto ao site-packages; caso contrário,
+eles irão.
+
+Um arquivo de configuração de caminho é aquele cujo nome tem o formato
+"*name*.pth" e que existe em um dos quatro diretórios mencionados
+acima; seu conteúdo são itens adicionais (um por linha) a serem
+adicionados ao "sys.path". Itens inexistentes nunca são adicionados ao
+"sys.path" e não é verificado se o item se refere a um diretório, e
+não a um arquivo. Nenhum item é adicionado ao "sys.path" mais de uma
+vez. Linhas em branco e linhas iniciadas com "#" são ignoradas. Linhas
+iniciadas com "import" (seguidas de espaço ou tabulação) são
+executadas.
+
+Nota:
+
+  Uma linha executável em um arquivo ".pth" é executada a cada
+  inicialização do Python, independentemente de um módulo em
+  particular ser realmente usado. Seu impacto deve, portanto, ser
+  reduzido ao mínimo. O objetivo principal das linhas executáveis ​​é
+  tornar o(s) módulo(s) correspondente(s) importável (carregar ganchos
+  de importação de terceiros, ajustar "PATH" etc). Qualquer outra
+  inicialização deve ser feita na importação real de um módulo, se e
+  quando isso acontecer. Limitar um fragmento de código a uma única
+  linha é uma medida deliberada para desencorajar colocar qualquer
+  coisa mais complexa aqui.
+
+Por exemplo, suponha que "sys.prefix" e "sys.exec_prefix" sejam
+definidos com "/usr/local". A biblioteca Python X.Y é instalado em
+"/usr/local/lib/python*X.Y*". Suponha que isso tenha um subdiretório
+"/usr/local/lib/python*X.Y*/site-packages" com três subsubdiretórios,
+"foo", "bar" e "spam", e dois caminhos arquivos de configuração,
+"foo.pth" e "bar.pth".  Presuma que "foo.pth" contém o seguinte:
+
+   # foo package configuration
+
+   foo
+   bar
+   bletch
+
+e que "bar.pth" contém:
+
+   # bar package configuration
+
+   bar
+
+Em seguida, os seguintes diretórios específicos da versão são
+adicionados a "sys.path", nesta ordem:
+
+   /usr/local/lib/pythonX.Y/site-packages/bar
+   /usr/local/lib/pythonX.Y/site-packages/foo
+
+Observe que "bletch" é omitido porque não existe; o diretório "bar"
+precede o diretório "foo" porque "bar.pth" vem em ordem alfabética
+antes de "foo.pth"; e "spam" é omitido porque não é mencionado em
+nenhum dos arquivos de configuração de caminho.
+
+
+"sitecustomize"
+===============
+
+After these path manipulations, an attempt is made to import a module
+named "sitecustomize", which can perform arbitrary site-specific
+customizations. It is typically created by a system administrator in
+the site-packages directory.  If this import fails with an
+"ImportError" or its subclass exception, and the exception's "name"
+attribute equals to "'sitecustomize'", it is silently ignored.  If
+Python is started without output streams available, as with
+"pythonw.exe" on Windows (which is used by default to start IDLE),
+attempted output from "sitecustomize" is ignored.  Any other exception
+causes a silent and perhaps mysterious failure of the process.
+
+
+"usercustomize"
+===============
+
+After this, an attempt is made to import a module named
+"usercustomize", which can perform arbitrary user-specific
+customizations, if "ENABLE_USER_SITE" is true.  This file is intended
+to be created in the user site-packages directory (see below), which
+is part of "sys.path" unless disabled by "-s".  If this import fails
+with an "ImportError" or its subclass exception, and the exception's
+"name" attribute equals to "'usercustomize'", it is silently ignored.
+
+Note that for some non-Unix systems, "sys.prefix" and
+"sys.exec_prefix" are empty, and the path manipulations are skipped;
+however the import of "sitecustomize" and "usercustomize" is still
+attempted.
+
+
+Configuração Readline
+=====================
+
+On systems that support "readline", this module will also import and
+configure the "rlcompleter" module, if Python is started in
+interactive mode and without the "-S" option. The default behavior is
+enable tab-completion and to use "~/.python_history" as the history
+save file.  To disable it, delete (or override) the
+"sys.__interactivehook__" attribute in your "sitecustomize" or
+"usercustomize" module or your "PYTHONSTARTUP" file.
+
+Alterado na versão 3.4: Activation of rlcompleter and history was made
+automatic.
+
+
+Conteúdo do módulo
+==================
+
+site.PREFIXES
+
+   A list of prefixes for site-packages directories.
+
+site.ENABLE_USER_SITE
+
+   Flag showing the status of the user site-packages directory.
+   "True" means that it is enabled and was added to "sys.path".
+   "False" means that it was disabled by user request (with "-s" or
+   "PYTHONNOUSERSITE").  "None" means it was disabled for security
+   reasons (mismatch between user or group id and effective id) or by
+   an administrator.
+
+site.USER_SITE
+
+   Path to the user site-packages for the running Python.  Can be
+   "None" if "getusersitepackages()" hasn't been called yet.  Default
+   value is "~/.local/lib/python*X.Y*/site-packages" for UNIX and non-
+   framework macOS builds, "~/Library/Python/*X.Y*/lib/python/site-
+   packages" for macOS framework builds, and
+   "*%APPDATA%*\Python\Python*XY*\site-packages" on Windows.  This
+   directory is a site directory, which means that ".pth" files in it
+   will be processed.
+
+site.USER_BASE
+
+   Path to the base directory for the user site-packages.  Can be
+   "None" if "getuserbase()" hasn't been called yet.  Default value is
+   "~/.local" for UNIX and macOS non-framework builds,
+   "~/Library/Python/*X.Y*" for macOS framework builds, and
+   "*%APPDATA%*\Python" for Windows.  This value is used to compute
+   the installation directories for scripts, data files, Python
+   modules, etc. for the user installation scheme. See also
+   "PYTHONUSERBASE".
+
+site.main()
+
+   Adds all the standard site-specific directories to the module
+   search path.  This function is called automatically when this
+   module is imported, unless the Python interpreter was started with
+   the "-S" flag.
+
+   Alterado na versão 3.3: This function used to be called
+   unconditionally.
+
+site.addsitedir(sitedir, known_paths=None)
+
+   Add a directory to sys.path and process its ".pth" files.
+   Typically used in "sitecustomize" or "usercustomize" (see above).
+
+site.getsitepackages()
+
+   Return a list containing all global site-packages directories.
+
+   Novo na versão 3.2.
+
+site.getuserbase()
+
+   Return the path of the user base directory, "USER_BASE".  If it is
+   not initialized yet, this function will also set it, respecting
+   "PYTHONUSERBASE".
+
+   Novo na versão 3.2.
+
+site.getusersitepackages()
+
+   Return the path of the user-specific site-packages directory,
+   "USER_SITE".  If it is not initialized yet, this function will also
+   set it, respecting "USER_BASE".  To determine if the user-specific
+   site-packages was added to "sys.path" "ENABLE_USER_SITE" should be
+   used.
+
+   Novo na versão 3.2.
+
+
+Interface de linha de comando
+=============================
+
+The "site" module also provides a way to get the user directories from
+the command line:
+
+   $ python -m site --user-site
+   /home/user/.local/lib/python3.11/site-packages
+
+If it is called without arguments, it will print the contents of
+"sys.path" on the standard output, followed by the value of
+"USER_BASE" and whether the directory exists, then the same thing for
+"USER_SITE", and finally the value of "ENABLE_USER_SITE".
+
+--user-base
+
+   Print the path to the user base directory.
+
+--user-site
+
+   Print the path to the user site-packages directory.
+
+If both options are given, user base and user site will be printed
+(always in this order), separated by "os.pathsep".
+
+If any option is given, the script will exit with one of these values:
+"0" if the user site-packages directory is enabled, "1" if it was
+disabled by the user, "2" if it is disabled for security reasons or by
+an administrator, and a value greater than 2 if there is an error.
+
+Ver também:
+
+  * **PEP 370** -- Diretório site-packages por usuário.
+
+  * The initialization of the sys.path module search path -- The
+    initialization of "sys.path".

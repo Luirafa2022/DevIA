@@ -1,0 +1,869 @@
+"shutil" --- Operações de arquivo de alto nível
+***********************************************
+
+**Código-fonte:** Lib/shutil.py
+
+======================================================================
+
+O módulo "shutil" oferece várias operações de alto nível em arquivos e
+coleções de arquivos. Em particular, são fornecidas funções que
+possuem suporte a cópia e remoção de arquivos. Para operações em
+arquivos individuais, veja também o módulo "os".
+
+Aviso:
+
+  Mesmo as funções de cópia de arquivos de nível mais alto
+  ("shutil.copy()", "shutil.copy2()") não podem copiar todos os
+  metadados do arquivo.Nas plataformas POSIX, isso significa que o
+  proprietário e o grupo do arquivo são perdidos, bem como as ACLs. No
+  Mac OS, a bifurcação de recursos e outros metadados não são usados.
+  Isso significa que os recursos serão perdidos e o tipo de arquivo e
+  os códigos do criador não estarão corretos. No Windows, os
+  proprietários de arquivos, ACLs e fluxos de dados alternativos não
+  são copiados.
+
+
+Operações de diretório e arquivos
+=================================
+
+shutil.copyfileobj(fsrc, fdst[, length])
+
+   Copy the contents of the *file-like object* *fsrc* to the file-like
+   object *fdst*. The integer *length*, if given, is the buffer size.
+   In particular, a negative *length* value means to copy the data
+   without looping over the source data in chunks; by default the data
+   is read in chunks to avoid uncontrolled memory consumption. Note
+   that if the current file position of the *fsrc* object is not 0,
+   only the contents from the current file position to the end of the
+   file will be copied.
+
+shutil.copyfile(src, dst, *, follow_symlinks=True)
+
+   Copy the contents (no metadata) of the file named *src* to a file
+   named *dst* and return *dst* in the most efficient way possible.
+   *src* and *dst* are *path-like objects* or path names given as
+   strings.
+
+   *dst* deve ser o nome completo do arquivo de destino; veja "copy()"
+   para uma cópia que aceita um caminho de diretório de destino. Se
+   *src* e *dst* especificarem o mesmo arquivo, "SameFileError" será
+   levantada.
+
+   O local de destino deve ser gravável; caso contrário, uma exceção
+   "OSError" será levantada. Se o *dst* já existir, ele será
+   substituído. Arquivos especiais como dispositivos de caractere ou
+   bloco e encadeamentos (pipe) não podem ser copiados com esta
+   função.
+
+   Se *follow_symlinks* for falso e *src* for um link simbólico, um
+   novo link simbólico será criado em vez de copiar o arquivo *src*
+   para o qual o arquivo aponta.
+
+   Levanta um evento de auditoria "shutil.copyfile" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.3: "IOError" costumava ser levantada em vez de
+   "OSError". Adicionado argumento *follow_symlinks*. Agora retorna
+   *dst*.
+
+   Alterado na versão 3.4: Levanta "SameFileError" em vez de "Error".
+   Como a primeira é uma subclasse da última, essa alteração é
+   compatível com versões anteriores.
+
+   Alterado na versão 3.8: As chamadas de sistema de cópia rápida
+   específicas da plataforma podem ser usadas internamente para copiar
+   o arquivo com mais eficiência. Veja a seção Operações de cópia
+   eficientes dependentes da plataforma.
+
+exception shutil.SameFileError
+
+   Essa exceção é levantada se a origem e o destino em "copyfile()"
+   forem o mesmo arquivo.
+
+   Novo na versão 3.4.
+
+shutil.copymode(src, dst, *, follow_symlinks=True)
+
+   Copy the permission bits from *src* to *dst*.  The file contents,
+   owner, and group are unaffected.  *src* and *dst* are *path-like
+   objects* or path names given as strings. If *follow_symlinks* is
+   false, and both *src* and *dst* are symbolic links, "copymode()"
+   will attempt to modify the mode of *dst* itself (rather than the
+   file it points to).  This functionality is not available on every
+   platform; please see "copystat()" for more information.  If
+   "copymode()" cannot modify symbolic links on the local platform,
+   and it is asked to do so, it will do nothing and return.
+
+   Levanta um evento de auditoria "shutil.copymode" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.3: Adicionado argumento *follow_symlinks*.
+
+shutil.copystat(src, dst, *, follow_symlinks=True)
+
+   Copy the permission bits, last access time, last modification time,
+   and flags from *src* to *dst*.  On Linux, "copystat()" also copies
+   the "extended attributes" where possible.  The file contents,
+   owner, and group are unaffected.  *src* and *dst* are *path-like
+   objects* or path names given as strings.
+
+   Se *follow_symlinks* for falso e *src* e *dst* se referirem a links
+   simbólicos, "copystat()" operará nos próprios links simbólicos, e
+   não nos arquivos aos quais os links simbólicos se referem - lendo
+   as informações do link simbólico *src* e gravando as informações no
+   link simbólico *dst*.
+
+   Nota:
+
+     Nem todas as plataformas oferecem a capacidade de examinar e
+     modificar links simbólicos. O próprio Python pode dizer qual
+     funcionalidade está disponível localmente.
+
+     * Se "os.chmod in os.supports_follow_symlinks" for "True",
+       "copystat()" pode modificar os bits de permissão de um link
+       simbólico.
+
+     * Se "os.utime in os.supports_follow_symlinks" for "True",
+       "copystat()" pode modificar as horas da última modificação e do
+       último acesso de um link simbólico.
+
+     * Se "os.chflags in os.supports_follow_symlinks" for "True",
+       "copystat()" pode modificar os sinalizadores de um link
+       simbólico. ("os.chflags" não está disponível em todas as
+       plataformas.)
+
+     Nas plataformas em que algumas ou todas essas funcionalidades não
+     estão disponíveis, quando solicitado a modificar um link
+     simbólico, "copystat()" copiará tudo o que puder. "copystat()"
+     nunca retorna falha.Por favor, veja "os.supports_follow_symlinks"
+     para mais informações.
+
+   Levanta um evento de auditoria "shutil.copystat" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.3: Adicionado argumento *follow_symlinks* e
+   suporte a atributos estendidos do Linux.
+
+shutil.copy(src, dst, *, follow_symlinks=True)
+
+   Copies the file *src* to the file or directory *dst*.  *src* and
+   *dst* should be *path-like objects* or strings.  If *dst* specifies
+   a directory, the file will be copied into *dst* using the base
+   filename from *src*. If *dst* specifies a file that already exists,
+   it will be replaced. Returns the path to the newly created file.
+
+   Se *follow_symlinks* for falso e *src* for um link simbólico, *dst*
+   será criado como um link simbólico. Se *follow_symlinks* for
+   verdadeiro e *src* for um link simbólico, *dst* será uma cópia do
+   arquivo ao qual *src* se refere.
+
+   "copy()" copia os dados do arquivo e o modo de permissão do arquivo
+   (consulte "os.chmod()"). Outros metadados, como os tempos de
+   criação e modificação do arquivo, não são preservados. Para
+   preservar todos os metadados do arquivo do original, use "copy2()".
+
+   Levanta um evento de auditoria "shutil.copyfile" com argumentos
+   "src", "dst".
+
+   Levanta um evento de auditoria "shutil.copymode" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.3: Adicionado argumento *follow_symlinks*.
+   Agora retorna o caminho para o arquivo recém-criado.
+
+   Alterado na versão 3.8: As chamadas de sistema de cópia rápida
+   específicas da plataforma podem ser usadas internamente para copiar
+   o arquivo com mais eficiência. Veja a seção Operações de cópia
+   eficientes dependentes da plataforma.
+
+shutil.copy2(src, dst, *, follow_symlinks=True)
+
+   Idêntico a "copy()", exceto que "copy2()" também tenta preservar os
+   metadados do arquivo.
+
+   When *follow_symlinks* is false, and *src* is a symbolic link,
+   "copy2()" attempts to copy all metadata from the *src* symbolic
+   link to the newly created *dst* symbolic link. However, this
+   functionality is not available on all platforms. On platforms where
+   some or all of this functionality is unavailable, "copy2()" will
+   preserve all the metadata it can; "copy2()" never raises an
+   exception because it cannot preserve file metadata.
+
+   "copy2()" usa "copystat()" para copiar os metadados do arquivo. Por
+   favor, veja "copystat()" para obter mais informações sobre o
+   suporte da plataforma para modificar os metadados do link
+   simbólico.
+
+   Levanta um evento de auditoria "shutil.copyfile" com argumentos
+   "src", "dst".
+
+   Levanta um evento de auditoria "shutil.copystat" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.3: Adicionado argumento *follow_symlinks*,
+   tenta copiar também atributos estendidos do sistema de arquivos
+   (atualmente apenas no Linux). Agora retorna o caminho para o
+   arquivo recém-criado.
+
+   Alterado na versão 3.8: As chamadas de sistema de cópia rápida
+   específicas da plataforma podem ser usadas internamente para copiar
+   o arquivo com mais eficiência. Veja a seção Operações de cópia
+   eficientes dependentes da plataforma.
+
+shutil.ignore_patterns(*patterns)
+
+   Esta função de fábrica cria uma função que pode ser usada como um
+   chamável para o argumento *ignore* de "copytree()", ignorando
+   arquivos e diretórios que correspondem a um dos padrões *patterns*
+   de estilo glob fornecidos. Veja o exemplo abaixo.
+
+shutil.copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2, ignore_dangling_symlinks=False, dirs_exist_ok=False)
+
+   Recursively copy an entire directory tree rooted at *src* to a
+   directory named *dst* and return the destination directory.  All
+   intermediate directories needed to contain *dst* will also be
+   created by default.
+
+   Permissões e horas dos diretórios são copiados com "copystat()",
+   arquivos individuais são copiados usando "copy2()".
+
+   Se *symlinks* for verdadeiro, os links simbólicos na árvore de
+   origem são representados como links simbólicos na nova árvore e os
+   metadados dos links originais serão copiados na medida do permitido
+   pela plataforma; se falso ou omitido, o conteúdo e os metadados dos
+   arquivos vinculados são copiados para a nova árvore.
+
+   Quando *symlinks* for falso, se o arquivo apontado pelo link
+   simbólico não existir, uma exceção será adicionada na lista de
+   erros gerados em uma exceção "Error" no final do processo de cópia.
+   Você pode definir o sinalizador opcional *ignore_dangling_symlinks*
+   como true se desejar silenciar esta exceção. Observe que esta opção
+   não tem efeito em plataformas que não possuem suporte a
+   "os.symlink()".
+
+   Se *ignore* for fornecido, deve ser um chamável que receberá como
+   argumento o diretório que está sendo visitado por "copytree()", e
+   uma lista de seu conteúdo, retornada por "os.listdir()". Como
+   "copytree()" é chamada recursivamente, o chamável *ignore* será
+   chamado uma vez para cada diretório que é copiado. O chamável deve
+   retornar uma sequência de nomes de diretório e arquivo em relação
+   ao diretório atual (ou seja, um subconjunto dos itens em seu
+   segundo argumento); esses nomes serão ignorados no processo de
+   cópia. "ignore_patterns()" pode ser usado para criar um chamável
+   que ignore nomes com base em padrões de estilo glob.
+
+   Se uma ou mais exceções ocorrerem, uma "Error" é levantada com uma
+   lista dos motivos.
+
+   Se *copy_function* for fornecida, deverá ser um chamável que será
+   usado para copiar cada arquivo. Ele será chamado com o caminho de
+   origem e o caminho de destino como argumentos. Por padrão,
+   "copy2()" é usada, mas qualquer função que possua suporte à mesma
+   assinatura (como "copy()") pode ser usada.
+
+   If *dirs_exist_ok* is false (the default) and *dst* already exists,
+   a "FileExistsError" is raised. If *dirs_exist_ok* is true, the
+   copying operation will continue if it encounters existing
+   directories, and files within the *dst* tree will be overwritten by
+   corresponding files from the *src* tree.
+
+   Levanta um evento de auditoria "shutil.copytree" com argumentos
+   "src", "dst".
+
+   Alterado na versão 3.2: Added the *copy_function* argument to be
+   able to provide a custom copy function. Added the
+   *ignore_dangling_symlinks* argument to silence dangling symlinks
+   errors when *symlinks* is false.
+
+   Alterado na versão 3.3: Copia metadados quando *symlinks* for
+   falso. Agora, retorna *dst*.
+
+   Alterado na versão 3.8: As chamadas de sistema de cópia rápida
+   específicas da plataforma podem ser usadas internamente para copiar
+   o arquivo com mais eficiência. Veja a seção Operações de cópia
+   eficientes dependentes da plataforma.
+
+   Alterado na versão 3.8: Added the *dirs_exist_ok* parameter.
+
+shutil.rmtree(path, ignore_errors=False, onerror=None, *, onexc=None, dir_fd=None)
+
+   Delete an entire directory tree; *path* must point to a directory
+   (but not a symbolic link to a directory).  If *ignore_errors* is
+   true, errors resulting from failed removals will be ignored; if
+   false or omitted, such errors are handled by calling a handler
+   specified by *onexc* or *onerror* or, if both are omitted,
+   exceptions are propagated to the caller.
+
+   Esta função tem suporte a caminhos relativos para descritores de
+   diretório.
+
+   Nota:
+
+     Em plataformas que suportam as funções baseadas em descritores de
+     arquivo necessárias, uma versão resistente a ataques de links
+     simbólicos de "rmtree()" é usada por padrão. Em outras
+     plataformas, a implementação "rmtree()" é suscetível a um ataque
+     de link simbólico: dados o tempo e as circunstâncias apropriados,
+     os invasores podem manipular links simbólicos no sistema de
+     arquivos para excluir arquivos que eles não seriam capazes de
+     acessar de outra forma. Os aplicativos podem usar o atributo de
+     função "rmtree.avoids_symlink_attacks" para determinar qual caso
+     se aplica.
+
+   If *onexc* is provided, it must be a callable that accepts three
+   parameters: *function*, *path*, and *excinfo*.
+
+   The first parameter, *function*, is the function which raised the
+   exception; it depends on the platform and implementation.  The
+   second parameter, *path*, will be the path name passed to
+   *function*.  The third parameter, *excinfo*, is the exception that
+   was raised. Exceptions raised by *onexc* will not be caught.
+
+   The deprecated *onerror* is similar to *onexc*, except that the
+   third parameter it receives is the tuple returned from
+   "sys.exc_info()".
+
+   Raises an auditing event "shutil.rmtree" with arguments "path",
+   "dir_fd".
+
+   Alterado na versão 3.3: Adicionada uma versão resistente a ataques
+   de link simbólico que é usada automaticamente se a plataforma
+   suportar funções baseadas em descritor de arquivo.
+
+   Alterado na versão 3.8: No Windows, não excluirá mais o conteúdo de
+   uma junção de diretório antes de remover a junção.
+
+   Alterado na versão 3.11: O parâmetro *dir_fd*.
+
+   Alterado na versão 3.12: Added the *onexc* parameter, deprecated
+   *onerror*.
+
+   rmtree.avoids_symlink_attacks
+
+      Indica se a plataforma e implementação atuais fornecem uma
+      versão resistente a ataques de link simbólico de "rmtree()".
+      Atualmente, isso só é verdade para plataformas que suportam
+      funções de acesso ao diretório baseadas em descritor de arquivo.
+
+      Novo na versão 3.3.
+
+shutil.move(src, dst, copy_function=copy2)
+
+   Recursively move a file or directory (*src*) to another location
+   and return the destination.
+
+   If *dst* is an existing directory or a symlink to a directory, then
+   *src* is moved inside that directory. The destination path in that
+   directory must not already exist.
+
+   If *dst* already exists but is not a directory, it may be
+   overwritten depending on "os.rename()" semantics.
+
+   If the destination is on the current filesystem, then "os.rename()"
+   is used. Otherwise, *src* is copied to the destination using
+   *copy_function* and then removed.  In case of symlinks, a new
+   symlink pointing to the target of *src* will be created as the
+   destination and *src* will be removed.
+
+   If *copy_function* is given, it must be a callable that takes two
+   arguments, *src* and the destination, and will be used to copy
+   *src* to the destination if "os.rename()" cannot be used.  If the
+   source is a directory, "copytree()" is called, passing it the
+   *copy_function*. The default *copy_function* is "copy2()".  Using
+   "copy()" as the *copy_function* allows the move to succeed when it
+   is not possible to also copy the metadata, at the expense of not
+   copying any of the metadata.
+
+   Levanta um evento auditoria "shutil.move" com argumentos "src",
+   "dst".
+
+   Alterado na versão 3.3: Adicionada manipulação de links simbólicos
+   explícitos para sistemas de arquivos externos, adaptando-os ao
+   comportamento do GNU **mv**. Agora retorna *dst*.
+
+   Alterado na versão 3.5: Adicionado o argumento nomeado
+   *copy_function*.
+
+   Alterado na versão 3.8: As chamadas de sistema de cópia rápida
+   específicas da plataforma podem ser usadas internamente para copiar
+   o arquivo com mais eficiência. Veja a seção Operações de cópia
+   eficientes dependentes da plataforma.
+
+   Alterado na versão 3.9: Aceita um *objeto caminho ou similar* para
+   *src* e *dst*.
+
+shutil.disk_usage(path)
+
+   Retorna estatísticas de uso de disco sobre o caminho fornecido como
+   *tupla nomeada* com os atributos *total*, *used* e *free*, que são
+   a quantidade de espaço total, usado e livre, em bytes. *path* pode
+   ser um arquivo ou diretório.
+
+   Nota:
+
+     On Unix filesystems, *path* must point to a path within a
+     **mounted** filesystem partition. On those platforms, CPython
+     doesn't attempt to retrieve disk usage information from non-
+     mounted filesystems.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.8: No Windows, *path* pode agora ser um
+   arquivo ou diretório.
+
+   Disponibilidade: Unix, Windows.
+
+shutil.chown(path, user=None, group=None)
+
+   Altera o proprietário *usuário* e/ou *group* do *path* fornecido.
+
+   *user* pode ser um nome de usuário do sistema ou um uid; o mesmo se
+   aplica ao *group*. É necessário pelo menos um argumento.
+
+   Veja também "os.chown()", a função subjacente.
+
+   Levanta um evento de auditoria "shutil.chown" com argumentos
+   "path", "user", "group".
+
+   Disponibilidade: Unix.
+
+   Novo na versão 3.3.
+
+shutil.which(cmd, mode=os.F_OK | os.X_OK, path=None)
+
+   Retorna o caminho para um executável que seria executado se o *cmd*
+   fornecido fosse chamado. Se nenhum *cmd* for chamado, retorna
+   "None".
+
+   *mode* é uma máscara de permissão passada para "os.access()", por
+   padrão determinando se o arquivo existe e é executável.
+
+   When no *path* is specified, the results of "os.environ()" are
+   used, returning either the "PATH" value or a fallback of
+   "os.defpath".
+
+   On Windows, the current directory is prepended to the *path* if
+   *mode* does not include "os.X_OK". When the *mode* does include
+   "os.X_OK", the Windows API "NeedCurrentDirectoryForExePathW" will
+   be consulted to determine if the current directory should be
+   prepended to *path*. To avoid consulting the current working
+   directory for executables: set the environment variable
+   "NoDefaultCurrentDirectoryInExePath".
+
+   Also on Windows, the "PATHEXT" variable is used to resolve commands
+   that may not already include an extension. For example, if you call
+   "shutil.which("python")", "which()" will search "PATHEXT" to know
+   that it should look for "python.exe" within the *path* directories.
+   For example, on Windows:
+
+      >>> shutil.which("python")
+      'C:\\Python33\\python.EXE'
+
+   This is also applied when *cmd* is a path that contains a directory
+   component:
+
+      >> shutil.which("C:\\Python33\\python")
+      'C:\\Python33\\python.EXE'
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.8: O tipo "bytes" é agora aceitado. Se o tipo
+   de *cmd* é "bytes", o tipo resultante também é "bytes".
+
+   Alterado na versão 3.12: On Windows, the current directory is no
+   longer prepended to the search path if *mode* includes "os.X_OK"
+   and WinAPI "NeedCurrentDirectoryForExePathW(cmd)" is false, else
+   the current directory is prepended even if it is already in the
+   search path; "PATHEXT" is used now even when *cmd* includes a
+   directory component or ends with an extension that is in "PATHEXT";
+   and filenames that have no extension can now be found.
+
+   Alterado na versão 3.12.1: On Windows, if *mode* includes
+   "os.X_OK", executables with an extension in "PATHEXT" will be
+   preferred over executables without a matching extension. This
+   brings behavior closer to that of Python 3.11.
+
+exception shutil.Error
+
+   Esta exceção coleta exceções que são levantadas durante uma
+   operação de vários arquivos. Para "copytree()", o argumento de
+   exceção é uma lista de tuplas de 3 elementos (*srcname*, *dstname*,
+   *exception*).
+
+
+Operações de cópia eficientes dependentes da plataforma
+-------------------------------------------------------
+
+A partir do Python 3.8, todas as funções envolvendo uma cópia de
+arquivo ("copyfile()", "copy()", "copy2()", "copytree()" e "move()" )
+podem usar chamadas do sistema de "cópia rápida" específicas da
+plataforma para copiar o arquivo de forma mais eficiente (veja
+bpo-33671). "cópia rápida" significa que a operação de cópia ocorre
+dentro do kernel, evitando o uso de buffers de espaço de usuário em
+Python como em ""outfd.write(infd.read())"".
+
+No macOS, fcopyfile é usado para copiar o conteúdo do arquivo (não
+metadados).
+
+No Linux, "os.sendfile()" é usado.
+
+No Windows, "shutil.copyfile()" usa um tamanho de buffer padrão maior
+(1 MiB ao invés de 64 KiB) e uma variante de "shutil.copyfileobj()"
+baseada em "memoryview()" é usada.
+
+Se a operação de cópia rápida falhar e nenhum dado foi escrito no
+arquivo de destino, o shutil irá silenciosamente voltar a usar a
+função menos eficiente "copyfileobj()" internamente.
+
+Alterado na versão 3.8.
+
+
+Exemplo de copytree
+-------------------
+
+An example that uses the "ignore_patterns()" helper:
+
+   from shutil import copytree, ignore_patterns
+
+   copytree(source, destination, ignore=ignore_patterns('*.pyc', 'tmp*'))
+
+Isso irá copiar tudo, exceto os arquivos ".pyc" e arquivos ou
+diretórios cujo nome começa com "tmp".
+
+Outro exemplo que usa o argumento *ignore* para adicionar uma chamada
+de registro:
+
+   from shutil import copytree
+   import logging
+
+   def _logpath(path, names):
+       logging.info('Working in %s', path)
+       return []   # nothing will be ignored
+
+   copytree(source, destination, ignore=_logpath)
+
+
+exemplo rmtree
+--------------
+
+This example shows how to remove a directory tree on Windows where
+some of the files have their read-only bit set. It uses the onexc
+callback to clear the readonly bit and reattempt the remove. Any
+subsequent failure will propagate.
+
+   import os, stat
+   import shutil
+
+   def remove_readonly(func, path, _):
+       "Clear the readonly bit and reattempt the removal"
+       os.chmod(path, stat.S_IWRITE)
+       func(path)
+
+   shutil.rmtree(directory, onexc=remove_readonly)
+
+
+Operações de arquivamento
+=========================
+
+Novo na versão 3.2.
+
+Alterado na versão 3.5: Adicionado suporte ao formato *xztar*.
+
+Utilitários de alto nível para criar e ler arquivos compactados e
+arquivados também são fornecidos. Eles contam com os módulos "zipfile"
+e "tarfile".
+
+shutil.make_archive(base_name, format[, root_dir[, base_dir[, verbose[, dry_run[, owner[, group[, logger]]]]]]])
+
+   Cria um arquivo compactado (como zip ou tar) e retorna seu nome.
+
+   *base_name* is the name of the file to create, including the path,
+   minus any format-specific extension.
+
+   *format* is the archive format: one of "zip" (if the "zlib" module
+   is available), "tar", "gztar" (if the "zlib" module is available),
+   "bztar" (if the "bz2" module is available), or "xztar" (if the
+   "lzma" module is available).
+
+   *root_dir* é um diretório que será o diretório raiz do arquivo,
+   todos os caminhos no arquivo serão relativos a ele; por exemplo,
+   normalmente chdir em *root_dir* antes de criar o arquivo.
+
+   *base_dir* é o diretório de onde iniciamos o arquivamento; ou seja,
+   *base_dir* será o prefixo comum de todos os arquivos e diretórios
+   no arquivo. *base_dir* deve ser fornecido em relação a *root_dir*.
+   Veja Exemplo de arquivamento com base_dir para como usar *base_dir*
+   e *root_dir* juntos.
+
+   *root_dir* e *base_dir* têm com padrão o diretório atual.
+
+   Se *dry_run* for verdadeiro, nenhum arquivo é criado, mas as
+   operações que seriam executadas são registradas no *logger*.
+
+   *owner* e *group* são usados ao criar um arquivo tar. Por padrão,
+   usa o proprietário e grupo atuais.
+
+   *logger* deve ser um objeto compatível com a **PEP 282**,
+   geralmente uma instância de "logging.Logger".
+
+   O argumento *verbose* não é usado e foi descontinuado.
+
+   Levanta um evento de auditoria "shutil.make_archive" com argumentos
+   "base_name", "format", "root_dir", "base_dir".
+
+   Nota:
+
+     This function is not thread-safe when custom archivers registered
+     with "register_archive_format()" do not support the *root_dir*
+     argument.  In this case it temporarily changes the current
+     working directory of the process to *root_dir* to perform
+     archiving.
+
+   Alterado na versão 3.8: O formato pax moderno (POSIX.1-2001) agora
+   é usado em vez do formato GNU legado para arquivos criados com
+   "format="tar"".
+
+   Alterado na versão 3.10.6: This function is now made thread-safe
+   during creation of standard ".zip" and tar archives.
+
+shutil.get_archive_formats()
+
+   Retorna uma lista de formatos suportados para arquivamento. Cada
+   elemento da sequência retornada é uma tupla "(nome, descrição)".
+
+   Por padrão, "shutil" fornece estes formatos:
+
+   * *zip*: arquivo ZIP (se o módulo "zlib" estiver disponível).
+
+   * *tar*: Arquivo tar não compactado. Usa o formato POSIX.1-2001 pax
+     para novos arquivos.
+
+   * *gztar*: arquivo tar compactado com gzip (se o módulo "zlib"
+     estiver disponível).
+
+   * *bztar*: arquivo tar compactado com bzip2 (se o módulo "bz2"
+     estiver disponível).
+
+   * *xztar*: Arquivo tar compactado com xz (se o módulo "lzma"
+     estiver disponível).
+
+   Você pode registrar novos formatos ou fornecer seu próprio
+   arquivador para quaisquer formatos existentes, usando
+   "register_archive_format()".
+
+shutil.register_archive_format(name, function[, extra_args[, description]])
+
+   Registra um arquivador para o formato *name*.
+
+   *function* é o chamável que será usado para descompactar arquivos.
+   O chamável receberá o *base_name* do arquivo a ser criado, seguido
+   pelo *base_dir* (cujo padrão é "os.curdir") para iniciar o
+   arquivamento. Outros argumentos são passados ​​como argumentos
+   nomeados *owner*, *group*, *dry_run* e *logger* (como passado em
+   "make_archive()").
+
+   If *function* has the custom attribute "function.supports_root_dir"
+   set to "True", the *root_dir* argument is passed as a keyword
+   argument. Otherwise the current working directory of the process is
+   temporarily changed to *root_dir* before calling *function*. In
+   this case "make_archive()" is not thread-safe.
+
+   Se fornecido, *extra_args* é uma sequência de pares "(nome, valor)"
+   que serão usados ​​como argumentos nomeados extras quando o
+   arquivador chamável for usado.
+
+   *description* é usado por "get_archive_formats()" que retorna a
+   lista de arquivadores. O padrão é uma string vazia.
+
+   Alterado na versão 3.12: Added support for functions supporting the
+   *root_dir* argument.
+
+shutil.unregister_archive_format(name)
+
+   Remove o formato de arquivo *name* da lista de formatos suportados.
+
+shutil.unpack_archive(filename[, extract_dir[, format[, filter]]])
+
+   Descompacta um arquivo. *filename* é o caminho completo do arquivo.
+
+   *extract_dir* é o nome do diretório de destino onde o arquivo é
+   descompactado. Se não for fornecido, o diretório de trabalho atual
+   será usado.
+
+   *format* é o formato do arquivo: um de "zip", "tar", "gztar",
+   "bztar" ou "xztar". Ou qualquer outro formato registrado com
+   "register_unpack_format()". Se não for fornecido,
+   "unpack_archive()" irá usar a extensão do nome do arquivo e ver se
+   um descompactador foi registrado para essa extensão. Caso nenhum
+   seja encontrado, uma "ValueError" é levantada.
+
+   The keyword-only *filter* argument is passed to the underlying
+   unpacking function. For zip files, *filter* is not accepted. For
+   tar files, it is recommended to set it to "'data'", unless using
+   features specific to tar and UNIX-like filesystems. (See Extraction
+   filters for details.) The "'data'" filter will become the default
+   for tar files in Python 3.14.
+
+   Levanta um evento de auditoria "shutil.unpack_archive" com
+   argumentos "filename", "extract_dir", "format".
+
+   Aviso:
+
+     Never extract archives from untrusted sources without prior
+     inspection. It is possible that files are created outside of the
+     path specified in the *extract_dir* argument, e.g. members that
+     have absolute filenames starting with "/" or filenames with two
+     dots "..".
+
+   Alterado na versão 3.7: Aceita um *objeto caminho ou similar* para
+   *filename* e *extract_dir*.
+
+   Alterado na versão 3.12: Added the *filter* argument.
+
+shutil.register_unpack_format(name, extensions, function[, extra_args[, description]])
+
+   Registra um formato de descompactação. *name* é o nome do formato e
+   *extensions* é uma lista de extensões correspondentes ao formato,
+   como ".zip" para arquivos Zip.
+
+   *function* is the callable that will be used to unpack archives.
+   The callable will receive:
+
+   * the path of the archive, as a positional argument;
+
+   * the directory the archive must be extracted to, as a positional
+     argument;
+
+   * possibly a *filter* keyword argument, if it was given to
+     "unpack_archive()";
+
+   * additional keyword arguments, specified by *extra_args* as a
+     sequence of "(name, value)" tuples.
+
+   *description* pode ser fornecido para descrever o formato e será
+   devolvido pela função "get_unpack_formats()".
+
+shutil.unregister_unpack_format(name)
+
+   Cancela o registro de um formato de descompactação. *name* é o nome
+   do formato.
+
+shutil.get_unpack_formats()
+
+   Retorna uma lista de todos os formatos registrados para
+   desempacotamento. Cada elemento da sequência retornada é uma tupla
+   "(name, extensions, description)".
+
+   Por padrão, "shutil" fornece estes formatos:
+
+   * *zip*: arquivo ZIP (descompactar arquivos compactados funciona
+     apenas se o módulo correspondente estiver disponível).
+
+   * *tar*: arquivo tar não comprimido.
+
+   * *gztar*: arquivo tar compactado com gzip (se o módulo "zlib"
+     estiver disponível).
+
+   * *bztar*: arquivo tar compactado com bzip2 (se o módulo "bz2"
+     estiver disponível).
+
+   * *xztar*: Arquivo tar compactado com xz (se o módulo "lzma"
+     estiver disponível).
+
+   Você pode registrar novos formatos ou fornecer seu próprio
+   desempacotador para quaisquer formatos existentes, usando
+   "register_unpack_format()".
+
+
+Exemplo de arquivo
+------------------
+
+Neste exemplo, criamos um arquivo tar compactado com gzip contendo
+todos os arquivos encontrados no diretório ".ssh" do usuário:
+
+   >>> from shutil import make_archive
+   >>> import os
+   >>> archive_name = os.path.expanduser(os.path.join('~', 'myarchive'))
+   >>> root_dir = os.path.expanduser(os.path.join('~', '.ssh'))
+   >>> make_archive(archive_name, 'gztar', root_dir)
+   '/Users/tarek/myarchive.tar.gz'
+
+O arquivo resultante contém:
+
+   $ tar -tzvf /Users/tarek/myarchive.tar.gz
+   drwx------ tarek/staff       0 2010-02-01 16:23:40 ./
+   -rw-r--r-- tarek/staff     609 2008-06-09 13:26:54 ./authorized_keys
+   -rwxr-xr-x tarek/staff      65 2008-06-09 13:26:54 ./config
+   -rwx------ tarek/staff     668 2008-06-09 13:26:54 ./id_dsa
+   -rwxr-xr-x tarek/staff     609 2008-06-09 13:26:54 ./id_dsa.pub
+   -rw------- tarek/staff    1675 2008-06-09 13:26:54 ./id_rsa
+   -rw-r--r-- tarek/staff     397 2008-06-09 13:26:54 ./id_rsa.pub
+   -rw-r--r-- tarek/staff   37192 2010-02-06 18:23:10 ./known_hosts
+
+
+Exemplo de arquivamento com *base_dir*
+--------------------------------------
+
+Neste exemplo, semelhante ao acima, mostramos como usar
+"make_archive()", mas desta vez com o uso de *base_dir*. Agora temos a
+seguinte estrutura de diretório:
+
+   $ tree tmp
+   tmp
+   └── root
+       └── structure
+           ├── content
+               └── please_add.txt
+           └── do_not_add.txt
+
+No arquivo final, "please_add.txt" deve ser incluído, mas
+"do_not_add.txt" não deve. Portanto, usamos o seguinte:
+
+   >>> from shutil import make_archive
+   >>> import os
+   >>> archive_name = os.path.expanduser(os.path.join('~', 'myarchive'))
+   >>> make_archive(
+   ...     archive_name,
+   ...     'tar',
+   ...     root_dir='tmp/root',
+   ...     base_dir='structure/content',
+   ... )
+   '/Users/tarek/my_archive.tar'
+
+Listar os arquivos no arquivo resultante nos dá:
+
+   $ python -m tarfile -l /Users/tarek/myarchive.tar
+   structure/content/
+   structure/content/please_add.txt
+
+
+Consultando o tamanho do terminal de saída
+==========================================
+
+shutil.get_terminal_size(fallback=(columns, lines))
+
+   Obtém o tamanho da janela do terminal.
+
+   Para cada uma das duas dimensões, a variável de ambiente, "COLUMNS"
+   e "LINES" respectivamente, é verificada. Se a variável estiver
+   definida e o valor for um número inteiro positivo, ela será usada.
+
+   Quando "COLUMNS" ou "LINES" não está definida, que é o caso comum,
+   o terminal conectado a "sys.__stdout__" é consultado invocando
+   "os.get_terminal_size()".
+
+   Se o tamanho do terminal não pode ser consultado com sucesso, ou
+   porque o sistema não tem suporte a consultas, ou porque não estamos
+   conectados a um terminal, o valor dado no parâmetro "fallback" é
+   usado. O padrão de "fallback" é "(80, 24)", que é o tamanho padrão
+   usado por muitos emuladores de terminal.
+
+   O valor retornado é uma tupla nomeada do tipo "os.terminal_size".
+
+   Veja também: The Single UNIX Specification, Versão 2, Other
+   Environment Variables.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.11: The "fallback" values are also used if
+   "os.get_terminal_size()" returns zeroes.

@@ -1,0 +1,527 @@
+"sysconfig" --- Fornece acesso às informações de configuração do Python
+***********************************************************************
+
+Novo na versão 3.2.
+
+**Código-fonte:** Lib/sysconfig.py
+
+======================================================================
+
+O módulo "sysconfig" fornece acesso às informações de configuração do
+Python, como a lista de caminhos de instalação e as variáveis de
+configuração relevantes para a plataforma atual.
+
+
+Variáveis de configuração
+=========================
+
+Uma distribuição do Python contém um arquivo de cabeçalho "Makefile" e
+"pyconfig.h" que são necessários para construir o próprio binário do
+Python e extensões C de terceiros compiladas usando "setuptools".
+
+"sysconfig" coloca todas as variáveis encontradas nestes arquivos em
+um dicionário que pode ser acessado usando "get_config_vars()" ou
+"get_config_var()".
+
+Notice that on Windows, it's a much smaller set.
+
+sysconfig.get_config_vars(*args)
+
+   Sem argumentos, retorna um dicionário de todas as variáveis de
+   configuração relevantes para a plataforma atual.
+
+   Com argumentos, retorna uma lista de valores resultantes da
+   pesquisa de cada argumento no dicionário de variáveis de
+   configuração.
+
+   Para cada argumento, se o valor não for encontrado, retorna "None".
+
+sysconfig.get_config_var(name)
+
+   Retorna o valor de uma única variável *nome*. Equivalente a
+   "get_config_vars().get(name)".
+
+   Se *name* não for encontrado, retorna "None".
+
+Exemplo de uso:
+
+   >>> import sysconfig
+   >>> sysconfig.get_config_var('Py_ENABLE_SHARED')
+   0
+   >>> sysconfig.get_config_var('LIBDIR')
+   '/usr/local/lib'
+   >>> sysconfig.get_config_vars('AR', 'CXX')
+   ['ar', 'g++']
+
+
+Caminhos de instalação
+======================
+
+O Python usa um esquema de instalação que difere dependendo da
+plataforma e das opções de instalação. Esses esquemas são armazenados
+em "sysconfig" sob identificadores únicos baseados no valor retornado
+por "os.name". Os esquemas são usados por instaladores de pacote para
+determinar para onde copiar arquivos.
+
+Python atualmente oferece suporte a nove esquemas:
+
+* *posix_prefix*: esquema para plataformas POSIX como Linux ou macOS.
+  Este é o esquema padrão usado quando o Python ou um componente é
+  instalado.
+
+* *posix_home*: esquema para plataformas POSIX, quando a opção *home*
+  é usada. Esse esquema define caminhos localizados sob um prefixo
+  inicial específico.
+
+* *posix_user*: esquema para plataformas POSIX, quando a opção *user*
+  é usada. Esse esquema define caminhos localizados sob o diretório
+  pessoal (home) do usuário ("site.USER_BASE").
+
+* *posix_venv*: esquema para "ambientes virtuais do Python" em
+  plataformas POSIX; por padrão, é o mesmo que *posix_prefix*.
+
+* *nt*: esquema para Windows. Este é o esquema padrão usado quando o
+  Python ou um componente é instalado.
+
+* *nt_user*: esquema para Windows, quando utilizada a opção *user*.
+
+* *nt_venv*: esquema para "ambientes virtuais do Python" no Windows;
+  por padrão, é o mesmo que *nt_prefix*.
+
+* *venv*: um esquema com valores de *posix_venv* ou *nt_venv*
+  dependendo da plataforma em que o Python é executado.
+
+* *osx_framework_user*: esquema para plataformas macOS, quando
+  utilizada a opção *user*.
+
+Cada esquema é composto por uma série de caminhos e cada caminho
+possui um identificador único. Python atualmente usa oito caminhos:
+
+* *stdlib*: diretório que contém os arquivos da biblioteca Python
+  padrão que não são específicos da plataforma.
+
+* *platstdlib*: diretório que contém os arquivos da biblioteca Python
+  padrão que são específicos da plataforma.
+
+* *platlib*: diretório para arquivos específicos do site e específicos
+  da plataforma.
+
+* *purelib*: diretório para arquivos específicos do site e não
+  específicos da plataforma (Python 'pure').
+
+* *include*: diretório para arquivos de cabeçalho não específicos da
+  plataforma para a API C do Python.
+
+* *platinclude*: diretório para arquivos de cabeçalho específicos da
+  plataforma para a API C do Python.
+
+* *scripts*: diretório para arquivos de script.
+
+* *data*: diretório para arquivos de dados.
+
+
+Esquema de usuário
+==================
+
+Este esquema foi projetado para ser a solução mais conveniente para
+usuários que não têm permissão de escrita no diretório global de
+pacotes de sites ou não desejam instalar nele.
+
+Os arquivos serão instalados em subdiretórios de "site.USER_BASE"
+(escrito como "*userbase*" daqui em diante). Este esquema instala
+módulos Python puros e módulos de extensão no mesmo local (também
+conhecido como "site.USER_SITE").
+
+
+"posix_user"
+------------
+
++----------------+-------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                     |
+|================|=============================================================|
+| *stdlib*       | "*userbase*/lib/python*X.Y*"                                |
++----------------+-------------------------------------------------------------+
+| *platstdlib*   | "*userbase*/lib/python*X.Y*"                                |
++----------------+-------------------------------------------------------------+
+| *platlib*      | "*userbase*/lib/python*X.Y*/site-packages"                  |
++----------------+-------------------------------------------------------------+
+| *purelib*      | "*userbase*/lib/python*X.Y*/site-packages"                  |
++----------------+-------------------------------------------------------------+
+| *include*      | "*userbase*/include/python*X.Y*"                            |
++----------------+-------------------------------------------------------------+
+| *scripts*      | "*userbase*/bin"                                            |
++----------------+-------------------------------------------------------------+
+| *data*         | "*userbase*"                                                |
++----------------+-------------------------------------------------------------+
+
+
+"nt_user"
+---------
+
++----------------+-------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                     |
+|================|=============================================================|
+| *stdlib*       | "*userbase*\Python*XY*"                                     |
++----------------+-------------------------------------------------------------+
+| *platstdlib*   | "*userbase*\Python*XY*"                                     |
++----------------+-------------------------------------------------------------+
+| *platlib*      | "*userbase*\Python*XY*\site-packages"                       |
++----------------+-------------------------------------------------------------+
+| *purelib*      | "*userbase*\Python*XY*\site-packages"                       |
++----------------+-------------------------------------------------------------+
+| *include*      | "*userbase*\Python*XY*\Include"                             |
++----------------+-------------------------------------------------------------+
+| *scripts*      | "*userbase*\Python*XY*\Scripts"                             |
++----------------+-------------------------------------------------------------+
+| *data*         | "*userbase*"                                                |
++----------------+-------------------------------------------------------------+
+
+
+"osx_framework_user"
+--------------------
+
++----------------+-------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                     |
+|================|=============================================================|
+| *stdlib*       | "*userbase*/lib/python"                                     |
++----------------+-------------------------------------------------------------+
+| *platstdlib*   | "*userbase*/lib/python"                                     |
++----------------+-------------------------------------------------------------+
+| *platlib*      | "*userbase*/lib/python/site-packages"                       |
++----------------+-------------------------------------------------------------+
+| *purelib*      | "*userbase*/lib/python/site-packages"                       |
++----------------+-------------------------------------------------------------+
+| *include*      | "*userbase*/include/python*X.Y*"                            |
++----------------+-------------------------------------------------------------+
+| *scripts*      | "*userbase*/bin"                                            |
++----------------+-------------------------------------------------------------+
+| *data*         | "*userbase*"                                                |
++----------------+-------------------------------------------------------------+
+
+
+Esquema de home
+===============
+
+A ideia por trás do "esquema home" é que você construa e mantenha um
+estoque pessoal de módulos Python. O nome deste esquema é derivado da
+ideia de um diretório "home" no Unix, uma vez que não é incomum para
+um usuário Unix fazer seu diretório home ter um layout semelhante a
+"/usr/" ou "/usr/local/". Este esquema pode ser usado por qualquer
+pessoa, independentemente do sistema operacional para o qual está
+instalando.
+
+
+"posix_home"
+------------
+
++----------------+-------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                     |
+|================|=============================================================|
+| *stdlib*       | "*home*/lib/python"                                         |
++----------------+-------------------------------------------------------------+
+| *platstdlib*   | "*home*/lib/python"                                         |
++----------------+-------------------------------------------------------------+
+| *platlib*      | "*home*/lib/python"                                         |
++----------------+-------------------------------------------------------------+
+| *purelib*      | "*home*/lib/python"                                         |
++----------------+-------------------------------------------------------------+
+| *include*      | "*home*/include/python"                                     |
++----------------+-------------------------------------------------------------+
+| *platinclude*  | "*home*/include/python"                                     |
++----------------+-------------------------------------------------------------+
+| *scripts*      | "*home*/bin"                                                |
++----------------+-------------------------------------------------------------+
+| *data*         | "*home*"                                                    |
++----------------+-------------------------------------------------------------+
+
+
+Esquema de prefixo
+==================
+
+O "esquema prefixo" é útil quando você deseja usar uma instalação
+Python para realizar a compilação/instalação (ou seja, para executar o
+script de configuração), mas instalar módulos no diretório de módulo
+de terceiros de uma instalação Python diferente (ou algo que parece
+uma instalação diferente do Python). Se isso parece um pouco incomum,
+então é -- é por isso que os esquemas usuário e home vêm antes. No
+entanto, existem pelo menos dois casos conhecidos em que o esquema
+prefixo será útil.
+
+Primeiro, considere que muitas distribuições Linux colocam Python em
+"/usr", ao invés do mais tradicional "/usr/local". Isso é totalmente
+apropriado, já que, nesses casos, o Python é parte do "sistema" em vez
+de um complemento local. No entanto, se você estiver instalando
+módulos Python a partir do código-fonte, provavelmente deseja que eles
+entrem em "/usr/local/lib/python2.*X*" em vez de
+"/usr/lib/python2.*X*".
+
+Outra possibilidade é um sistema de arquivos de rede onde o nome usado
+para escrever em um diretório remoto é diferente do nome usado para
+lê-lo: por exemplo, o interpretador Python acessado como
+"/usr/local/bin/python" pode pesquisar por módulos em
+"/usr/local/lib/python2.*X*", mas esses módulos teriam que ser
+instalados em, digamos, "/mnt/*@server*/export/lib/python2.*X*".
+
+
+"posix_prefix"
+--------------
+
++----------------+------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                    |
+|================|============================================================|
+| *stdlib*       | "*prefix*/lib/python*X.Y*"                                 |
++----------------+------------------------------------------------------------+
+| *platstdlib*   | "*prefix*/lib/python*X.Y*"                                 |
++----------------+------------------------------------------------------------+
+| *platlib*      | "*prefix*/lib/python*X.Y*/site-packages"                   |
++----------------+------------------------------------------------------------+
+| *purelib*      | "*prefix*/lib/python*X.Y*/site-packages"                   |
++----------------+------------------------------------------------------------+
+| *include*      | "*prefix*/include/python*X.Y*"                             |
++----------------+------------------------------------------------------------+
+| *platinclude*  | "*prefix*/include/python*X.Y*"                             |
++----------------+------------------------------------------------------------+
+| *scripts*      | "*prefix*/bin"                                             |
++----------------+------------------------------------------------------------+
+| *data*         | "*prefix*"                                                 |
++----------------+------------------------------------------------------------+
+
+
+"nt"
+----
+
++----------------+------------------------------------------------------------+
+| Caminho        | Diretório de instalação                                    |
+|================|============================================================|
+| *stdlib*       | "*prefix*\Lib"                                             |
++----------------+------------------------------------------------------------+
+| *platstdlib*   | "*prefix*\Lib"                                             |
++----------------+------------------------------------------------------------+
+| *platlib*      | "*prefix*\Lib\site-packages"                               |
++----------------+------------------------------------------------------------+
+| *purelib*      | "*prefix*\Lib\site-packages"                               |
++----------------+------------------------------------------------------------+
+| *include*      | "*prefix*\Include"                                         |
++----------------+------------------------------------------------------------+
+| *platinclude*  | "*prefix*\Include"                                         |
++----------------+------------------------------------------------------------+
+| *scripts*      | "*prefix*\Scripts"                                         |
++----------------+------------------------------------------------------------+
+| *data*         | "*prefix*"                                                 |
++----------------+------------------------------------------------------------+
+
+
+Funções de caminho de instalação
+================================
+
+"sysconfig" fornece algumas funções para determinar esses caminhos de
+instalação.
+
+sysconfig.get_scheme_names()
+
+   Retorna uma tupla contendo todos os esquemas atualmente suportados
+   em "sysconfig".
+
+sysconfig.get_default_scheme()
+
+   Retorna o nome do esquema padrão para a plataforma atual.
+
+   Novo na versão 3.10: Esta função era chamada de
+   "_get_default_scheme()" e considerada um detalhe de implementação.
+
+   Alterado na versão 3.11: Quando o Python é executado em um ambiente
+   virtual, o esquema *venv* é retornado.
+
+sysconfig.get_preferred_scheme(key)
+
+   Retorna um nome de esquema preferido para um layout de instalação
+   especificado por *key*.
+
+   *key* deve ser ""prefix"", ""home"" ou ""user"".
+
+   O valor de retorno é um nome de esquema listado em
+   "get_scheme_names()". Ele pode ser passado para as funções
+   "sysconfig" que recebem um argumento *scheme*, como "get_paths()".
+
+   Novo na versão 3.10.
+
+   Alterado na versão 3.11: Quando o Python é executado em um ambiente
+   virtual e "key="prefix"", o esquema *venv* é retornado.
+
+sysconfig._get_preferred_schemes()
+
+   Retorna um dict contendo nomes de esquema preferidos na plataforma
+   atual. Os implementadores e redistribuidores do Python podem
+   adicionar seus esquemas preferidos ao valor global de nível de
+   módulo "_INSTALL_SCHEMES" e modificar esta função para retornar
+   esses nomes de esquema. Por exemplo, fornecer esquemas diferentes
+   para os gerenciadores de pacotes de sistema e idioma usarem, de
+   modo que os pacotes instalados por um não se misturem com os do
+   outro.
+
+   Os usuários finais não devem usar esta função, mas
+   "get_default_scheme()" e "get_preferred_scheme()".
+
+   Novo na versão 3.10.
+
+sysconfig.get_path_names()
+
+   Retorna uma tupla contendo todos os nomes de caminhos atualmente
+   suportados em "sysconfig".
+
+sysconfig.get_path(name[, scheme[, vars[, expand]]])
+
+   Retorna um caminho de instalação correspondente ao caminho *name*,
+   do esquema de instalação denominado *scheme*.
+
+   *name* deve ser um valor da lista retornada por "get_path_names()".
+
+   "sysconfig" armazena os caminhos de instalação correspondentes a
+   cada nome de caminho, para cada plataforma, com variáveis a serem
+   expandidas. Por exemplo, o caminho *stdlib* para o esquema *nt* é:
+   "{base}/Lib".
+
+   "get_path()" usará as variáveis retornadas por "get_config_vars()"
+   para expandir o caminho. Todas as variáveis possuem valores padrão
+   para cada plataforma, portanto, pode-se chamar esta função e obter
+   o valor padrão.
+
+   Se *scheme* for fornecido, deve ser um valor da lista retornada por
+   "get_scheme_names()". Caso contrário, o esquema padrão para a
+   plataforma atual é usado.
+
+   Se *vars* for fornecido, deve ser um dicionário de variáveis que
+   atualizará o dicionário retornado por "get_config_vars()".
+
+   Se *expand* for definido como "False", o caminho não será expandido
+   usando as variáveis.
+
+   Se *name* não for encontrado, levanta uma "KeyError".
+
+sysconfig.get_paths([scheme[, vars[, expand]]])
+
+   Retorna um dicionário contendo todos os caminhos de instalação
+   correspondentes a um esquema de instalação. Veja "get_path()" para
+   mais informações.
+
+   Se *esquema* não for fornecido, usará o esquema padrão para a
+   plataforma atual.
+
+   Se *vars* for fornecido, deve ser um dicionário de variáveis que
+   atualizará o dicionário usado para expandir os caminhos.
+
+   Se *expand* for definido como falso, os caminhos não serão
+   expandidos.
+
+   Se *scheme* não for um esquema existente, "get_paths()" vai
+   levantar uma "KeyError".
+
+
+Outras funções
+==============
+
+sysconfig.get_python_version()
+
+   Retorna o número da versão Python "MAJOR.MINOR" como uma string.
+   Semelhante a "'%d.%d' % sys.version_info[:2]".
+
+sysconfig.get_platform()
+
+   Retorna uma string que identifica a plataforma atual.
+
+   Isso é usado principalmente para distinguir diretórios de
+   construção específicos da plataforma e distribuições construídas
+   específicas da plataforma. Geralmente inclui o nome e a versão do
+   sistema operacional e a arquitetura (conforme fornecido por
+   'os.uname()'), embora as informações exatas incluídas dependam do
+   sistema operacional; por exemplo, no Linux, a versão do kernel não
+   é particularmente importante.
+
+   Exemplos de valores retornados:
+
+   * linux-i586
+
+   * linux-alpha (?)
+
+   * solaris-2.6-sun4u
+
+   Windows vai retornar um entre:
+
+   * win-amd64 (Windows 64 bits no AMD64, isto é, x86_64, Intel64 e
+     EM64T)
+
+   * win32 (todos os demais - especificamente, sys.platform é
+     retornado)
+
+   macOS pode retornar:
+
+   * macosx-10.6-ppc
+
+   * macosx-10.4-ppc64
+
+   * macosx-10.3-i386
+
+   * macosx-10.4-fat
+
+   Para outras plataformas não POSIX, é retornado apenas
+   "sys.platform".
+
+sysconfig.is_python_build()
+
+   Retorna "True" se o interpretador Python em execução foi construído
+   a partir do código-fonte e está sendo executado a partir de seu
+   local de construção, e não de um local resultante de, por exemplo,
+   executando "make install" ou instalando através de um instalador
+   binário.
+
+sysconfig.parse_config_h(fp[, vars])
+
+   Analisa um arquivo no estilo "config.h".
+
+   *fp* é um objeto arquivo ou similar apontando para o arquivo
+   "config.h" ou similar.
+
+   Um dicionário contendo pares nome/valor é retornado. Se um
+   dicionário opcional for passado como segundo argumento, ele será
+   usado no lugar de um novo dicionário e atualizado com os valores
+   lidos no arquivo.
+
+sysconfig.get_config_h_filename()
+
+   Retorna o caminho do "pyconfig.h".
+
+sysconfig.get_makefile_filename()
+
+   Retorna o caminho do "Makefile".
+
+
+Usando o módulo "sysconfig" como um Script
+==========================================
+
+Você pode usar "sysconfig" como um script com a opção *-m* do Python:
+
+   $ python -m sysconfig
+   Platform: "macosx-10.4-i386"
+   Python version: "3.2"
+   Current installation scheme: "posix_prefix"
+
+   Paths:
+           data = "/usr/local"
+           include = "/Users/tarek/Dev/svn.python.org/py3k/Include"
+           platinclude = "."
+           platlib = "/usr/local/lib/python3.2/site-packages"
+           platstdlib = "/usr/local/lib/python3.2"
+           purelib = "/usr/local/lib/python3.2/site-packages"
+           scripts = "/usr/local/bin"
+           stdlib = "/usr/local/lib/python3.2"
+
+   Variables:
+           AC_APPLE_UNIVERSAL_BUILD = "0"
+           AIX_GENUINE_CPLUSPLUS = "0"
+           AR = "ar"
+           ARFLAGS = "rc"
+           ...
+
+Esta chamada imprimirá na saída padrão as informações retornadas por
+"get_platform()", "get_python_version()", "get_path()" e
+"get_config_vars()".

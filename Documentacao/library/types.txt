@@ -1,0 +1,542 @@
+"types" --- Criação de tipos dinâmicos e nomes para tipos embutidos
+*******************************************************************
+
+**Código-fonte:** Lib/types.py
+
+======================================================================
+
+Este módulo define funções utilitárias para auxiliar na criação
+dinâmica de novos tipos.
+
+Também define nomes para alguns tipos de objetos usados pelo
+interpretador Python padrão, mas não expostos como componentes
+embutidos como "int" ou "str" são.
+
+Por fim, fornece algumas classes e funções adicionais relacionadas ao
+tipo que não são fundamentais o suficiente para serem incorporadas.
+
+
+Criação de tipos dinâmicos
+==========================
+
+types.new_class(name, bases=(), kwds=None, exec_body=None)
+
+   Cria um objeto de classe dinamicamente usando a metaclasse
+   apropriada.
+
+   Os três primeiros argumentos são os componentes que compõem um
+   cabeçalho de definição de classe: o nome da classe, as classes base
+   (em ordem), os argumentos nomeados (como "metaclass").
+
+   O argumento *exec_body* é um retorno de chamada usado para
+   preencher o espaço para nome da classe recém-criado. Ele deve
+   aceitar o espaço para nome da classe como seu único argumento e
+   atualizar o espaço para nome diretamente com o conteúdo da classe.
+   Se nenhum retorno de chamada for fornecido, ele terá o mesmo efeito
+   que passar em "lambda ns: None".
+
+   Novo na versão 3.3.
+
+types.prepare_class(name, bases=(), kwds=None)
+
+   Calcula a metaclasse apropriada e cria o espaço de nomes da classe.
+
+   Os argumentos são os componentes que compõem um cabeçalho de
+   definição de classe: o nome da classe, as classes base (em ordem) e
+   os argumentos nomeados (como "metaclass").
+
+   O valor de retorno é uma tupla de 3: "metaclass, namespace, kwds"
+
+   *metaclass* é a metaclasse apropriada, *namespace* é o espaço de
+   nomes da classe preparada e *kwds* é uma cópia atualizada do
+   argumento passado no *kwds* com qualquer entrada "'metaclass'"
+   removida. Se nenhum argumento *kwds* for passado, este será um
+   ditado vazio.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.6: O valor padrão para o elemento "namespace"
+   da tupla retornada foi alterado. Agora, um mapeamento preservando-
+   ordem-inserção é usado quando a metaclasse não possui um método
+   "__prepare__".
+
+Ver também:
+
+  Metaclasses
+     Detalhes completos do processo de criação de classe suportado por
+     essas funções
+
+  **PEP 3115** - Metaclasses no Python 3000
+     Introduzido o gancho de espaço de nomes "__prepare__"
+
+types.resolve_bases(bases)
+
+   Resolve entradas MRO dinamicamente, conforme especificado pela
+   **PEP 560**.
+
+   Esta função procura por itens em *bases* que não sejam instâncias
+   de "type" e retorna uma tupla onde cada objeto que possui um método
+   "__mro_entries__()" é substituído por um resultado descompactado da
+   chamada desse método. Se um item *bases* é uma instância de "type",
+   ou não possui o método "__mro_entries__()", ele é incluído na tupla
+   de retorno inalterada.
+
+   Novo na versão 3.7.
+
+types.get_original_bases(cls, /)
+
+   Retorna a tupla de objetos originalmente dados como as bases de
+   *cls* antes do método "__mro_entries__()" ter sido chamado em
+   qualquer base (seguindo os mecanismos apresentados na **PEP 560**).
+   Isso é útil para introspecção de Generics.
+
+   Para classes que possuem um atributo "__orig_bases__", esta função
+   retorna o valor de "cls.__orig_bases__". Para classes sem o
+   atributo "__orig_bases__", "cls.__bases__" é retornado.
+
+   Exemplos:
+
+      from typing import TypeVar, Generic, NamedTuple, TypedDict
+
+      T = TypeVar("T")
+      class Foo(Generic[T]): ...
+      class Bar(Foo[int], float): ...
+      class Baz(list[str]): ...
+      Eggs = NamedTuple("Eggs", [("a", int), ("b", str)])
+      Spam = TypedDict("Spam", {"a": int, "b": str})
+
+      assert Bar.__bases__ == (Foo, float)
+      assert get_original_bases(Bar) == (Foo[int], float)
+
+      assert Baz.__bases__ == (list,)
+      assert get_original_bases(Baz) == (list[str],)
+
+      assert Eggs.__bases__ == (tuple,)
+      assert get_original_bases(Eggs) == (NamedTuple,)
+
+      assert Spam.__bases__ == (dict,)
+      assert get_original_bases(Spam) == (TypedDict,)
+
+      assert int.__bases__ == (object,)
+      assert get_original_bases(int) == (object,)
+
+   Novo na versão 3.12.
+
+Ver também:
+
+  **PEP 560** - Suporte básico para módulo typing e tipos genéricos
+
+
+Tipos padrão do interpretador
+=============================
+
+Este módulo fornece nomes para muitos dos tipos necessários para
+implementar um interpretador Python. Evita deliberadamente incluir
+alguns dos tipos que surgem apenas incidentalmente durante o
+processamento, como o tipo "listiterator".
+
+O uso típico desses nomes é para verificações "isinstance()" ou
+"issubclass()".
+
+Se você instanciar algum desses tipos, observe que as assinaturas
+podem variar entre as versões do Python.
+
+Os nomes padrão são definidos para os seguintes tipos:
+
+types.NoneType
+
+   O tipo de "None".
+
+   Novo na versão 3.10.
+
+types.FunctionType
+types.LambdaType
+
+   O tipo de funções definidas pelo usuário e funções criadas por
+   expressões "lambda".
+
+   Levanta um evento de auditoria "function.__new__" com o argumento
+   "code".
+
+   O evento de auditoria ocorre apenas para instanciação direta de
+   objetos de função e não é levantado para compilação normal.
+
+types.GeneratorType
+
+   O tipo de objetos de iterador *gerador*, criados pelas funções de
+   gerador.
+
+types.CoroutineType
+
+   O tipo de objetos de *corrotina*, criado por funções de "async
+   def".
+
+   Novo na versão 3.5.
+
+types.AsyncGeneratorType
+
+   O tipo de objetos de iterador *gerador assíncrono*, criados pelas
+   funções do gerador assíncrono.
+
+   Novo na versão 3.6.
+
+class types.CodeType(**kwargs)
+
+   O tipo de objetos código retornados por "compile()".
+
+   Levanta um "code.__new__" de evento de auditoria com os argumentos
+   "code", "filename", "name", "argcount", "posonlyargcount",
+   "kwonlyargcount", "nlocals", "stacksize", "flags".
+
+   Observe que os argumentos auditados podem não corresponder aos
+   nomes ou posições exigidos pelo inicializador. O evento de
+   auditoria ocorre apenas para instanciação direta de objetos de
+   código e não é levantado para compilação normal.
+
+types.CellType
+
+   O tipo para objetos de célula: tais objetos são usados como
+   contêineres para as variáveis livres de uma função.
+
+   Novo na versão 3.8.
+
+types.MethodType
+
+   O tipo de método de instâncias de classe definidas pelo usuário.
+
+types.BuiltinFunctionType
+types.BuiltinMethodType
+
+   O tipo de funções embutidas como "len()" ou "sys.exit()", e métodos
+   de classes embutidas. (Aqui, o termo "embutidas" significa "escrito
+   em C".)
+
+types.WrapperDescriptorType
+
+   O tipo de método de alguns tipos de dados embutidos e classes base,
+   como "object.__init__()" ou "object.__lt__()".
+
+   Novo na versão 3.7.
+
+types.MethodWrapperType
+
+   O tipo de métodos *vinculados* de alguns tipos de dados embutidos e
+   classes base. Por exemplo, é o tipo de "object().__str__".
+
+   Novo na versão 3.7.
+
+types.NotImplementedType
+
+   O tipo de "NotImplemented".
+
+   Novo na versão 3.10.
+
+types.MethodDescriptorType
+
+   O tipo de método de alguns tipos de dados embutidos, como
+   "str.join()".
+
+   Novo na versão 3.7.
+
+types.ClassMethodDescriptorType
+
+   O tipo de métodos de classe *não vinculados* de alguns tipos de
+   dados embutidos, como "dict.__dict__['fromkeys']".
+
+   Novo na versão 3.7.
+
+class types.ModuleType(name, doc=None)
+
+   O tipo de *módulos*. O construtor aceita o nome do módulo a ser
+   criado e, opcionalmente, seu *docstring*.
+
+   Nota:
+
+     Use "importlib.util.module_from_spec()" para criar um novo módulo
+     se você deseja definir os vários atributos controlados por
+     importação.
+
+   __doc__
+
+      A *docstring* do módulo. O padrão é "None".
+
+   __loader__
+
+      O *carregador* que carregou o módulo. O padrão é "None".
+
+      Este atributo deve corresponder ao
+      "importlib.machinery.ModuleSpec.loader" conforme armazenado no
+      objeto "__spec__".
+
+      Nota:
+
+        Uma versão futura do Python pode parar de definir esse
+        atributo por padrão. Para se proteger contra esta mudança
+        potencial, de preferência leia o atributo "__spec__" ou use
+        "getattr(module, "__loader__", None)" se você explicitamente
+        precisar usar este atributo.
+
+      Alterado na versão 3.4: O padrão é "None". Anteriormente, o
+      atributo era opcional.
+
+   __name__
+
+      O nome do módulo. Espera-se corresponder a
+      "importlib.machinery.ModuleSpec.name".
+
+   __package__
+
+      A qual *pacote* um módulo pertence. Se o módulo é de nível
+      superior (ou seja, não faz parte de nenhum pacote específico), o
+      atributo deve ser definido como "''", senão deve ser definido
+      como o nome do pacote (que pode ser "__name__" se o módulo for o
+      próprio pacote). O padrão é "None".
+
+      Este atributo deve corresponder ao
+      "importlib.machinery.ModuleSpec.parent" conforme armazenado no
+      objeto "__spec__".
+
+      Nota:
+
+        Uma versão futura do Python pode parar de definir este
+        atributo por padrão. Para se proteger contra esta mudança
+        potencial, de preferência leia o atributo "__spec__" ou use
+        "getattr(module, "__package__", None)" se você explicitamente
+        precisar usar este atributo.
+
+      Alterado na versão 3.4: O padrão é "None". Anteriormente, o
+      atributo era opcional.
+
+   __spec__
+
+      Um registro do estado relacionado ao sistema de importação do
+      módulo. Espera-se que seja uma instância de
+      "importlib.machinery.ModuleSpec".
+
+      Novo na versão 3.4.
+
+types.EllipsisType
+
+   O tipo de "Ellipsis".
+
+   Novo na versão 3.10.
+
+class types.GenericAlias(t_origin, t_args)
+
+   O tipo dos genéricos parametrizados como "list[int]".
+
+   "t_origin" deve ser uma classe genérica não parametrizada, como
+   "list", "tuple" ou "dict".  "t_args" deve ser uma "tuple"
+   (possivelmente com comprimento 1) de tipos que parametrizam
+   "t_origin":
+
+      >>> from types import GenericAlias
+
+      >>> list[int] == GenericAlias(list, (int,))
+      True
+      >>> dict[str, int] == GenericAlias(dict, (str, int))
+      True
+
+   Novo na versão 3.9.
+
+   Alterado na versão 3.9.2: Este tipo pode agora ter uma subclasse.
+
+   Ver também:
+
+     Tipos Generic Alias
+        Documentação detalhada sobre instâncias de
+        "types.GenericAlias"
+
+     **PEP 585** - Sugestão de tipo para Genéricos em coleções padrão
+        Apresentação da classe "types.GenericAlias"
+
+class types.UnionType
+
+   The type of union type expressions.
+
+   Novo na versão 3.10.
+
+class types.TracebackType(tb_next, tb_frame, tb_lasti, tb_lineno)
+
+   O tipo de objetos traceback, como encontrados em
+   "sys.exception().__traceback__".
+
+   Veja a referência de linguagem para detalhes dos atributos e
+   operações disponíveis, e orientação sobre como criar tracebacks
+   dinamicamente.
+
+types.FrameType
+
+   O tipo de objetos de quadro como encontrado em "tb.tb_frame" se
+   "tb" é um objeto traceback.
+
+types.GetSetDescriptorType
+
+   O tipo de objetos definidos em módulos de extensão com
+   "PyGetSetDef", como "FrameType.f_locals" ou "array.array.typecode".
+   Este tipo é usado como descritor para atributos de objeto; tem o
+   mesmo propósito que o tipo "property", mas para classes definidas
+   em módulos de extensão.
+
+types.MemberDescriptorType
+
+   O tipo de objetos definidos em módulos de extensão com
+   "PyMemberDef", como "datetime.timedelta.days". Este tipo é usado
+   como descritor para membros de dados C simples que usam funções de
+   conversão padrão; tem o mesmo propósito que o tipo "property", mas
+   para classes definidas em módulos de extensão.
+
+   Além disso, quando uma classe é definida com um atributo
+   "__slots__", então para cada atributo, uma instância de
+   "MemberDescriptorType" será adicionada como um atributo na classe.
+   Isso permite que o atributo apareça no "__dict__" da classe.
+
+   **Detalhes da implementação do CPython:** Em outras implementações
+   de Python, este tipo pode ser idêntico a "GetSetDescriptorType".
+
+class types.MappingProxyType(mapping)
+
+   Proxy somente leitura de um mapeamento. Ele fornece uma visão
+   dinâmica das entradas do mapeamento, o que significa que quando o
+   mapeamento muda, a visão reflete essas mudanças.
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.9: Atualizado para ter suporte ao novo
+   operador de união ("|") da **PEP 584**, que simplesmente delega
+   para o mapeamento subjacente.
+
+   key in proxy
+
+      Retorna "True" se o mapeamento subjacente tiver uma chave *key*,
+      senão "False".
+
+   proxy[key]
+
+      Retorna e o item do mapeamento subjacente com a chave *key*.
+      Levanta um "KeyError" se *key* não estiver no mapeamento
+      subjacente.
+
+   iter(proxy)
+
+      Retorna um iterador sobre as chaves do mapeamento subjacente.
+      Este é um atalho para "iter(proxy.keys())".
+
+   len(proxy)
+
+      Retorna o número de itens no mapeamento subjacente.
+
+   copy()
+
+      Retorna uma cópia rasa do mapeamento subjacente.
+
+   get(key[, default])
+
+      Retorna o valor para *key* se *key* estiver no mapeamento
+      subjacente, caso contrário, *default*. Se *default* não for
+      fornecido, o padrão é "None", de forma que este método nunca
+      levante uma "KeyError".
+
+   items()
+
+      Retorna uma nova visão dos itens do mapeamento subjacente (pares
+      "(chave, valor)").
+
+   keys()
+
+      Retorna uma nova visão das chaves do mapeamento subjacente.
+
+   values()
+
+      Retorna uma nova visão dos valores do mapeamento subjacente.
+
+   reversed(proxy)
+
+      Retorna um iterador reverso sobre as chaves do mapeamento
+      subjacente.
+
+      Novo na versão 3.9.
+
+   hash(proxy)
+
+      Retorna um hash do mapeamento subjacente.
+
+      Novo na versão 3.12.
+
+
+Classes e funções de utilidades adicionais
+==========================================
+
+class types.SimpleNamespace
+
+   Uma subclasse "object" simples que fornece acesso de atributo ao
+   seu espaço de nomes, bem como um repr significativo.
+
+   Diferentemente de "object", com "SimpleNamespace" você pode
+   adicionar e remover atributos. Se um objeto "SimpleNamespace" é
+   inicializado com argumentos nomeados, eles são adicionados
+   diretamente ao espaço de nomes subjacente.
+
+   O tipo é aproximadamente equivalente ao seguinte código:
+
+      class SimpleNamespace:
+          def __init__(self, /, **kwargs):
+              self.__dict__.update(kwargs)
+
+          def __repr__(self):
+              items = (f"{k}={v!r}" for k, v in self.__dict__.items())
+              return "{}({})".format(type(self).__name__, ", ".join(items))
+
+          def __eq__(self, other):
+              if isinstance(self, SimpleNamespace) and isinstance(other, SimpleNamespace):
+                 return self.__dict__ == other.__dict__
+              return NotImplemented
+
+   "SimpleNamespace" pode ser útil como um substituto para "class NS:
+   pass". No entanto, para um tipo de registro estruturado, use
+   "namedtuple()".
+
+   Novo na versão 3.3.
+
+   Alterado na versão 3.9: A ordem dos atributos no repr mudou de
+   alfabética para inserção (como no "dict").
+
+types.DynamicClassAttribute(fget=None, fset=None, fdel=None, doc=None)
+
+   Roteia o acesso ao atributo em uma classe para __getattr__.
+
+   Este é um descritor, usado para definir atributos que atuam de
+   forma diferente quando acessados por meio de uma instância e por
+   meio de uma classe. O acesso à instância permanece normal, mas o
+   acesso a um atributo por meio de uma classe será roteado para o
+   método __getattr__ da classe; isso é feito levantando
+   AttributeError.
+
+   Isso permite ter propriedades ativas em uma instância, e ter
+   atributos virtuais na classe com o mesmo nome (veja "enum.Enum"
+   para um exemplo).
+
+   Novo na versão 3.4.
+
+
+Funções de utilidade de corrotina
+=================================
+
+types.coroutine(gen_func)
+
+   Esta função transforma uma função *geradora* em uma *função de
+   corrotina* que retorna uma corrotina baseada em gerador. A
+   corrotina baseada em gerador ainda é um *iterador gerador*, mas
+   também é considerada um objeto *corrotina* e é *aguardável*. No
+   entanto, pode não necessariamente implementar o método
+   "__await__()".
+
+   Se *gen_func* for uma função geradora, ela será modificada no
+   local.
+
+   Se *gen_func* não for uma função geradora, ela será envolta. Se ele
+   retornar uma instância de "Collections.abc.Generator", a instância
+   será envolvida em um objeto proxy *aguardável*. Todos os outros
+   tipos de objetos serão retornados como estão.
+
+   Novo na versão 3.5.

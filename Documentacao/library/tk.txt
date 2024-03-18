@@ -1,0 +1,260 @@
+Interfaces Gráficas de Usuário com Tk
+*************************************
+
+Tk/Tcl tem sido parte integrante do Python. Ele fornece um kit de
+ferramentas de janela robusto e independente de plataforma, que está
+disponível para programadores Python usando o pacote "tkinter" e sua
+extensão, os módulos "tkinter.tix" e "tkinter.ttk".
+
+O pacote "tkinter" é uma fina camada orientada a objetos no topo do
+Tcl/Tk. Para usar "tkinter", você não precisa escrever o código Tcl,
+mas precisará consultar a documentação do Tk e, ocasionalmente, a
+documentação do Tcl. "tkinter" é um conjunto de envólucros que
+implementam os widgets Tk como classes Python.
+
+As principais virtudes do "tkinter" são que ele é rápido, e que
+geralmente vem junto com o Python. Embora sua documentação padrão seja
+fraca, um bom material está disponível, que inclui: referências,
+tutoriais, um livro e outros. "tkinter" também é famoso por ter uma
+aparência desatualizada, que foi amplamente melhorada no Tk 8.5. No
+entanto, existem muitas outras bibliotecas GUI nas quais você pode
+estar interessado. A wiki do Python lista várias frameworks e
+ferramentas GUI alternativas.
+
+* "tkinter" --- Interface Python para Tcl/Tk
+
+  * Arquitetura
+
+  * Módulos Tkinter
+
+  * Preservador de vida Tkinter
+
+    * Um programa Olá Mundo
+
+    * Conceitos importantes do Tk
+
+    * Entendendo como Tkinter envolve Tcl/Tk
+
+    * Como é que eu...? Que opção faz...?
+
+    * Navegando no Manual de Referência Tcl/Tk
+
+  * Modelo de threading
+
+  * Referência Útil
+
+    * Opções de Definição
+
+    * O Empacotador
+
+    * Opções do Empacotador
+
+    * Acoplando Variáveis de Widgets
+
+    * O Gerenciador de Janela
+
+    * Opções de Tipos de Dados do Tk
+
+    * Ligações e Eventos
+
+    * O Parâmetro index
+
+    * Imagens
+
+  * Tratadores de arquivos
+
+* "tkinter.colorchooser" --- Diálogo de escolha de cor
+
+* "tkinter.font" --- Tkinter font wrapper
+
+* Diálogos Tkinter
+
+  * "tkinter.simpledialog" --- Diálogos de entrada padrão do Tkinter
+
+  * "tkinter.filedialog" --- Caixas de diálogo de seleção de arquivo
+
+    * Caixas de diálogo nativos de carregar/salvar
+
+  * "tkinter.commondialog" --- Modelos de janela de diálogo
+
+* "tkinter.messagebox" --- Prompts de mensagem do Tkinter
+
+* "tkinter.scrolledtext" --- Widget Scrolled Text
+
+* "tkinter.dnd" --- Suporte para arrastar e soltar
+
+* : mod: *tkinter.ttk* --- Widgets temáticos do Tk
+
+  * Usando Ttk
+
+  * Ttk Widgets
+
+  * Ferramenta
+
+    * Opções padrões
+
+    * Opções de ferramenta rolável
+
+    * Opções de rótulo
+
+    * Opções de compatibilidade
+
+    * Widget States
+
+    * ttk.Widget
+
+  * Combobox
+
+    * Opções
+
+    * Virtual events
+
+    * ttk.Combobox
+
+  * Spinbox
+
+    * Opções
+
+    * Virtual events
+
+    * ttk.Spinbox
+
+  * Notebook
+
+    * Opções
+
+    * Tab Options
+
+    * Tab Identifiers
+
+    * Virtual Events
+
+    * ttk.Notebook
+
+  * Progressbar
+
+    * Opções
+
+    * ttk.Progressbar
+
+  * Separator
+
+    * Opções
+
+  * Sizegrip
+
+    * Platform-specific notes
+
+    * Bugs
+
+  * Treeview
+
+    * Opções
+
+    * Item Options
+
+    * Tag Options
+
+    * Column Identifiers
+
+    * Virtual Events
+
+    * ttk.Treeview
+
+  * Ttk Styling
+
+    * Layouts
+
+* "tkinter.tix" --- Extension widgets for Tk
+
+  * Using Tix
+
+  * Tix Widgets
+
+    * Widgets básicos
+
+    * Seletores de arquivo
+
+    * Hierarchical ListBox
+
+    * Tabular ListBox
+
+    * Manager Widgets
+
+    * Image Types
+
+    * Miscellaneous Widgets
+
+    * Form Geometry Manager
+
+  * Comandos Tix
+
+* IDLE
+
+  * Menus
+
+    * Menu Arquivo (Console e Editor)
+
+    * Edit menu (Shell and Editor)
+
+    * Format menu (Editor window only)
+
+    * Run menu (Editor window only)
+
+    * Shell menu (Shell window only)
+
+    * Debug menu (Shell window only)
+
+    * Options menu (Shell and Editor)
+
+    * Window menu (Shell and Editor)
+
+    * Help menu (Shell and Editor)
+
+    * Context menus
+
+  * Editing and Navigation
+
+    * Editor windows
+
+    * Teclas de atalho
+
+    * Automatic indentation
+
+    * Busca e Substituição
+
+    * Completions
+
+    * Calltips
+
+    * Code Context
+
+    * Shell window
+
+    * Text colors
+
+  * Startup and Code Execution
+
+    * Uso na linha de comando
+
+    * Startup failure
+
+    * Running user code
+
+    * User output in Shell
+
+    * Developing tkinter applications
+
+    * Running without a subprocess
+
+  * Help and Preferences
+
+    * Help sources
+
+    * Setting preferences
+
+    * IDLE on macOS
+
+    * Extensions
+
+  * idlelib

@@ -1,0 +1,81 @@
+"spwd" --- O banco de dados de senhas shadow
+********************************************
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "spwd" foi descontinuado (veja **PEP 594** para detalhes e
+alternativas).
+
+======================================================================
+
+Este módulo fornece acesso ao banco de dados de senhas shadow do Unix.
+Está disponível em várias versões do Unix.
+
+Disponibilidade: não Emscripten, não WASI.
+
+Este módulo não funciona ou não está disponível em plataformas
+WebAssembly "wasm32-emscripten" e "wasm32-wasi". Veja Plataformas
+WebAssembly para mais informações.
+
+Você deve ter privilégios suficientes para acessar o banco de dados de
+senhas shadow (isso geralmente significa que você precisa ser root).
+
+As entradas do banco de dados de senhas shadow são relatadas como um
+objeto tupla ou similar, cujos atributos correspondem aos membros da
+estrutura "spwd" (campo Atributo abaixo, consulte "<shadow.h>"):
+
++---------+-----------------+-----------------------------------+
+| Índice  | Atributo        | Significado                       |
+|=========|=================|===================================|
+| 0       | "sp_namp"       | Nome de login                     |
++---------+-----------------+-----------------------------------+
+| 1       | "sp_pwdp"       | Senha criptografada               |
++---------+-----------------+-----------------------------------+
+| 2       | "sp_lstchg"     | Data da última alteração          |
++---------+-----------------+-----------------------------------+
+| 3       | "sp_min"        | Número mínimo de dias entre       |
+|         |                 | alterações                        |
++---------+-----------------+-----------------------------------+
+| 4       | "sp_max"        | Número máximo de dias entre       |
+|         |                 | alterações                        |
++---------+-----------------+-----------------------------------+
+| 5       | "sp_warn"       | Número de dias antes da senha     |
+|         |                 | expirar para avisar o usuário     |
+|         |                 | sobre ela                         |
++---------+-----------------+-----------------------------------+
+| 6       | "sp_inact"      | Número de dias após a senha       |
+|         |                 | expirar até a conta ser           |
+|         |                 | desativada                        |
++---------+-----------------+-----------------------------------+
+| 7       | "sp_expire"     | Número de dias desde 1970-01-01   |
+|         |                 | em que a conta expira             |
++---------+-----------------+-----------------------------------+
+| 8       | "sp_flag"       | Reservado                         |
++---------+-----------------+-----------------------------------+
+
+Os itens sp_namp e sp_pwdp são strings, todos os outros são números
+inteiros. "KeyError" é levantada se a entrada solicitada não puder ser
+encontrada.
+
+As seguintes funções estão definidas:
+
+spwd.getspnam(name)
+
+   Retorna a entrada do banco de dados de senhas shadow para o nome de
+   usuário especificado.
+
+   Alterado na versão 3.6: Levanta um "PermissionError" em vez de
+   "KeyError" se o usuário não tiver privilégios.
+
+spwd.getspall()
+
+   Retorna uma lista de todas as entradas disponíveis do banco de
+   dados de senhas shadow, em ordem arbitrária.
+
+Ver também:
+
+  Módulo "grp"
+     Uma interface para o banco de dados do grupo, similar a esta.
+
+  Módulo "pwd"
+     Uma interface para o banco de dados de senhas normais, similar a
+     esta.

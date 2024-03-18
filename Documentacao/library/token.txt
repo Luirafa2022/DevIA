@@ -1,0 +1,311 @@
+"token" --- Constantes usadas com árvores de análises do Python
+***************************************************************
+
+**Código-fonte:** Lib/token.py
+
+======================================================================
+
+Este módulo fornece constantes que representam os valores numéricos
+dos nós das folhas da árvore de análise (tokens terminais). Consulte o
+arquivo "Grammar/Tokens" na distribuição Python para obter as
+definições dos nomes no contexto da gramática da linguagem. Os valores
+numéricos específicos para os quais os nomes são mapeados podem mudar
+entre as versões do Python.
+
+O módulo também fornece um mapeamento de códigos numéricos para nomes
+e algumas funções. As funções espelham definições nos arquivos de
+cabeçalho do Python C.
+
+token.tok_name
+
+   Dicionário que mapeia os valores numéricos das constantes definidas
+   neste módulo de volta para cadeias de nomes, permitindo que seja
+   gerada uma representação mais legível de árvores de análise.
+
+token.ISTERMINAL(x)
+
+   Retorna "True" para valores de tokens terminais.
+
+token.ISNONTERMINAL(x)
+
+   Retorna "True" para valores de tokens não terminais.
+
+token.ISEOF(x)
+
+   Retorna "True" se *x* for o marcador que indica o final da entrada.
+
+Os constantes de tokens são:
+
+token.ENDMARKER
+
+token.NAME
+
+token.NUMBER
+
+token.STRING
+
+token.NEWLINE
+
+token.INDENT
+
+token.DEDENT
+
+token.LPAR
+
+   Valor de token para ""("".
+
+token.RPAR
+
+   Valor de token para "")"".
+
+token.LSQB
+
+   Valor de token para ""["".
+
+token.RSQB
+
+   Valor de token para ""]"".
+
+token.COLON
+
+   Valor de token para "":"".
+
+token.COMMA
+
+   Valor de token para "","".
+
+token.SEMI
+
+   Valor de token para "";"".
+
+token.PLUS
+
+   Valor de token para ""+"".
+
+token.MINUS
+
+   Valor de token para ""-"".
+
+token.STAR
+
+   Valor de token para ""*"".
+
+token.SLASH
+
+   Valor de token para ""/"".
+
+token.VBAR
+
+   Valor de token para ""|"".
+
+token.AMPER
+
+   Valor de token para ""&"".
+
+token.LESS
+
+   Valor de token para ""<"".
+
+token.GREATER
+
+   Valor de token para "">"".
+
+token.EQUAL
+
+   Valor de token para ""="".
+
+token.DOT
+
+   Valor de token para ""."".
+
+token.PERCENT
+
+   Valor de token para ""%"".
+
+token.LBRACE
+
+   Valor de token para ""{"".
+
+token.RBRACE
+
+   Valor de token para ""}"".
+
+token.EQEQUAL
+
+   Valor de token para ""=="".
+
+token.NOTEQUAL
+
+   Valor de token para ""!="".
+
+token.LESSEQUAL
+
+   Valor de token para ""<="".
+
+token.GREATEREQUAL
+
+   Valor de token para "">="".
+
+token.TILDE
+
+   Valor de token para ""~"".
+
+token.CIRCUMFLEX
+
+   Valor de token para ""^"".
+
+token.LEFTSHIFT
+
+   Valor de token para ""<<"".
+
+token.RIGHTSHIFT
+
+   Valor de token para "">>"".
+
+token.DOUBLESTAR
+
+   Valor de token para ""**"".
+
+token.PLUSEQUAL
+
+   Valor de token para ""+="".
+
+token.MINEQUAL
+
+   Valor de token para ""-="".
+
+token.STAREQUAL
+
+   Valor de token para ""*="".
+
+token.SLASHEQUAL
+
+   Valor de token para ""/="".
+
+token.PERCENTEQUAL
+
+   Valor de token para ""%="".
+
+token.AMPEREQUAL
+
+   Valor de token para ""&="".
+
+token.VBAREQUAL
+
+   Valor de token para ""|="".
+
+token.CIRCUMFLEXEQUAL
+
+   Valor de token para ""^="".
+
+token.LEFTSHIFTEQUAL
+
+   Valor de token para ""<<="".
+
+token.RIGHTSHIFTEQUAL
+
+   Valor de token para "">>="".
+
+token.DOUBLESTAREQUAL
+
+   Valor de token para ""**="".
+
+token.DOUBLESLASH
+
+   Valor de token para ""//"".
+
+token.DOUBLESLASHEQUAL
+
+   Valor de token para ""//="".
+
+token.AT
+
+   Valor de token para ""@"".
+
+token.ATEQUAL
+
+   Valor de token para ""@="".
+
+token.RARROW
+
+   Valor de token para ""->"".
+
+token.ELLIPSIS
+
+   Valor de token para ""..."".
+
+token.COLONEQUAL
+
+   Valor de token para "":="".
+
+token.EXCLAMATION
+
+   Valor de token para ""!"".
+
+token.OP
+
+token.AWAIT
+
+token.ASYNC
+
+token.TYPE_IGNORE
+
+token.TYPE_COMMENT
+
+token.SOFT_KEYWORD
+
+token.FSTRING_START
+
+token.FSTRING_MIDDLE
+
+token.FSTRING_END
+
+token.COMMENT
+
+token.NL
+
+token.ERRORTOKEN
+
+token.N_TOKENS
+
+token.NT_OFFSET
+
+Os seguintes valores de tipo de token não são usados pelo tokenizador
+do C, mas são necessários para o módulo "tokenize".
+
+token.COMMENT
+
+   Valor de token usado para indicar um comentário.
+
+token.NL
+
+   Valor de token usado para indicar uma nova linha que não termina. O
+   token "NEWLINE" indica o fim de uma linha lógica do código Python.
+   Os tokens "NL" são gerados quando uma linha lógica de código é
+   continuada em várias linhas físicas.
+
+token.ENCODING
+
+   Valor de token que indica a codificação usada para decodificar os
+   bytes de origem em texto. O primeiro token retornado por
+   "tokenize.tokenize()" sempre será um token "ENCODING".
+
+token.TYPE_COMMENT
+
+   Valor do token indicando que um comentário de tipo foi reconhecido.
+   Esses tokens são produzidos apenas quando "ast.parse()" é chamado
+   com "type_comments=True".
+
+Alterado na versão 3.5: Adicionados os tokens "AWAIT" e "ASYNC".
+
+Alterado na versão 3.7: Adicionados os tokens "COMMENT", "NL" e
+"ENCODING".
+
+Alterado na versão 3.7: Removido os tokens "AWAIT" e "ASYNC". "async"
+e "await" são agora tokenizados como tokens "NAME".
+
+Alterado na versão 3.8: Adicionados "TYPE_COMMENT", "TYPE_IGNORE",
+"COLONEQUAL". Adicionados os tokens "AWAIT" e "ASYNC" (eles são
+necessários para dar suporte à análise de versões mais antigas do
+Python para "ast.parse()" com "feature_version" definido como 6 ou
+inferior).

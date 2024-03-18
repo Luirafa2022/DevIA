@@ -1,0 +1,677 @@
+"random" --- Gera números pseudoaleatórios
+******************************************
+
+**Código-fonte:** Lib/random.py
+
+======================================================================
+
+Este módulo implementa geradores de números pseudoaleatórios para
+várias distribuições.
+
+Para números inteiros, há uma seleção uniforme de um intervalo. Para
+sequências, há uma seleção uniforme de um elemento aleatório, uma
+função para gerar uma permutação aleatória de uma lista internamanete
+e uma função para amostragem aleatória sem substituição.
+
+Na linha real, existem funções para calcular distribuições uniforme,
+normal (gaussiana), log-normal, exponencial negativa, gama e beta.
+Para gerar distribuições de ângulos, a distribuição de von Mises está
+disponível.
+
+Almost all module functions depend on the basic function "random()",
+which generates a random float uniformly in the half-open range "0.0
+<= X < 1.0". Python uses the Mersenne Twister as the core generator.
+It produces 53-bit precision floats and has a period of 2**19937-1.
+The underlying implementation in C is both fast and threadsafe.  The
+Mersenne Twister is one of the most extensively tested random number
+generators in existence.  However, being completely deterministic, it
+is not suitable for all purposes, and is completely unsuitable for
+cryptographic purposes.
+
+As funções fornecidas por este módulo são, na verdade, métodos
+vinculados de uma instância oculta da classe "random.Random". Você
+pode instanciar suas próprias instâncias de "Random" para obter
+geradores que não compartilham estado.
+
+Class "Random" can also be subclassed if you want to use a different
+basic generator of your own devising: see the documentation on that
+class for more details.
+
+O módulo "random" também fornece a classe "SystemRandom" que usa a
+função do sistema "os.urandom()" para gerar números aleatórios a
+partir de fontes fornecidas pelo sistema operacional.
+
+Aviso:
+
+  Os geradores pseudoaleatórios deste módulo não devem ser usados para
+  fins de segurança. Para segurança ou uso criptográfico, veja o
+  módulo "secrets".
+
+Ver também:
+
+  M. Matsumoto and T. Nishimura, "Mersenne Twister: A
+  623-dimensionally equidistributed uniform pseudorandom number
+  generator", ACM Transactions on Modeling and Computer Simulation
+  Vol. 8, No. 1, January pp.3--30 1998.
+
+  Receita de Complementary-Multiply-with-Carry para um gerador de
+  números aleatórios alternativo compatível com um longo período e
+  operações de atualização comparativamente simples.
+
+
+Funções de contabilidade
+========================
+
+random.seed(a=None, version=2)
+
+   Inicializa o gerador de números aleatórios.
+
+   Se *a* for omitido ou "None", a hora atual do sistema será usada.
+   Se fontes de aleatoriedade são fornecidas pelo sistema operacional,
+   elas são usadas no lugar da hora do sistema (consulte a função
+   "os.urandom()" para detalhes sobre disponibilidade).
+
+   Se *a* é um int, ele é usado diretamente.
+
+   Com a versão 2 (o padrão), o objeto a "str", "bytes" ou "bytearray"
+   é convertido em um objeto "int" e todos os seus bits são usados.
+
+   Com a versão 1 (fornecida para reproduzir sequências aleatórias de
+   versões mais antigas do Python), o algoritmo para "str" e "bytes"
+   gera um intervalo mais restrito de sementes.
+
+   Alterado na versão 3.2: Movido para o esquema da versão 2, que usa
+   todos os bits em uma semente de strings.
+
+   Alterado na versão 3.11: The *seed* must be one of the following
+   types: "None", "int", "float", "str", "bytes", or "bytearray".
+
+random.getstate()
+
+   Retorna um objeto capturando o estado interno atual do gerador.
+   Este objeto pode ser passado para "setstate()" para restaurar o
+   estado.
+
+random.setstate(state)
+
+   *state* deveria ter sido obtido de uma chamada anterior para
+   "getstate()", e "setstate()" restaura o estado interno do gerador
+   para o que era no momento que "getstate()" foi chamado.
+
+
+Funções para bytes
+==================
+
+random.randbytes(n)
+
+   Gera *n* bytes aleatórios.
+
+   Este método não deve ser usado para gerar tokens de segurança. Use
+   "secrets.token_bytes()".
+
+   Novo na versão 3.9.
+
+
+Funções para inteiros
+=====================
+
+random.randrange(stop)
+random.randrange(start, stop[, step])
+
+   Return a randomly selected element from "range(start, stop, step)".
+
+   This is roughly equivalent to "choice(range(start, stop, step))"
+   but supports arbitrarily large ranges and is optimized for common
+   cases.
+
+   The positional argument pattern matches the "range()" function.
+
+   Keyword arguments should not be used because they can be
+   interpreted in unexpected ways. For example "randrange(start=100)"
+   is interpreted as "randrange(0, 100, 1)".
+
+   Alterado na versão 3.2: "randrange()" é mais sofisticado em
+   produzir valores igualmente distribuídos. Anteriormente, usava um
+   estilo como "int(random()*n)", que poderia produzir distribuições
+   ligeiramente desiguais.
+
+   Alterado na versão 3.12: Automatic conversion of non-integer types
+   is no longer supported. Calls such as "randrange(10.0)" and
+   "randrange(Fraction(10, 1))" now raise a "TypeError".
+
+random.randint(a, b)
+
+   Retorna um inteiro aleatório *N* de forma que "a <= N <= b".
+   Apelido para "randrange(a, b+1)".
+
+random.getrandbits(k)
+
+   Returns a non-negative Python integer with *k* random bits. This
+   method is supplied with the Mersenne Twister generator and some
+   other generators may also provide it as an optional part of the
+   API. When available, "getrandbits()" enables "randrange()" to
+   handle arbitrarily large ranges.
+
+   Alterado na versão 3.9: Este método agora aceita zero em *k*.
+
+
+Funções para sequências
+=======================
+
+random.choice(seq)
+
+   Retorna um elemento aleatório da sequência não vazia *seq*. Se
+   *seq* estiver vazio, levanta "IndexError".
+
+random.choices(population, weights=None, *, cum_weights=None, k=1)
+
+   Retorna uma lista do tamanho de *k* de elementos escolhidos da
+   *population* com substituição. Se a *population* estiver vazio,
+   levanta "IndexError".
+
+   Se uma sequência *weights* for especificada, as seleções serão
+   feitas de acordo com os pesos relativos. Alternativamente, se uma
+   sequência *cum_weights* for fornecida, as seleções serão feitas de
+   acordo com os pesos cumulativos (talvez calculados usando
+   "itertools.accumulate()"). Por exemplo, os pesos relativos "[10, 5,
+   30, 5]" são equivalentes aos pesos cumulativos "[10, 15, 45, 50]".
+   Internamente, os pesos relativos são convertidos em pesos
+   acumulados antes de fazer seleções, portanto, fornecer pesos
+   cumulativos economiza trabalho.
+
+   Se nem *weights* nem *cum_weights* forem especificados, as seleções
+   serão feitas com igual probabilidade. Se uma sequência de pesos for
+   fornecida, ela deverá ter o mesmo comprimento que a sequência
+   *population*. É um "TypeError" para especificar ambos os *weights*
+   e *cum_weights*.
+
+   *weights* ou *cum_weights* pode usar qualquer tipo numérico que
+   interopera com os valores "float" retornados por "random()" (que
+   inclui inteiros, ponto flutuantes, e frações mas exclui decimais).
+   Assume-se que pesos serão não-negativos e finitos. Uma "ValueError"
+   é levantada se todos os pesos forem zero.
+
+   Para uma dada semente, a função "choices()" com igual peso
+   normalmente produz uma sequência diferente das chamadas repetidas
+   para "choice()". O algoritmo usado por "choice()" usa aritmética de
+   ponto flutuante para consistência e velocidade internas. O
+   algoritmo usado por "choice()" assume como padrão aritmética
+   inteira com seleções repetidas para evitar pequenos vieses de erro
+   de arredondamento.
+
+   Novo na versão 3.6.
+
+   Alterado na versão 3.9: Levanta uma "ValueError" se todos os pesos
+   forem zero.
+
+random.shuffle(x)
+
+   Embaralha a sequência *x* internamente.
+
+   Para embaralhar uma sequência imutável e retornar uma nova lista
+   embaralhada, use "sample(x, k=len(x))".
+
+   Observe que, mesmo para pequenos "len(x)", o número total de
+   permutações de *x* pode crescer rapidamente maior que o período da
+   maioria dos geradores de números aleatórios. Isso implica que a
+   maioria das permutações de uma longa sequência nunca pode ser
+   gerada. Por exemplo, uma sequência de comprimento 2080 é a maior
+   que pode caber no período do gerador de números aleatórios Mersenne
+   Twister.
+
+   Alterado na versão 3.11: Removed the optional parameter *random*.
+
+random.sample(population, k, *, counts=None)
+
+   Return a *k* length list of unique elements chosen from the
+   population sequence.  Used for random sampling without replacement.
+
+   Retorna uma nova lista contendo elementos da população, mantendo a
+   população original inalterada. A lista resultante está na ordem de
+   seleção, para que todas as subfatias também sejam amostras
+   aleatórias válidas. Isso permite que os vencedores do sorteio (a
+   amostra) sejam divididos em grandes prêmios e vencedores de segundo
+   lugar (as subfatias).
+
+   Os membros da população não precisam ser *hasheáveis* ou único. Se
+   a população contiver repetições, cada ocorrência é uma seleção
+   possível na amostra.
+
+   Elementos repetidos podem ser especificados um de cada vez ou com o
+   parâmetro somente-nomeado opcional *count*. Por exemplo,
+   "sample(['red', 'blue'], counts=[4, 2], k=5)" é equivalente a
+   "sample(['red', 'red', 'red', 'red', 'blue', 'blue'], k=5)".
+
+   Para escolher uma amostra de um intervalo de números inteiros, use
+   um objeto "range()" como argumento. Isso é especialmente rápido e
+   com eficiência de espaço para amostragem de uma grande população:
+   "sample(range(10000000), k=60)".
+
+   Se o tamanho da amostra for maior que o tamanho da população, uma
+   "ValueError" é levantada.
+
+   Alterado na versão 3.9: Adicionado o parâmetro *counts*.
+
+   Alterado na versão 3.11: The *population* must be a sequence.
+   Automatic conversion of sets to lists is no longer supported.
+
+
+Discrete distributions
+======================
+
+The following function generates a discrete distribution.
+
+random.binomialvariate(n=1, p=0.5)
+
+   Binomial distribution. Return the number of successes for *n*
+   independent trials with the probability of success in each trial
+   being *p*:
+
+   Mathematically equivalent to:
+
+      sum(random() < p for i in range(n))
+
+   The number of trials *n* should be a non-negative integer. The
+   probability of success *p* should be between "0.0 <= p <= 1.0". The
+   result is an integer in the range "0 <= X <= n".
+
+   Novo na versão 3.12.
+
+
+Distribuições com valor real
+============================
+
+As funções a seguir geram distribuições específicas com valor real. Os
+parâmetros de função são nomeados após as variáveis correspondentes na
+equação da distribuição, conforme usadas na prática matemática comum;
+a maioria dessas equações pode ser encontrada em qualquer texto
+estatístico.
+
+random.random()
+
+   Return the next random floating point number in the range "0.0 <= X
+   < 1.0"
+
+random.uniform(a, b)
+
+   Retorna um número de ponto flutuante aleatório *N* de forma que "a
+   <= N <= b" para "a <= b" e "b <= N <= a" para "b < a".
+
+   The end-point value "b" may or may not be included in the range
+   depending on floating-point rounding in the expression "a + (b-a) *
+   random()".
+
+random.triangular(low, high, mode)
+
+   Retorna um número de ponto flutuante aleatório *N* de forma que
+   "low <= N <= high" e com o *mode* especificado entre esses limites.
+   Os limites *low* e *high* são padronizados como zero e um. O
+   argumento *mode* assume como padrão o ponto médio entre os limites,
+   fornecendo uma distribuição simétrica.
+
+random.betavariate(alpha, beta)
+
+   Distribuição beta. As condições nos parâmetros são "alpha > 0" e
+   "beta > 0". Os valores retornados variam entre 0 e 1.
+
+random.expovariate(lambd=1.0)
+
+   Distribuição exponencial. *lambd* é 1.0 dividido pela média
+   desejada. Deve ser diferente de zero. (O parâmetro seria chamado
+   "lambda", mas é uma palavra reservada em Python.) Os valores
+   retornados variam de 0 a infinito positivo se *lambd* for positivo
+   e de infinito negativo a 0 se *lambd* for negativo.
+
+   Alterado na versão 3.12: Added the default value for "lambd".
+
+random.gammavariate(alpha, beta)
+
+   Gamma distribution.  (*Not* the gamma function!)  The shape and
+   scale parameters, *alpha* and *beta*, must have positive values.
+   (Calling conventions vary and some sources define 'beta' as the
+   inverse of the scale).
+
+   A função de distribuição de probabilidade é:
+
+                x ** (alpha - 1) * math.exp(-x / beta)
+      pdf(x) =  --------------------------------------
+                  math.gamma(alpha) * beta ** alpha
+
+random.gauss(mu=0.0, sigma=1.0)
+
+   Normal distribution, also called the Gaussian distribution. *mu* is
+   the mean, and *sigma* is the standard deviation.  This is slightly
+   faster than the "normalvariate()" function defined below.
+
+   Nota sobre multithreading: quando duas threads chamam esta função
+   simultaneamente, é possível que recebam o mesmo valor de retorno.
+   Isso pode ser evitado de três maneiras. 1) Fazer com que cada
+   thread use uma instância diferente do gerador de números
+   aleatórios. 2) Colocar bloqueios em todas as chamadas. 3) Usar a
+   função mais lenta, mas segura para thread  "normalvariate()".
+
+   Alterado na versão 3.11: *mu* and *sigma* now have default
+   arguments.
+
+random.lognormvariate(mu, sigma)
+
+   Distribuição log normal. Se você usar o logaritmo natural dessa
+   distribuição, obterá uma distribuição normal com média *mu* e
+   desvio padrão *sigma*. *mu* pode ter qualquer valor e *sigma* deve
+   ser maior que zero.
+
+random.normalvariate(mu=0.0, sigma=1.0)
+
+   Distribuição normal. *mu* é a média e *sigma* é o desvio padrão.
+
+   Alterado na versão 3.11: *mu* and *sigma* now have default
+   arguments.
+
+random.vonmisesvariate(mu, kappa)
+
+   *mu* é o ângulo médio, expresso em radianos entre 0 e 2**pi*, e
+   *kappa* é o parâmetro de concentração, que deve ser maior ou igual
+   a zero. Se *kappa* for igual a zero, essa distribuição será
+   reduzida para um ângulo aleatório uniforme no intervalo de 0 a
+   2**pi*.
+
+random.paretovariate(alpha)
+
+   Distribuição de Pareto. *alpha* é o parâmetro de forma.
+
+random.weibullvariate(alpha, beta)
+
+   Distribuição Weibull. *alpha* é o parâmetro de escala e *beta* é o
+   parâmetro de forma.
+
+
+Gerador alternativo
+===================
+
+class random.Random([seed])
+
+   Classe que implementa o gerador de números pseudoaleatórios padrão
+   usado pelo módulo "random".
+
+   Alterado na versão 3.11: Formerly the *seed* could be any hashable
+   object.  Now it is limited to: "None", "int", "float", "str",
+   "bytes", or "bytearray".
+
+   Subclasses of "Random" should override the following methods if
+   they wish to make use of a different basic generator:
+
+   seed(a=None, version=2)
+
+      Override this method in subclasses to customise the "seed()"
+      behaviour of "Random" instances.
+
+   getstate()
+
+      Override this method in subclasses to customise the "getstate()"
+      behaviour of "Random" instances.
+
+   setstate(state)
+
+      Override this method in subclasses to customise the "setstate()"
+      behaviour of "Random" instances.
+
+   random()
+
+      Override this method in subclasses to customise the "random()"
+      behaviour of "Random" instances.
+
+   Optionally, a custom generator subclass can also supply the
+   following method:
+
+   getrandbits(k)
+
+      Override this method in subclasses to customise the
+      "getrandbits()" behaviour of "Random" instances.
+
+class random.SystemRandom([seed])
+
+   Classe que usa a função "os.urandom()" para gerar números
+   aleatórios a partir de fontes fornecidas pelo sistema operacional.
+   Não disponível em todos os sistemas. Não depende do estado do
+   software e as sequências não são reproduzíveis. Assim, o método
+   "seed()" não tem efeito e é ignorado. Os métodos "getstate()" e
+   "setstate()" levantam "NotImplementedError" se chamados.
+
+
+Notas sobre reprodutibilidade
+=============================
+
+Sometimes it is useful to be able to reproduce the sequences given by
+a pseudo-random number generator.  By reusing a seed value, the same
+sequence should be reproducible from run to run as long as multiple
+threads are not running.
+
+A maioria dos algoritmos e funções de propagação do módulo aleatório
+está sujeita a alterações nas versões de Python, mas dois aspectos são
+garantidos para não serem alterados:
+
+* Se um novo método de semeadura for adicionado, será oferecida uma
+  semeadora compatível com versões anteriores.
+
+* O método do gerador "random()" continuará produzindo a mesma
+  sequência quando o semeador compatível receber a mesma semente.
+
+
+Exemplos
+========
+
+Exemplos básicos:
+
+   >>> random()                          # Random float:  0.0 <= x < 1.0
+   0.37444887175646646
+
+   >>> uniform(2.5, 10.0)                # Random float:  2.5 <= x <= 10.0
+   3.1800146073117523
+
+   >>> expovariate(1 / 5)                # Interval between arrivals averaging 5 seconds
+   5.148957571865031
+
+   >>> randrange(10)                     # Integer from 0 to 9 inclusive
+   7
+
+   >>> randrange(0, 101, 2)              # Even integer from 0 to 100 inclusive
+   26
+
+   >>> choice(['win', 'lose', 'draw'])   # Single random element from a sequence
+   'draw'
+
+   >>> deck = 'ace two three four'.split()
+   >>> shuffle(deck)                     # Shuffle a list
+   >>> deck
+   ['four', 'two', 'ace', 'three']
+
+   >>> sample([10, 20, 30, 40, 50], k=4) # Four samples without replacement
+   [40, 10, 50, 30]
+
+Simulações:
+
+   >>> # Six roulette wheel spins (weighted sampling with replacement)
+   >>> choices(['red', 'black', 'green'], [18, 18, 2], k=6)
+   ['red', 'green', 'black', 'black', 'red', 'black']
+
+   >>> # Deal 20 cards without replacement from a deck
+   >>> # of 52 playing cards, and determine the proportion of cards
+   >>> # with a ten-value:  ten, jack, queen, or king.
+   >>> deal = sample(['tens', 'low cards'], counts=[16, 36], k=20)
+   >>> deal.count('tens') / 20
+   0.15
+
+   >>> # Estimate the probability of getting 5 or more heads from 7 spins
+   >>> # of a biased coin that settles on heads 60% of the time.
+   >>> sum(binomialvariate(n=7, p=0.6) >= 5 for i in range(10_000)) / 10_000
+   0.4169
+
+   >>> # Probability of the median of 5 samples being in middle two quartiles
+   >>> def trial():
+   ...     return 2_500 <= sorted(choices(range(10_000), k=5))[2] < 7_500
+   ...
+   >>> sum(trial() for i in range(10_000)) / 10_000
+   0.7958
+
+Exemplo de bootstrapping estatístico usando reamostragem com
+substituição para estimar um intervalo de confiança para a média de
+uma amostra:
+
+   # https://www.thoughtco.com/example-of-bootstrapping-3126155
+   from statistics import fmean as mean
+   from random import choices
+
+   data = [41, 50, 29, 37, 81, 30, 73, 63, 20, 35, 68, 22, 60, 31, 95]
+   means = sorted(mean(choices(data, k=len(data))) for i in range(100))
+   print(f'The sample mean of {mean(data):.1f} has a 90% confidence '
+         f'interval from {means[5]:.1f} to {means[94]:.1f}')
+
+Exemplo de um teste de permutação de reamostragem para determinar a
+significância estatística ou valor-p de uma diferença observada entre
+os efeitos de uma droga em comparação com um placebo:
+
+   # Example from "Statistics is Easy" by Dennis Shasha and Manda Wilson
+   from statistics import fmean as mean
+   from random import shuffle
+
+   drug = [54, 73, 53, 70, 73, 68, 52, 65, 65]
+   placebo = [54, 51, 58, 44, 55, 52, 42, 47, 58, 46]
+   observed_diff = mean(drug) - mean(placebo)
+
+   n = 10_000
+   count = 0
+   combined = drug + placebo
+   for i in range(n):
+       shuffle(combined)
+       new_diff = mean(combined[:len(drug)]) - mean(combined[len(drug):])
+       count += (new_diff >= observed_diff)
+
+   print(f'{n} label reshufflings produced only {count} instances with a difference')
+   print(f'at least as extreme as the observed difference of {observed_diff:.1f}.')
+   print(f'The one-sided p-value of {count / n:.4f} leads us to reject the null')
+   print(f'hypothesis that there is no difference between the drug and the placebo.')
+
+Simulação de tempos de chegada e entregas de serviços para uma fila
+multisservidor:
+
+   from heapq import heapify, heapreplace
+   from random import expovariate, gauss
+   from statistics import mean, quantiles
+
+   average_arrival_interval = 5.6
+   average_service_time = 15.0
+   stdev_service_time = 3.5
+   num_servers = 3
+
+   waits = []
+   arrival_time = 0.0
+   servers = [0.0] * num_servers  # time when each server becomes available
+   heapify(servers)
+   for i in range(1_000_000):
+       arrival_time += expovariate(1.0 / average_arrival_interval)
+       next_server_available = servers[0]
+       wait = max(0.0, next_server_available - arrival_time)
+       waits.append(wait)
+       service_duration = max(0.0, gauss(average_service_time, stdev_service_time))
+       service_completed = arrival_time + wait + service_duration
+       heapreplace(servers, service_completed)
+
+   print(f'Mean wait: {mean(waits):.1f}   Max wait: {max(waits):.1f}')
+   print('Quartiles:', [round(q, 1) for q in quantiles(waits)])
+
+Ver também:
+
+  Statistics for Hackers um tutorial em vídeo por Jake Vanderplas
+  sobre análise estatística usando apenas alguns conceitos
+  fundamentais, incluindo simulação, amostragem, embaralhamento e
+  validação cruzada.
+
+  Economics Simulation a simulation of a marketplace by Peter Norvig
+  that shows effective use of many of the tools and distributions
+  provided by this module (gauss, uniform, sample, betavariate,
+  choice, triangular, and randrange).
+
+  A Concrete Introduction to Probability (using Python) a tutorial by
+  Peter Norvig covering the basics of probability theory, how to write
+  simulations, and how to perform data analysis using Python.
+
+
+Receitas
+========
+
+These recipes show how to efficiently make random selections from the
+combinatoric iterators in the "itertools" module:
+
+   def random_product(*args, repeat=1):
+       "Random selection from itertools.product(*args, **kwds)"
+       pools = [tuple(pool) for pool in args] * repeat
+       return tuple(map(random.choice, pools))
+
+   def random_permutation(iterable, r=None):
+       "Random selection from itertools.permutations(iterable, r)"
+       pool = tuple(iterable)
+       r = len(pool) if r is None else r
+       return tuple(random.sample(pool, r))
+
+   def random_combination(iterable, r):
+       "Random selection from itertools.combinations(iterable, r)"
+       pool = tuple(iterable)
+       n = len(pool)
+       indices = sorted(random.sample(range(n), r))
+       return tuple(pool[i] for i in indices)
+
+   def random_combination_with_replacement(iterable, r):
+       "Choose r elements with replacement.  Order the result to match the iterable."
+       # Result will be in set(itertools.combinations_with_replacement(iterable, r)).
+       pool = tuple(iterable)
+       n = len(pool)
+       indices = sorted(random.choices(range(n), k=r))
+       return tuple(pool[i] for i in indices)
+
+O padrão de "random()" é retornar múltiplos de 2⁻⁵³ no intervalo *0.0
+≤ x < 1.0*. Todos esses números são espaçados uniformemente e são
+representáveis exatamente como pontos flutuantes Python. No entanto,
+muitos outros pontos flutuantes representados nesse intervalo não são
+seleções possíveis. Por exemplo, "0.05954861408025609" não é um
+múltiplo inteiro de 2⁻⁵³.
+
+A receita a seguir tem uma abordagem diferente. Todos os pontos
+flutuantes no intervalo são seleções possíveis. A mantissa vem de uma
+distribuição uniforme de inteiros no intervalo *2⁵² ≤ mantissa < 2⁵³*.
+O expoente vem de uma distribuição geométrica onde expoentes menores
+que *-53* ocorrem com metade da frequência do próximo expoente maior.
+
+   from random import Random
+   from math import ldexp
+
+   class FullRandom(Random):
+
+       def random(self):
+           mantissa = 0x10_0000_0000_0000 | self.getrandbits(52)
+           exponent = -53
+           x = 0
+           while not x:
+               x = self.getrandbits(32)
+               exponent += x.bit_length() - 32
+           return ldexp(mantissa, exponent)
+
+Todas as distribuições reais valoradas na classe usarão o novo método:
+
+   >>> fr = FullRandom()
+   >>> fr.random()
+   0.05954861408025609
+   >>> fr.expovariate(0.25)
+   8.87925541791544
+
+A receita é conceitualmente equivalente a um algoritmo que escolhe
+entre todos os múltiplos de 2⁻¹⁰⁷⁴ no intervalo *0.0 ≤ x < 1.0*. Todos
+esses números são espaçados uniformemente, mas a maioria deve ser
+arredondada para o ponto flutuante Python representável mais próximo.
+(O valor 2⁻¹⁰⁷⁴ é o menor ponto flutuante positivo não normalizado e é
+igual a "math.ulp(0.0)".)
+
+Ver também:
+
+  Generating Pseudo-random Floating-Point Values um artigo de Allen B.
+  Downey descrevendo formas de gerar pontos flutuantes mais refinados
+  do que normalmente gerados por "random()".

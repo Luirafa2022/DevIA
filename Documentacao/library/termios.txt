@@ -1,0 +1,127 @@
+"termios" --- Controle de tty no estilo POSIX
+*********************************************
+
+======================================================================
+
+Este módulo fornece uma interface para as chamadas POSIX para controle
+de E/S do tty. Para uma descrição completa dessas chamadas, consulte a
+página de manual Unix *termios(3)*. Está disponível apenas para as
+versões Unix que tenham suporte ao controle de E/S de tty no estilo
+POSIX do *termios* configurado durante a instalação.
+
+Disponibilidade: Unix.
+
+Todas as funções neste módulo usam um descritor de arquivo *fd* como
+seu primeiro argumento. Pode ser um descritor de arquivo de tipo
+inteiro, como retornado por "sys.stdin.fileno()", ou um *objeto
+arquivo*, como o próprio "sys.stdin".
+
+Este módulo também define todas as constantes necessárias para
+trabalhar com as funções fornecidas aqui; estes têm o mesmo nome de
+seus equivalentes em C. Consulte a documentação do sistema para mais
+informações sobre o uso dessas interfaces de controle de terminal.
+
+O módulo define as seguintes funções:
+
+termios.tcgetattr(fd)
+
+   Retorna uma lista contendo os atributos tty para o descritor de
+   arquivo *fd*, da seguinte forma: "[iflag, oflag, cflag, lflag,
+   ispeed, ospeed, cc]" onde *cc* é uma lista dos caracteres especiais
+   do tty (cada uma string de comprimento 1, exceto os itens com
+   índices "VMIN" e "VTIME", que são números inteiros quando esses
+   campos são definidos). A interpretação dos sinalizadores e as
+   velocidades, bem como a indexação no vetor *cc*, devem ser feitas
+   usando as constantes simbólicas definidas no módulo "termios".
+
+termios.tcsetattr(fd, when, attributes)
+
+   Define os atributos do tty para descritor de arquivo *fd* a partir
+   de *attributes*, que é uma lista como a retornada por
+   "tcgetattr()". O argumento *when* determina quando os atributos são
+   alterados:
+
+   termios.TCSANOW
+
+      Altera os atributos imediatamente.
+
+   termios.TCSADRAIN
+
+      Altera os atributos depois de transmitir todas as saídas
+      enfileiradas.
+
+   termios.TCSAFLUSH
+
+      Altera os atributos depois de transmitir todas as saídas
+      enfileiradas e descartar todas as entradas enfileiradas.
+
+termios.tcsendbreak(fd, duration)
+
+   Envia uma quebra no descritor de arquivo *fd*. Uma duração zero,
+   representada por *duration*, envia uma pausa por 0,25 a 0,5
+   segundos; *duration* com valor diferente de zero tem um significado
+   dependente do sistema.
+
+termios.tcdrain(fd)
+
+   Aguarda até que toda a saída escrita no descritor de arquivo *fd*
+   seja transmitida.
+
+termios.tcflush(fd, queue)
+
+   Descarta dados na fila no descritor de arquivo *fd*. O seletor
+   *queue* especifica qual fila: "TCIFLUSH" para a fila de entrada,
+   "TCOFLUSH" para a fila de saída ou "TCIOFLUSH" para as duas filas.
+
+termios.tcflow(fd, action)
+
+   Suspende ou retoma a entrada ou saída no descritor de arquivo *fd*.
+   O argumento *action* pode ser "TCOOFF" para suspender a saída,
+   "TCOON" para reiniciar a saída, "TCIOFF" para suspender a entrada
+   ou "TCION" para reiniciar a entrada.
+
+termios.tcgetwinsize(fd)
+
+   Retorna uma tupla "(ws_row, ws_col)" contendo o tamanho da janela
+   de terminal para o descritor de arquivo *fd*. Requer
+   "termios.TIOCGWINSZ" ou "termios.TIOCGSIZE".
+
+   Novo na versão 3.11.
+
+termios.tcsetwinsize(fd, winsize)
+
+   Define o tamanho da janela de terminal para o descritor de arquivo
+   *fd* de *winsize*, que é uma tupla de dois elementos "(ws_row,
+   ws_col)" como a retornada por "tcgetwinsize()". Requer pelo menos
+   um dos pares ("termios.TIOCGWINSZ", "termios.TIOCSWINSZ");
+   ("termios.TIOCGSIZE", "termios.TIOCSSIZE") a ser definido.
+
+   Novo na versão 3.11.
+
+Ver também:
+
+  Módulo "tty"
+     Funções de conveniência para operações comuns de controle de
+     terminal.
+
+
+Exemplo
+=======
+
+Aqui está uma função que solicita uma senha com o eco desativado.
+Observe a técnica usando uma chamada separada "tcgetattr()" e uma
+instrução "try" ... "finally" para garantir que os atributos tty
+antigos sejam restaurados exatamente, aconteça o que acontecer:
+
+   def getpass(prompt="Password: "):
+       import termios, sys
+       fd = sys.stdin.fileno()
+       old = termios.tcgetattr(fd)
+       new = termios.tcgetattr(fd)
+       new[3] = new[3] & ~termios.ECHO          # lflags
+       try:
+           termios.tcsetattr(fd, termios.TCSADRAIN, new)
+           passwd = input(prompt)
+       finally:
+           termios.tcsetattr(fd, termios.TCSADRAIN, old)
+       return passwd

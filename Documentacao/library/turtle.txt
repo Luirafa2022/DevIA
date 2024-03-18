@@ -1,0 +1,2586 @@
+"turtle" --- Gráficos Tartaruga
+*******************************
+
+**Código-fonte:** Lib/turtle.py
+
+======================================================================
+
+
+Introdução
+==========
+
+Os gráficos Turtle são uma implementação das populares ferramentas de
+desenho geométrico introduzidas em Logo, desenvolvido por Wally
+Feurzeig, Seymour Papert e Cynthia Solomon em 1967.
+
+
+Turtle star
+^^^^^^^^^^^
+
+A tartaruga pode desenhar formas intrincadas usando programas que
+repetem movimentos simples.
+
+[imagem]
+
+Em Python, os gráficos de tartaruga fornecem uma representação de uma
+"tartaruga" física (um pequeno robô com uma caneta) que desenha em uma
+folha de papel no chão.
+
+É uma maneira eficaz e comprovada de os alunos conhecerem os conceitos
+de programação e a interação com o software, pois oferece feedback
+instantâneo e visível. Também oferece acesso conveniente a resultados
+gráficos em geral.
+
+Desenho de tartaruga foi originalmente criado como uma ferramenta
+educacional, para ser usado por professores em sala de aula. Para o
+programador que precisa produzir algum resultado gráfico, essa pode
+ser uma maneira de fazer isso sem a sobrecarga de introduzir
+bibliotecas mais complexas ou externas em seu trabalho.
+
+
+Tutorial
+========
+
+Os novos usuários devem começar por aqui. Neste tutorial, exploraremos
+alguns dos conceitos básicos do desenho de tartarugas.
+
+
+Iniciando um ambiente de desenvolvimento da tartaruga
+-----------------------------------------------------
+
+Em um console do Python, faça a importação de todos os objetos do
+módulo denominado "turtle"
+
+   from turtle import *
+
+Se você se deparar com a seguinte mensagem de erro "No module named
+'_tkinter'", será necessário instalar o "Tk - pacote de interface
+gráfica" em seu sistema.
+
+
+Desenho básico
+--------------
+
+Envie a tartaruga para frente 100 passos:
+
+   forward(100)
+
+Você deverá ver (provavelmente, em uma nova janela na sua tela) uma
+linha desenhada pela tartaruga, em direção ao leste → . Mude a direção
+da tartaruga, de modo que ela gire 120 graus para a esquerda (sentido
+anti-horário):
+
+   left(120)
+
+Vamos continuar desenhando um triângulo:
+
+   forward(100)
+   left(120)
+   forward(100)
+
+Observe como a tartaruga, representada por uma seta, aponta em
+diferentes direções à medida que você a dirige.
+
+Faça experiências com esses comandos e também com "backward()" e
+"right()".
+
+
+Controle da Caneta
+~~~~~~~~~~~~~~~~~~
+
+Tente alterar a cor - por exemplo, "color('blue')" - e a largura da
+linha - por exemplo, "width(3)" - e, em seguida, desenhe novamente.
+
+Você também pode mover a tartaruga sem desenhar, levantando a caneta:
+"up()" antes de mover. Para começar a desenhar novamente, use
+"down()".
+
+
+A posição da tartaruga
+~~~~~~~~~~~~~~~~~~~~~~
+
+Envie sua tartaruga de volta ao ponto de partida (útil se ela tiver
+desaparecido da tela):
+
+   home()
+
+A posição inicial da tartaruga está no centro da tela. Se você
+precisar conhecê-la, obtenha as coordenadas x-y da tartaruga com:
+
+   pos()
+
+A a posição inicial fica em "(0, 0)".
+
+E, depois de um tempo, provavelmente vai querer ajudar a limpar a
+janela aberta para que possamos começar de novo:
+
+   clearscreen()
+
+
+Criação de padrões algorítmicos
+-------------------------------
+
+Usando laços de repetição, é possível construir criar padrões
+geométricos:
+
+   for steps in range(100):
+       for c in ('blue', 'red', 'green'):
+           color(c)
+           forward(steps)
+           right(30)
+
+- que, é claro, são limitados apenas pela imaginação!
+
+Vamos desenhar o formato de estrela na parte superior da página.
+Queremos linhas de contorno vermelhas, com preenchimento em amarelo:
+
+   color('red')
+   fillcolor('yellow')
+
+Assim como "up()" e "down()" determinam se as linhas serão desenhadas,
+o preenchimento pode ser ativado e desativado:
+
+   begin_fill()
+
+Em seguida, vamos criar um laço de repetição:
+
+   while True:
+       forward(200)
+       left(170)
+       if abs(pos()) < 1:
+           break
+
+"abs(pos()) < 1" é uma boa maneira de saber quando a tartaruga está de
+volta à sua posição inicial.
+
+Por fim, complete o preenchimento:
+
+   end_fill()
+
+(Observe que o preenchimento só ocorre de fato quando você fornece o
+comando "end_fill()" .)
+
+
+Como fazer...
+=============
+
+Esta seção aborda alguns casos de uso e abordagens típicos do módulo
+"turtle".
+
+
+Comece o mais rápido possível
+-----------------------------
+
+Uma dos prazeres dos gráficos de tartaruga é o feedback visual
+imediato disponível a partir de comandos simples. É uma excelente
+maneira de apresentar ideias de programação às crianças, com um mínimo
+de sofrimento (não apenas às crianças, é claro).
+
+O módulo tartaruga torna isso possível ao expor toda a sua
+funcionalidade básica como funções, disponíveis com "from turtle
+import *". O tutorial gráficos de turtle cobre essa abordagem.
+
+Vale a pena observar que muitos dos comandos da tartaruga também
+possuem equivalentes ainda mais concisos, como usar "fd()" para obter
+o mesmo resultado de "forward()". Esses comandos são especialmente
+úteis quando se trabalha com alunos para os quais a digitação não é
+uma habilidade.
+
+   Você precisará ter o pacote de interface "Tk" instalado em seu
+   sistema para que os gráficos do módulo "turtle" funcionem. Esteja
+   ciente de que isso nem sempre é simples, portanto, verifique isso
+   com antecedência se estiver planejando usar os gráficos de
+   tartaruga com um aluno.
+
+
+Use o "identificador" do módulo "turtle"
+----------------------------------------
+
+Usar "from turtle import *" é conveniente, mas lembre-se de que ele
+importa um coleção bastante grande de objetos e, se você estiver
+fazendo qualquer coisa no seu código que não esteja relacionada com o
+módulo gráficos de tartaruga, corre o risco de um conflito de nomes de
+objetos (isso se torna um problema ainda maior se você estiver usando
+o módulo de gráficos de tartaruga em um script em que outros módulos
+possam ser também importados).
+
+A solução é usar o identificador/domínio do próprio módulo "import
+turtle" sem o asterisco no final da importação - assim a chamada do
+objeto/função "fd()" torna-se "turtle.fd()", da mesma forma como
+"width()" torna-se "turtle.width()" e assim por diante.  (Se digitar
+"turtle" várias vezes se tornar tedioso, use "import turtle as t", por
+exemplo, para fornecer um apelido mais conciso e objetivo ao
+identificador/domínio dentro do seu código).
+
+
+Usar o módulo gráfico de tartaruga dentro de um script (código específico)
+--------------------------------------------------------------------------
+
+Recomenda-se usar o módulo "turtle" com uma apelido para
+identificador/domínio, conforme descrito acima, por exemplo:
+
+   import turtle as t
+   from random import random
+
+   for i in range(100):
+       steps = int(random() * 100)
+       angle = int(random() * 360)
+       t.right(angle)
+       t.fd(steps)
+
+No entanto, outra etapa também é necessária ou o Python também fechará
+a janela da tartaruga assim que o código acima terminar de ser
+executado. Adicione:
+
+   t.mainloop()
+
+ao final do código anterior. Assim, o código anterior agora conterá
+uma instrução que aguardará ser dispensado e não sairá até que seja
+encerrado, por exemplo, fechando a janela aberta pelo módulo gráficos
+da tartaruga.
+
+
+Use o módulo gráficos da tartaruga orientado a objetos
+------------------------------------------------------
+
+Ver também: Explicação de interface orientada a objetos
+
+Exceto para fins introdutórios muito básicos ou para experimentar
+coisas o mais rápido possível, é mais comum e muito mais eficiente
+usar a abordagem orientada a objetos para gráficos de tartarugas. Por
+exemplo, isso permite várias tartarugas na tela ao mesmo tempo.
+
+Nessa abordagem, os vários comandos do módulo "turtle" são métodos de
+objetos (principalmente objetos  de "Turtle"). Você *pode* usar a
+abordagem orientada a <txprotected>objetos</txprotected> em console,
+mas ela seria mais típica em um script Python.
+
+O exemplo acima se torna então:
+
+   from turtle import Turtle
+   from random import random
+
+   t = Turtle()
+   for i in range(100):
+       steps = int(random() * 100)
+       angle = int(random() * 360)
+       t.right(angle)
+       t.fd(steps)
+
+   t.screen.mainloop()
+
+Observe a última linha. "t.screen" é um instância da subclasse
+"Screen" que existe numa instância da classe tartaruga ou "turtle";
+ela é criada automaticamente junto com a instância de tartaruga.
+
+A tela da tartaruga pode ser personalizada, por exemplo:
+
+   t.screen.title('Object-oriented turtle demo')
+   t.screen.bgcolor("orange")
+
+
+Referência Gráficos de Tartaruga
+================================
+
+Nota:
+
+  Na documentação a seguir, a lista de argumentos para funções é
+  fornecida. Os métodos, é claro, têm o primeiro argumento adicional
+  *self* que é omitido aqui.
+
+
+Métodos de Turtle
+-----------------
+
+Movimentos de Turtle
+   Movimento e desenho
+         "forward()" | "fd()"
+         "backward()" | "bk()" | "back()"
+         "right()" | "rt()"
+         "left()" | "lt()"
+         "goto()" | "setpos()" | "setposition()"
+         "teleport()"
+         "setx()"
+         "sety()"
+         "setheading()" | "seth()"
+         "home()"
+         "circle()"
+         "dot()"
+         "stamp()"
+         "clearstamp()"
+         "clearstamps()"
+         "undo()"
+         "speed()"
+
+   Fala o estado de Turtle
+         "position()" | "pos()"
+         "towards()"
+         "xcor()"
+         "ycor()"
+         "heading()"
+         "distance()"
+
+   Configuração e Medidas
+         "degrees()"
+         "radians()"
+
+Controle da Caneta
+   Estado do Desenho
+         "pendown()" | "pd()" | "down()"
+         "penup()" | "pu()" | "up()"
+         "pensize()" | "width()"
+         "pen()"
+         "isdown()"
+
+   Controle da Cor
+         "color()"
+         "pencolor()"
+         "fillcolor()"
+
+   Preenchimento
+         "filling()"
+         "begin_fill()"
+         "end_fill()"
+
+   Mais sobre o Controle do Desenho
+         "reset()"
+         "clear()"
+         "write()"
+
+Estado da tartaruga
+   Visibilidade
+         "showturtle()" | "st()"
+         "hideturtle()" | "ht()"
+         "isvisible()"
+
+   Aparência
+         "shape()"
+         "resizemode()"
+         "shapesize()" | "turtlesize()"
+         "shearfactor()"
+         "settiltangle()"
+         "tiltangle()"
+         "tilt()"
+         "shapetransform()"
+         "get_shapepoly()"
+
+Eventos Utilizados
+      "onclick()"
+      "onrelease()"
+      "ondrag()"
+
+Métodos Especiais da Tartaruga
+      "begin_poly()"
+      "end_poly()"
+      "get_poly()"
+      "clone()"
+      "getturtle()" | "getpen()"
+      "getscreen()"
+      "setundobuffer()"
+      "undobufferentries()"
+
+
+Métodos de TurtleScreen/Screen
+------------------------------
+
+Controle da Janela
+      "bgcolor()"
+      "bgpic()"
+      "clearscreen()"
+      "resetscreen()"
+      "screensize()"
+      "setworldcoordinates()"
+
+Controle da animação
+      "delay()"
+      "tracer()"
+      "update()"
+
+Usando os eventos de tela
+      "listen()"
+      "onkey()" | "onkeyrelease()"
+      "onkeypress()"
+      "onclick()" | "onscreenclick()"
+      "ontimer()"
+      "mainloop()" | "done()"
+
+Configurações e métodos especiais
+      "mode()"
+      "colormode()"
+      "getcanvas()"
+      "getshapes()"
+      "register_shape()" | "addshape()"
+      "turtles()"
+      "window_height()"
+      "window_width()"
+
+Métodos de entrada
+      "textinput()"
+      "numinput()"
+
+Métodos específicos para Screen
+      "bye()"
+      "exitonclick()"
+      "setup()"
+      "title()"
+
+
+Métodos de RawTurtle/Turtle e funções correspondentes
+=====================================================
+
+A maioria dos exemplos desta seção referem-se a uma instância Turtle
+chamada "turtle".
+
+
+Movimentos de Turtle
+--------------------
+
+turtle.forward(distance)
+turtle.fd(distance)
+
+   Parâmetros:
+      **distance** -- um número (inteiro ou ponto flutuante)
+
+   Move a tartaruga para frente pela *distance* especificada, na
+   direção em que a tartaruga está indo.
+
+      >>> turtle.position()
+      (0.00,0.00)
+      >>> turtle.forward(25)
+      >>> turtle.position()
+      (25.00,0.00)
+      >>> turtle.forward(-75)
+      >>> turtle.position()
+      (-50.00,0.00)
+
+turtle.back(distance)
+turtle.bk(distance)
+turtle.backward(distance)
+
+   Parâmetros:
+      **distance** -- um número
+
+   Move a tartaruga para trás por *distance*, na direção oposta à
+   direção em que a tartaruga está indo. Não muda o rumo da tartaruga.
+
+      >>> turtle.position()
+      (0.00,0.00)
+      >>> turtle.backward(30)
+      >>> turtle.position()
+      (-30.00,0.00)
+
+turtle.right(angle)
+turtle.rt(angle)
+
+   Parâmetros:
+      **angle** -- um número (inteiro ou ponto flutuante)
+
+   Vira a tartaruga à direita por unidades de *angle*. (As unidades
+   são por padrão graus, mas podem ser definidas através das funções
+   "degrees()" e "radians()".) A orientação do ângulo depende do modo
+   tartaruga, veja "mode()".
+
+      >>> turtle.heading()
+      22.0
+      >>> turtle.right(45)
+      >>> turtle.heading()
+      337.0
+
+turtle.left(angle)
+turtle.lt(angle)
+
+   Parâmetros:
+      **angle** -- um número (inteiro ou ponto flutuante)
+
+   Vira a tartaruga à esquerda por unidades de *angle*. (As unidades
+   são por padrão graus, mas podem ser definidas através das funções
+   "degrees()" e "radians()".) A orientação do ângulo depende do modo
+   tartaruga, veja "mode()".
+
+      >>> turtle.heading()
+      22.0
+      >>> turtle.left(45)
+      >>> turtle.heading()
+      67.0
+
+turtle.goto(x, y=None)
+turtle.setpos(x, y=None)
+turtle.setposition(x, y=None)
+
+   Parâmetros:
+      * **x** -- um número ou um par/vetor de números
+
+      * **y** -- um número ou "None"
+
+   Se *y* for "None", *x* deve ser um par de coordenadas ou uma classe
+   "Vec2D" (por exemplo, como retornado pela função "pos()").
+
+   Move a tartaruga para uma posição absoluta. Caso a caneta esteja
+   virada para baixo, traça a linha. Não altera a orientação da
+   tartaruga.
+
+      >>> tp = turtle.pos()
+      >>> tp
+      (0.00,0.00)
+      >>> turtle.setpos(60,30)
+      >>> turtle.pos()
+      (60.00,30.00)
+      >>> turtle.setpos((20,80))
+      >>> turtle.pos()
+      (20.00,80.00)
+      >>> turtle.setpos(tp)
+      >>> turtle.pos()
+      (0.00,0.00)
+
+turtle.teleport(x, y=None, *, fill_gap=False)
+
+   Parâmetros:
+      * **x** -- um número ou "None"
+
+      * **y** -- um número ou "None"
+
+      * **fill_gap** -- a boolean
+
+   Move turtle to an absolute position. Unlike goto(x, y), a line will
+   not be drawn. The turtle's orientation does not change. If
+   currently filling, the polygon(s) teleported from will be filled
+   after leaving, and filling will begin again after teleporting. This
+   can be disabled with fill_gap=True, which makes the imaginary line
+   traveled during teleporting act as a fill barrier like in goto(x,
+   y).
+
+      >>> tp = turtle.pos()
+      >>> tp
+      (0.00,0.00)
+      >>> turtle.teleport(60)
+      >>> turtle.pos()
+      (60.00,0.00)
+      >>> turtle.teleport(y=10)
+      >>> turtle.pos()
+      (60.00,10.00)
+      >>> turtle.teleport(20, 30)
+      >>> turtle.pos()
+      (20.00,30.00)
+
+   Novo na versão 3.12.
+
+turtle.setx(x)
+
+   Parâmetros:
+      **x** -- um número (inteiro ou ponto flutuante)
+
+   Define a primeira coordenada da tartaruga para *x*, deixa a segunda
+   coordenada inalterada.
+
+      >>> turtle.position()
+      (0.00,240.00)
+      >>> turtle.setx(10)
+      >>> turtle.position()
+      (10.00,240.00)
+
+turtle.sety(y)
+
+   Parâmetros:
+      **y** -- um número (inteiro ou ponto flutuante)
+
+   Defina a segunda coordenada da tartaruga para *y*, deixa a primeira
+   coordenada inalterada.
+
+      >>> turtle.position()
+      (0.00,40.00)
+      >>> turtle.sety(-10)
+      >>> turtle.position()
+      (0.00,-10.00)
+
+turtle.setheading(to_angle)
+turtle.seth(to_angle)
+
+   Parâmetros:
+      **to_angle** -- um número (inteiro ou ponto flutuante)
+
+   Define a orientação da tartaruga para  *to_angle*. Aqui estão
+   algumas direções mais comuns em graus:
+
+   +---------------------+----------------------+
+   | modo padrão         | modo logo            |
+   |=====================|======================|
+   | 0 - leste           | 0 - norte            |
+   +---------------------+----------------------+
+   | 90 - norte          | 90 - leste           |
+   +---------------------+----------------------+
+   | 180 - oeste         | 180 - sul            |
+   +---------------------+----------------------+
+   | 270 - sul           | 270 - oeste          |
+   +---------------------+----------------------+
+
+      >>> turtle.setheading(90)
+      >>> turtle.heading()
+      90.0
+
+turtle.home()
+
+   Move a tartaruga para a origem -- coordenadas (0,0) -- e define seu
+   rumo para sua orientação inicial (que depende do modo, veja
+   "mode()").
+
+      >>> turtle.heading()
+      90.0
+      >>> turtle.position()
+      (0.00,-10.00)
+      >>> turtle.home()
+      >>> turtle.position()
+      (0.00,0.00)
+      >>> turtle.heading()
+      0.0
+
+turtle.circle(radius, extent=None, steps=None)
+
+   Parâmetros:
+      * **radius** -- um número
+
+      * **extent** -- um número (ou "None")
+
+      * **steps** -- um inteiro  (ou "None")
+
+   Desenha um círculo com dado *radius*. O centro são as unidades de
+   *radius* à esquerda da tartaruga; *extent* -- um ângulo --
+   determina qual parte do círculo é desenhada. Se *extent* não for
+   fornecida, desenha o círculo inteiro. Se *extent* não for um
+   círculo completo, uma extremidade do arco será a posição atual da
+   caneta. Desenha o arco no sentido anti-horário se *radius* for
+   positivo, caso contrário, no sentido horário. Finalmente, a direção
+   da tartaruga é alterada pela quantidade de *extent*.
+
+   Como o círculo é aproximado por um polígono regular inscrito,
+   *steps* determina o número de passos a serem usados. Caso não seja
+   informado, será calculado automaticamente. Pode ser usado para
+   desenhar polígonos regulares.
+
+      >>> turtle.home()
+      >>> turtle.position()
+      (0.00,0.00)
+      >>> turtle.heading()
+      0.0
+      >>> turtle.circle(50)
+      >>> turtle.position()
+      (-0.00,0.00)
+      >>> turtle.heading()
+      0.0
+      >>> turtle.circle(120, 180)  # draw a semicircle
+      >>> turtle.position()
+      (0.00,240.00)
+      >>> turtle.heading()
+      180.0
+
+turtle.dot(size=None, *color)
+
+   Parâmetros:
+      * **size** -- um inteiro >= 1  (caso seja fornecido)
+
+      * **color** -- uma string de cores ou uma tupla de cores
+        numéricas
+
+   Desenha um ponto circular com diâmetro *size*, usando *color*. Se
+   *size* não for fornecido, o máximo de pensize+4 e 2*pensize será
+   usado.
+
+      >>> turtle.home()
+      >>> turtle.dot()
+      >>> turtle.fd(50); turtle.dot(20, "blue"); turtle.fd(50)
+      >>> turtle.position()
+      (100.00,-0.00)
+      >>> turtle.heading()
+      0.0
+
+turtle.stamp()
+
+   Carimba uma cópia da forma da tartaruga na tela na posição atual da
+   tartaruga. Retorna um stamp_id para esse carimbo, que pode ser
+   usado para excluí-lo chamando "clearstamp(stamp_id)".
+
+      >>> turtle.color("blue")
+      >>> stamp_id = turtle.stamp()
+      >>> turtle.fd(50)
+
+turtle.clearstamp(stampid)
+
+   Parâmetros:
+      **stampid** -- um inteiro, deve ser o valor de retorno da
+      chamada de "stamp()" anterior
+
+   Exclui o carimbo com o *stamp* fornecido.
+
+      >>> turtle.position()
+      (150.00,-0.00)
+      >>> turtle.color("blue")
+      >>> astamp = turtle.stamp()
+      >>> turtle.fd(50)
+      >>> turtle.position()
+      (200.00,-0.00)
+      >>> turtle.clearstamp(astamp)
+      >>> turtle.position()
+      (200.00,-0.00)
+
+turtle.clearstamps(n=None)
+
+   Parâmetros:
+      **n** -- um inteiro  (ou "None")
+
+   Exclui todos ou o primeiro/último *n* dos selos da tartaruga. Se
+   *n* for "None", exclui todos os carimbos, se *n* > 0 exclui os
+   primeiros *n* carimbos, senão se *n* < 0 exclui os últimos *n*
+   carimbos.
+
+      >>> for i in range(8):
+      ...     unused_stamp_id = turtle.stamp()
+      ...     turtle.fd(30)
+      >>> turtle.clearstamps(2)
+      >>> turtle.clearstamps(-2)
+      >>> turtle.clearstamps()
+
+turtle.undo()
+
+   Desfaz (repetidamente) a(s) última(s) ação(ões) da tartaruga. O
+   número de ações de desfazer disponíveis é determinado pelo tamanho
+   do buffer de desfazer.
+
+      >>> for i in range(4):
+      ...     turtle.fd(50); turtle.lt(80)
+      ...
+      >>> for i in range(8):
+      ...     turtle.undo()
+
+turtle.speed(speed=None)
+
+   Parâmetros:
+      **speed** -- um inteiro no intervalo 0..10 ou uma string de
+      velocidade (veja abaixo)
+
+   Define a velocidade da tartaruga para um valor inteiro no intervalo
+   0..10. Se nenhum argumento for fornecido, retorna a velocidade
+   atual.
+
+   Se a entrada for um número maior que 10 ou menor que 0,5, a
+   velocidade é definida como 0. As strings de velocidade são mapeadas
+   para valores de velocidade da seguinte forma:
+
+   * "fastest": 0
+
+   * "fast": 10
+
+   * "normal": 6
+
+   * "slow": 3
+
+   * "slowest": 1
+
+   Velocidades de 1 a 10  tornam a animação cada vez mais rápida,
+   tanto para o desenho da linha  como para a rotação da tartaruga.
+
+   Atenção: *speed* = 0 significa que *nenhuma* animação ocorre. Para
+   frente/trás faz a tartaruga pular e da mesma forma para
+   esquerda/direita faz a tartaruga girar instantaneamente.
+
+      >>> turtle.speed()
+      3
+      >>> turtle.speed('normal')
+      >>> turtle.speed()
+      6
+      >>> turtle.speed(9)
+      >>> turtle.speed()
+      9
+
+
+Fala o estado de Turtle
+-----------------------
+
+turtle.position()
+turtle.pos()
+
+   Retorna a localização atual da tartaruga (x,y) (como um vetor
+   "Vec2D").
+
+      >>> turtle.pos()
+      (440.00,-0.00)
+
+turtle.towards(x, y=None)
+
+   Parâmetros:
+      * **x** -- um número ou um par/vetor de números ou uma instância
+        de tartaruga
+
+      * **y** -- um número caso *x* seja um número, senão "None"
+
+   Retorna o ângulo entre a linha da posição da tartaruga para a
+   posição especificada por (x,y), o vetor ou a outra tartaruga. Isso
+   depende da orientação inicial da tartaruga, que depende do modo -
+   "standard"/"world" ou "logo".
+
+      >>> turtle.goto(10, 10)
+      >>> turtle.towards(0,0)
+      225.0
+
+turtle.xcor()
+
+   Retorna a coordenada X da tartaruga.
+
+      >>> turtle.home()
+      >>> turtle.left(50)
+      >>> turtle.forward(100)
+      >>> turtle.pos()
+      (64.28,76.60)
+      >>> print(round(turtle.xcor(), 5))
+      64.27876
+
+turtle.ycor()
+
+   Retorna a coordenada Y da tartaruga.
+
+      >>> turtle.home()
+      >>> turtle.left(60)
+      >>> turtle.forward(100)
+      >>> print(turtle.pos())
+      (50.00,86.60)
+      >>> print(round(turtle.ycor(), 5))
+      86.60254
+
+turtle.heading()
+
+   Retorna o título atual da tartaruga (o valor depende do modo da
+   tartaruga, veja "mode()").
+
+      >>> turtle.home()
+      >>> turtle.left(67)
+      >>> turtle.heading()
+      67.0
+
+turtle.distance(x, y=None)
+
+   Parâmetros:
+      * **x** -- um número ou um par/vetor de números ou uma instância
+        de tartaruga
+
+      * **y** -- um número caso *x* seja um número, senão "None"
+
+   Retorna a distância da tartaruga para (x,y), o vetor dado, ou a
+   outra tartaruga dada, em unidades de passo de tartaruga.
+
+      >>> turtle.home()
+      >>> turtle.distance(30,40)
+      50.0
+      >>> turtle.distance((30,40))
+      50.0
+      >>> joe = Turtle()
+      >>> joe.forward(77)
+      >>> turtle.distance(joe)
+      77.0
+
+
+Configurações de medida
+-----------------------
+
+turtle.degrees(fullcircle=360.0)
+
+   Parâmetros:
+      **fullcircle** -- um número
+
+   Define as unidades de medição do ângulo, ou seja, defina o número
+   de "graus" para um círculo completo. O valor padrão é 360 graus.
+
+      >>> turtle.home()
+      >>> turtle.left(90)
+      >>> turtle.heading()
+      90.0
+
+      Change angle measurement unit to grad (also known as gon,
+      grade, or gradian and equals 1/100-th of the right angle.)
+      >>> turtle.degrees(400.0)
+      >>> turtle.heading()
+      100.0
+      >>> turtle.degrees(360)
+      >>> turtle.heading()
+      90.0
+
+turtle.radians()
+
+   Define as unidades de medida de ângulo para radianos. Equivalente a
+   "degrees(2*math.pi)".
+
+      >>> turtle.home()
+      >>> turtle.left(90)
+      >>> turtle.heading()
+      90.0
+      >>> turtle.radians()
+      >>> turtle.heading()
+      1.5707963267948966
+
+
+Controle da Caneta
+------------------
+
+
+Estado do Desenho
+~~~~~~~~~~~~~~~~~
+
+turtle.pendown()
+turtle.pd()
+turtle.down()
+
+   Desce a caneta - desenha ao se mover.
+
+turtle.penup()
+turtle.pu()
+turtle.up()
+
+   Levanta a caneta -- sem qualquer desenho ao se mover.
+
+turtle.pensize(width=None)
+turtle.width(width=None)
+
+   Parâmetros:
+      **width** -- um número positivo
+
+   Define a espessura da linha para *width* ou retorne-a. Se
+   resizemode estiver definido como "auto" e a forma de tartaruga for
+   um polígono, esse polígono será desenhado com a mesma espessura de
+   linha. Se nenhum argumento for fornecido, o tamanho da pena atual
+   será retornado.
+
+      >>> turtle.pensize()
+      1
+      >>> turtle.pensize(10)   # from here on lines of width 10 are drawn
+
+turtle.pen(pen=None, **pendict)
+
+   Parâmetros:
+      * **pen** -- um dicionário com algumas ou todas as chaves
+        listadas abaixo
+
+      * **pendict** -- um ou mais argumentos nomeados com as chaves
+        listadas abaixo como palavras-chave
+
+   Retorna ou define os atributos da caneta em um "dicionário da
+   caneta" com os seguintes pares de chave/valor:
+
+   * "shown": True/False
+
+   * "pendown": True/False
+
+   * "pencolor": string de cores ou tupla de cores
+
+   * "fillcolor": string de cores ou tupla de cores
+
+   * "pensize": número positivo
+
+   * "speed": número na faixa de 0..10
+
+   * "resizemode": "auto", "user" ou "noresize"
+
+   * "stretchfactor": (número positivo, número positivo)
+
+   * "outline": número positivo
+
+   * "tilt": número
+
+   Este dicionário pode ser usado como argumento para uma chamada
+   subsequente para "pen()" para restaurar o estado da caneta
+   anterior. Além disso, um ou mais desses atributos podem ser
+   fornecidos como argumentos nomeados. Isso pode ser usado para
+   definir vários atributos de caneta em uma instrução.
+
+      >>> turtle.pen(fillcolor="black", pencolor="red", pensize=10)
+      >>> sorted(turtle.pen().items())
+      [('fillcolor', 'black'), ('outline', 1), ('pencolor', 'red'),
+       ('pendown', True), ('pensize', 10), ('resizemode', 'noresize'),
+       ('shearfactor', 0.0), ('shown', True), ('speed', 9),
+       ('stretchfactor', (1.0, 1.0)), ('tilt', 0.0)]
+      >>> penstate=turtle.pen()
+      >>> turtle.color("yellow", "")
+      >>> turtle.penup()
+      >>> sorted(turtle.pen().items())[:3]
+      [('fillcolor', ''), ('outline', 1), ('pencolor', 'yellow')]
+      >>> turtle.pen(penstate, fillcolor="green")
+      >>> sorted(turtle.pen().items())[:3]
+      [('fillcolor', 'green'), ('outline', 1), ('pencolor', 'red')]
+
+turtle.isdown()
+
+   Retorna "True" se a caneta estiver abaixada, "False" se estiver
+   levantada.
+
+      >>> turtle.penup()
+      >>> turtle.isdown()
+      False
+      >>> turtle.pendown()
+      >>> turtle.isdown()
+      True
+
+
+Controle da Cor
+~~~~~~~~~~~~~~~
+
+turtle.pencolor(*args)
+
+   Retorna ou define a cor da caneta ou pencolor.
+
+   São permitidos quatro formatos de entrada:
+
+   "pencolor()"
+      Retorna a cor da caneta atual como string de especificação de
+      cor ou como uma tupla (veja o exemplo). Pode ser usado como
+      entrada para outra chamada color/pencolor/fillcolor.
+
+   "pencolor(colorstring)"
+      Define pencolor como *colorstring*, que é uma string de
+      especificação de cor Tk, como ""red"", ""yellow"" ou
+      ""#33cc8c"".
+
+   "pencolor((r, g, b))"
+      Define a cor da caneta como a cor RGB representada pela tupla
+      *r*, *g*, e *b*. Os valores de *r*, *g*, and *b* precisam estar
+      na faixa 0..colormode, onde colormode é 1.0 ou 255 (ver
+      "colormode()").
+
+   "pencolor(r, g, b)"
+      Define a cor da caneta como a cor RGB representada por *r*, *g*,
+      e *b*. Os valores de *r*, *g*, and *b* precisam estar na faixa
+      0..colormode.
+
+   Se a forma da tartaruga for um polígono, o contorno desse polígono
+   será desenhado com a nova cor de caneta definida.
+
+      >>> colormode()
+      1.0
+      >>> turtle.pencolor()
+      'red'
+      >>> turtle.pencolor("brown")
+      >>> turtle.pencolor()
+      'brown'
+      >>> tup = (0.2, 0.8, 0.55)
+      >>> turtle.pencolor(tup)
+      >>> turtle.pencolor()
+      (0.2, 0.8, 0.5490196078431373)
+      >>> colormode(255)
+      >>> turtle.pencolor()
+      (51.0, 204.0, 140.0)
+      >>> turtle.pencolor('#32c18f')
+      >>> turtle.pencolor()
+      (50.0, 193.0, 143.0)
+
+turtle.fillcolor(*args)
+
+   Retorna ou define o fillcolor.
+
+   São permitidos quatro formatos de entrada:
+
+   "fillcolor()"
+      Return the current fillcolor as color specification string,
+      possibly in tuple format (see example).  May be used as input to
+      another color/pencolor/fillcolor call.
+
+   "fillcolor(colorstring)"
+      Set fillcolor to *colorstring*, which is a Tk color
+      specification string, such as ""red"", ""yellow"", or
+      ""#33cc8c"".
+
+   "fillcolor((r, g, b))"
+      Set fillcolor to the RGB color represented by the tuple of *r*,
+      *g*, and *b*.  Each of *r*, *g*, and *b* must be in the range
+      0..colormode, where colormode is either 1.0 or 255 (see
+      "colormode()").
+
+   "fillcolor(r, g, b)"
+      Set fillcolor to the RGB color represented by *r*, *g*, and *b*.
+      Each of *r*, *g*, and *b* must be in the range 0..colormode.
+
+   If turtleshape is a polygon, the interior of that polygon is drawn
+   with the newly set fillcolor.
+
+      >>> turtle.fillcolor("violet")
+      >>> turtle.fillcolor()
+      'violet'
+      >>> turtle.pencolor()
+      (50.0, 193.0, 143.0)
+      >>> turtle.fillcolor((50, 193, 143))  # Integers, not floats
+      >>> turtle.fillcolor()
+      (50.0, 193.0, 143.0)
+      >>> turtle.fillcolor('#ffffff')
+      >>> turtle.fillcolor()
+      (255.0, 255.0, 255.0)
+
+turtle.color(*args)
+
+   Return or set pencolor and fillcolor.
+
+   Several input formats are allowed.  They use 0 to 3 arguments as
+   follows:
+
+   "color()"
+      Return the current pencolor and the current fillcolor as a pair
+      of color specification strings or tuples as returned by
+      "pencolor()" and "fillcolor()".
+
+   "color(colorstring)", "color((r,g,b))", "color(r,g,b)"
+      Inputs as in "pencolor()", set both, fillcolor and pencolor, to
+      the given value.
+
+   "color(colorstring1, colorstring2)", "color((r1,g1,b1),
+   (r2,g2,b2))"
+      Equivalent to "pencolor(colorstring1)" and
+      "fillcolor(colorstring2)" and analogously if the other input
+      format is used.
+
+   If turtleshape is a polygon, outline and interior of that polygon
+   is drawn with the newly set colors.
+
+      >>> turtle.color("red", "green")
+      >>> turtle.color()
+      ('red', 'green')
+      >>> color("#285078", "#a0c8f0")
+      >>> color()
+      ((40.0, 80.0, 120.0), (160.0, 200.0, 240.0))
+
+Veja também: Método da tela "colormode()".
+
+
+Preenchimento
+~~~~~~~~~~~~~
+
+turtle.filling()
+
+   Retorna fillstate ("True" se estiver preenchido, "False" caso
+   contrário).
+
+      >>> turtle.begin_fill()
+      >>> if turtle.filling():
+      ...    turtle.pensize(5)
+      ... else:
+      ...    turtle.pensize(3)
+
+turtle.begin_fill()
+
+   To be called just before drawing a shape to be filled.
+
+turtle.end_fill()
+
+   Fill the shape drawn after the last call to "begin_fill()".
+
+   Whether or not overlap regions for self-intersecting polygons or
+   multiple shapes are filled depends on the operating system
+   graphics, type of overlap, and number of overlaps.  For example,
+   the Turtle star above may be either all yellow or have some white
+   regions.
+
+      >>> turtle.color("black", "red")
+      >>> turtle.begin_fill()
+      >>> turtle.circle(80)
+      >>> turtle.end_fill()
+
+
+Mais sobre o Controle do Desenho
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+turtle.reset()
+
+   Delete the turtle's drawings from the screen, re-center the turtle
+   and set variables to the default values.
+
+      >>> turtle.goto(0,-22)
+      >>> turtle.left(100)
+      >>> turtle.position()
+      (0.00,-22.00)
+      >>> turtle.heading()
+      100.0
+      >>> turtle.reset()
+      >>> turtle.position()
+      (0.00,0.00)
+      >>> turtle.heading()
+      0.0
+
+turtle.clear()
+
+   Delete the turtle's drawings from the screen.  Do not move turtle.
+   State and position of the turtle as well as drawings of other
+   turtles are not affected.
+
+turtle.write(arg, move=False, align='left', font=('Arial', 8, 'normal'))
+
+   Parâmetros:
+      * **arg** -- object to be written to the TurtleScreen
+
+      * **move** -- True/False
+
+      * **align** -- uma das Strings "left", "center" ou right"
+
+      * **font** -- a triple (fontname, fontsize, fonttype)
+
+   Write text - the string representation of *arg* - at the current
+   turtle position according to *align* ("left", "center" or "right")
+   and with the given font.  If *move* is true, the pen is moved to
+   the bottom-right corner of the text.  By default, *move* is
+   "False".
+
+   >>> turtle.write("Home = ", True, align="center")
+   >>> turtle.write((0,0), True)
+
+
+Estado da tartaruga
+-------------------
+
+
+Visibilidade
+~~~~~~~~~~~~
+
+turtle.hideturtle()
+turtle.ht()
+
+   Make the turtle invisible.  It's a good idea to do this while
+   you're in the middle of doing some complex drawing, because hiding
+   the turtle speeds up the drawing observably.
+
+      >>> turtle.hideturtle()
+
+turtle.showturtle()
+turtle.st()
+
+   Tornar a tartaruga visível.
+
+      >>> turtle.showturtle()
+
+turtle.isvisible()
+
+   Return "True" if the Turtle is shown, "False" if it's hidden.
+
+   >>> turtle.hideturtle()
+   >>> turtle.isvisible()
+   False
+   >>> turtle.showturtle()
+   >>> turtle.isvisible()
+   True
+
+
+Aparência
+~~~~~~~~~
+
+turtle.shape(name=None)
+
+   Parâmetros:
+      **name** -- a string which is a valid shapename
+
+   Set turtle shape to shape with given *name* or, if name is not
+   given, return name of current shape.  Shape with *name* must exist
+   in the TurtleScreen's shape dictionary.  Initially there are the
+   following polygon shapes: "arrow", "turtle", "circle", "square",
+   "triangle", "classic".  To learn about how to deal with shapes see
+   Screen method "register_shape()".
+
+      >>> turtle.shape()
+      'classic'
+      >>> turtle.shape("turtle")
+      >>> turtle.shape()
+      'turtle'
+
+turtle.resizemode(rmode=None)
+
+   Parâmetros:
+      **rmode** -- uma das Strings "auto", "user", "noresize"
+
+   Set resizemode to one of the values: "auto", "user", "noresize".
+   If *rmode* is not given, return current resizemode.  Different
+   resizemodes have the following effects:
+
+   * "auto": adapta a aparência da tartaruga correspondente ao valor
+     do pensize.
+
+   * "user": adapts the appearance of the turtle according to the
+     values of stretchfactor and outlinewidth (outline), which are set
+     by "shapesize()".
+
+   * "noresize": no adaption of the turtle's appearance takes place.
+
+   "resizemode("user")" is called by "shapesize()" when used with
+   arguments.
+
+      >>> turtle.resizemode()
+      'noresize'
+      >>> turtle.resizemode("auto")
+      >>> turtle.resizemode()
+      'auto'
+
+turtle.shapesize(stretch_wid=None, stretch_len=None, outline=None)
+turtle.turtlesize(stretch_wid=None, stretch_len=None, outline=None)
+
+   Parâmetros:
+      * **stretch_wid** -- número positivo
+
+      * **stretch_len** -- número positivo
+
+      * **outline** -- número positivo
+
+   Return or set the pen's attributes x/y-stretchfactors and/or
+   outline.  Set resizemode to "user".  If and only if resizemode is
+   set to "user", the turtle will be displayed stretched according to
+   its stretchfactors: *stretch_wid* is stretchfactor perpendicular to
+   its orientation, *stretch_len* is stretchfactor in direction of its
+   orientation, *outline* determines the width of the shape's outline.
+
+      >>> turtle.shapesize()
+      (1.0, 1.0, 1)
+      >>> turtle.resizemode("user")
+      >>> turtle.shapesize(5, 5, 12)
+      >>> turtle.shapesize()
+      (5, 5, 12)
+      >>> turtle.shapesize(outline=8)
+      >>> turtle.shapesize()
+      (5, 5, 8)
+
+turtle.shearfactor(shear=None)
+
+   Parâmetros:
+      **shear** -- número (opcional)
+
+   Set or return the current shearfactor. Shear the turtleshape
+   according to the given shearfactor shear, which is the tangent of
+   the shear angle. Do *not* change the turtle's heading (direction of
+   movement). If shear is not given: return the current shearfactor,
+   i. e. the tangent of the shear angle, by which lines parallel to
+   the heading of the turtle are sheared.
+
+      >>> turtle.shape("circle")
+      >>> turtle.shapesize(5,2)
+      >>> turtle.shearfactor(0.5)
+      >>> turtle.shearfactor()
+      0.5
+
+turtle.tilt(angle)
+
+   Parâmetros:
+      **angle** -- um número
+
+   Rotate the turtleshape by *angle* from its current tilt-angle, but
+   do *not* change the turtle's heading (direction of movement).
+
+      >>> turtle.reset()
+      >>> turtle.shape("circle")
+      >>> turtle.shapesize(5,2)
+      >>> turtle.tilt(30)
+      >>> turtle.fd(50)
+      >>> turtle.tilt(30)
+      >>> turtle.fd(50)
+
+turtle.settiltangle(angle)
+
+   Parâmetros:
+      **angle** -- um número
+
+   Rotate the turtleshape to point in the direction specified by
+   *angle*, regardless of its current tilt-angle.  *Do not* change the
+   turtle's heading (direction of movement).
+
+      >>> turtle.reset()
+      >>> turtle.shape("circle")
+      >>> turtle.shapesize(5,2)
+      >>> turtle.settiltangle(45)
+      >>> turtle.fd(50)
+      >>> turtle.settiltangle(-45)
+      >>> turtle.fd(50)
+
+   Obsoleto desde a versão 3.1.
+
+turtle.tiltangle(angle=None)
+
+   Parâmetros:
+      **angle** -- um número (opcional)
+
+   Set or return the current tilt-angle. If angle is given, rotate the
+   turtleshape to point in the direction specified by angle,
+   regardless of its current tilt-angle. Do *not* change the turtle's
+   heading (direction of movement). If angle is not given: return the
+   current tilt-angle, i. e. the angle between the orientation of the
+   turtleshape and the heading of the turtle (its direction of
+   movement).
+
+      >>> turtle.reset()
+      >>> turtle.shape("circle")
+      >>> turtle.shapesize(5,2)
+      >>> turtle.tilt(45)
+      >>> turtle.tiltangle()
+      45.0
+
+turtle.shapetransform(t11=None, t12=None, t21=None, t22=None)
+
+   Parâmetros:
+      * **t11** -- um número (opcional)
+
+      * **t12** -- um número (opcional)
+
+      * **t21** -- um número (opcional)
+
+      * **t12** -- um número (opcional)
+
+   Set or return the current transformation matrix of the turtle
+   shape.
+
+   If none of the matrix elements are given, return the transformation
+   matrix as a tuple of 4 elements. Otherwise set the given elements
+   and transform the turtleshape according to the matrix consisting of
+   first row t11, t12 and second row t21, t22. The determinant t11 *
+   t22 - t12 * t21 must not be zero, otherwise an error is raised.
+   Modify stretchfactor, shearfactor and tiltangle according to the
+   given matrix.
+
+      >>> turtle = Turtle()
+      >>> turtle.shape("square")
+      >>> turtle.shapesize(4,2)
+      >>> turtle.shearfactor(-0.5)
+      >>> turtle.shapetransform()
+      (4.0, -1.0, -0.0, 2.0)
+
+turtle.get_shapepoly()
+
+   Return the current shape polygon as tuple of coordinate pairs. This
+   can be used to define a new shape or components of a compound
+   shape.
+
+      >>> turtle.shape("square")
+      >>> turtle.shapetransform(4, -1, 0, 2)
+      >>> turtle.get_shapepoly()
+      ((50, -20), (30, 20), (-50, 20), (-30, -20))
+
+
+Eventos Utilizados
+------------------
+
+turtle.onclick(fun, btn=1, add=None)
+
+   Parâmetros:
+      * **fun** -- a function with two arguments which will be called
+        with the coordinates of the clicked point on the canvas
+
+      * **btn** -- number of the mouse-button, defaults to 1 (left
+        mouse button)
+
+      * **add** -- "True" or "False" -- if "True", a new binding will
+        be added, otherwise it will replace a former binding
+
+   Bind *fun* to mouse-click events on this turtle.  If *fun* is
+   "None", existing bindings are removed.  Example for the anonymous
+   turtle, i.e. the procedural way:
+
+      >>> def turn(x, y):
+      ...     left(180)
+      ...
+      >>> onclick(turn)  # Now clicking into the turtle will turn it.
+      >>> onclick(None)  # event-binding will be removed
+
+turtle.onrelease(fun, btn=1, add=None)
+
+   Parâmetros:
+      * **fun** -- a function with two arguments which will be called
+        with the coordinates of the clicked point on the canvas
+
+      * **btn** -- number of the mouse-button, defaults to 1 (left
+        mouse button)
+
+      * **add** -- "True" or "False" -- if "True", a new binding will
+        be added, otherwise it will replace a former binding
+
+   Bind *fun* to mouse-button-release events on this turtle.  If *fun*
+   is "None", existing bindings are removed.
+
+      >>> class MyTurtle(Turtle):
+      ...     def glow(self,x,y):
+      ...         self.fillcolor("red")
+      ...     def unglow(self,x,y):
+      ...         self.fillcolor("")
+      ...
+      >>> turtle = MyTurtle()
+      >>> turtle.onclick(turtle.glow)     # clicking on turtle turns fillcolor red,
+      >>> turtle.onrelease(turtle.unglow) # releasing turns it to transparent.
+
+turtle.ondrag(fun, btn=1, add=None)
+
+   Parâmetros:
+      * **fun** -- a function with two arguments which will be called
+        with the coordinates of the clicked point on the canvas
+
+      * **btn** -- number of the mouse-button, defaults to 1 (left
+        mouse button)
+
+      * **add** -- "True" or "False" -- if "True", a new binding will
+        be added, otherwise it will replace a former binding
+
+   Bind *fun* to mouse-move events on this turtle.  If *fun* is
+   "None", existing bindings are removed.
+
+   Remark: Every sequence of mouse-move-events on a turtle is preceded
+   by a mouse-click event on that turtle.
+
+      >>> turtle.ondrag(turtle.goto)
+
+   Subsequently, clicking and dragging the Turtle will move it across
+   the screen thereby producing handdrawings (if pen is down).
+
+
+Métodos Especiais da Tartaruga
+------------------------------
+
+turtle.begin_poly()
+
+   Start recording the vertices of a polygon.  Current turtle position
+   is first vertex of polygon.
+
+turtle.end_poly()
+
+   Stop recording the vertices of a polygon.  Current turtle position
+   is last vertex of polygon.  This will be connected with the first
+   vertex.
+
+turtle.get_poly()
+
+   Return the last recorded polygon.
+
+      >>> turtle.home()
+      >>> turtle.begin_poly()
+      >>> turtle.fd(100)
+      >>> turtle.left(20)
+      >>> turtle.fd(30)
+      >>> turtle.left(60)
+      >>> turtle.fd(50)
+      >>> turtle.end_poly()
+      >>> p = turtle.get_poly()
+      >>> register_shape("myFavouriteShape", p)
+
+turtle.clone()
+
+   Create and return a clone of the turtle with same position, heading
+   and turtle properties.
+
+      >>> mick = Turtle()
+      >>> joe = mick.clone()
+
+turtle.getturtle()
+turtle.getpen()
+
+   Return the Turtle object itself.  Only reasonable use: as a
+   function to return the "anonymous turtle":
+
+      >>> pet = getturtle()
+      >>> pet.fd(50)
+      >>> pet
+      <turtle.Turtle object at 0x...>
+
+turtle.getscreen()
+
+   Return the "TurtleScreen" object the turtle is drawing on.
+   TurtleScreen methods can then be called for that object.
+
+      >>> ts = turtle.getscreen()
+      >>> ts
+      <turtle._Screen object at 0x...>
+      >>> ts.bgcolor("pink")
+
+turtle.setundobuffer(size)
+
+   Parâmetros:
+      **size** -- um inteiro ou "None"
+
+   Set or disable undobuffer.  If *size* is an integer, an empty
+   undobuffer of given size is installed.  *size* gives the maximum
+   number of turtle actions that can be undone by the "undo()"
+   method/function.  If *size* is "None", the undobuffer is disabled.
+
+      >>> turtle.setundobuffer(42)
+
+turtle.undobufferentries()
+
+   Return number of entries in the undobuffer.
+
+      >>> while undobufferentries():
+      ...     undo()
+
+
+Formas compostas
+----------------
+
+To use compound turtle shapes, which consist of several polygons of
+different color, you must use the helper class "Shape" explicitly as
+described below:
+
+1. Create an empty Shape object of type "compound".
+
+2. Add as many components to this object as desired, using the
+   "addcomponent()" method.
+
+   Por exemplo:
+
+      >>> s = Shape("compound")
+      >>> poly1 = ((0,0),(10,-5),(0,10),(-10,-5))
+      >>> s.addcomponent(poly1, "red", "blue")
+      >>> poly2 = ((0,0),(10,-5),(-10,-5))
+      >>> s.addcomponent(poly2, "blue", "red")
+
+3. Now add the Shape to the Screen's shapelist and use it:
+
+      >>> register_shape("myshape", s)
+      >>> shape("myshape")
+
+Nota:
+
+  The "Shape" class is used internally by the "register_shape()"
+  method in different ways.  The application programmer has to deal
+  with the Shape class *only* when using compound shapes like shown
+  above!
+
+
+Methods of TurtleScreen/Screen and corresponding functions
+==========================================================
+
+Most of the examples in this section refer to a TurtleScreen instance
+called "screen".
+
+
+Controle da Janela
+------------------
+
+turtle.bgcolor(*args)
+
+   Parâmetros:
+      **args** -- a color string or three numbers in the range
+      0..colormode or a 3-tuple of such numbers
+
+   Set or return background color of the TurtleScreen.
+
+      >>> screen.bgcolor("orange")
+      >>> screen.bgcolor()
+      'orange'
+      >>> screen.bgcolor("#800080")
+      >>> screen.bgcolor()
+      (128.0, 0.0, 128.0)
+
+turtle.bgpic(picname=None)
+
+   Parâmetros:
+      **picname** -- a string, name of a gif-file or ""nopic"", or
+      "None"
+
+   Set background image or return name of current backgroundimage.  If
+   *picname* is a filename, set the corresponding image as background.
+   If *picname* is ""nopic"", delete background image, if present.  If
+   *picname* is "None", return the filename of the current
+   backgroundimage.
+
+      >>> screen.bgpic()
+      'nopic'
+      >>> screen.bgpic("landscape.gif")
+      >>> screen.bgpic()
+      "landscape.gif"
+
+turtle.clear()
+
+   Nota:
+
+     This TurtleScreen method is available as a global function only
+     under the name "clearscreen".  The global function "clear" is a
+     different one derived from the Turtle method "clear".
+
+turtle.clearscreen()
+
+   Delete all drawings and all turtles from the TurtleScreen.  Reset
+   the now empty TurtleScreen to its initial state: white background,
+   no background image, no event bindings and tracing on.
+
+turtle.reset()
+
+   Nota:
+
+     This TurtleScreen method is available as a global function only
+     under the name "resetscreen".  The global function "reset" is
+     another one derived from the Turtle method "reset".
+
+turtle.resetscreen()
+
+   Reset all Turtles on the Screen to their initial state.
+
+turtle.screensize(canvwidth=None, canvheight=None, bg=None)
+
+   Parâmetros:
+      * **canvwidth** -- positive integer, new width of canvas in
+        pixels
+
+      * **canvheight** -- positive integer, new height of canvas in
+        pixels
+
+      * **bg** -- colorstring or color-tuple, new background color
+
+   If no arguments are given, return current (canvaswidth,
+   canvasheight).  Else resize the canvas the turtles are drawing on.
+   Do not alter the drawing window.  To observe hidden parts of the
+   canvas, use the scrollbars. With this method, one can make visible
+   those parts of a drawing which were outside the canvas before.
+
+   >>> screen.screensize()
+   (400, 300)
+   >>> screen.screensize(2000,1500)
+   >>> screen.screensize()
+   (2000, 1500)
+
+   e.g. to search for an erroneously escaped turtle ;-)
+
+turtle.setworldcoordinates(llx, lly, urx, ury)
+
+   Parâmetros:
+      * **llx** -- a number, x-coordinate of lower left corner of
+        canvas
+
+      * **lly** -- a number, y-coordinate of lower left corner of
+        canvas
+
+      * **urx** -- a number, x-coordinate of upper right corner of
+        canvas
+
+      * **ury** -- a number, y-coordinate of upper right corner of
+        canvas
+
+   Set up user-defined coordinate system and switch to mode "world" if
+   necessary.  This performs a "screen.reset()".  If mode "world" is
+   already active, all drawings are redrawn according to the new
+   coordinates.
+
+   **ATTENTION**: in user-defined coordinate systems angles may appear
+   distorted.
+
+      >>> screen.reset()
+      >>> screen.setworldcoordinates(-50,-7.5,50,7.5)
+      >>> for _ in range(72):
+      ...     left(10)
+      ...
+      >>> for _ in range(8):
+      ...     left(45); fd(2)   # a regular octagon
+
+
+Controle da animação
+--------------------
+
+turtle.delay(delay=None)
+
+   Parâmetros:
+      **delay** -- positive integer
+
+   Set or return the drawing *delay* in milliseconds.  (This is
+   approximately the time interval between two consecutive canvas
+   updates.)  The longer the drawing delay, the slower the animation.
+
+   Argumentos opcionais:
+
+      >>> screen.delay()
+      10
+      >>> screen.delay(5)
+      >>> screen.delay()
+      5
+
+turtle.tracer(n=None, delay=None)
+
+   Parâmetros:
+      * **n** -- inteiro não-negativo
+
+      * **delay** -- inteiro não-negativo
+
+   Turn turtle animation on/off and set delay for update drawings.  If
+   *n* is given, only each n-th regular screen update is really
+   performed.  (Can be used to accelerate the drawing of complex
+   graphics.)  When called without arguments, returns the currently
+   stored value of n. Second argument sets delay value (see
+   "delay()").
+
+      >>> screen.tracer(8, 25)
+      >>> dist = 2
+      >>> for i in range(200):
+      ...     fd(dist)
+      ...     rt(90)
+      ...     dist += 2
+
+turtle.update()
+
+   Perform a TurtleScreen update. To be used when tracer is turned
+   off.
+
+Veja também o método RawTurtle/Turtle "speed()".
+
+
+Usando os eventos de tela
+-------------------------
+
+turtle.listen(xdummy=None, ydummy=None)
+
+   Set focus on TurtleScreen (in order to collect key-events).  Dummy
+   arguments are provided in order to be able to pass "listen()" to
+   the onclick method.
+
+turtle.onkey(fun, key)
+turtle.onkeyrelease(fun, key)
+
+   Parâmetros:
+      * **fun** -- a function with no arguments or "None"
+
+      * **key** -- a string: key (e.g. "a") or key-symbol (e.g.
+        "space")
+
+   Bind *fun* to key-release event of key.  If *fun* is "None", event
+   bindings are removed. Remark: in order to be able to register key-
+   events, TurtleScreen must have the focus. (See method "listen()".)
+
+      >>> def f():
+      ...     fd(50)
+      ...     lt(60)
+      ...
+      >>> screen.onkey(f, "Up")
+      >>> screen.listen()
+
+turtle.onkeypress(fun, key=None)
+
+   Parâmetros:
+      * **fun** -- a function with no arguments or "None"
+
+      * **key** -- a string: key (e.g. "a") or key-symbol (e.g.
+        "space")
+
+   Bind *fun* to key-press event of key if key is given, or to any
+   key-press-event if no key is given. Remark: in order to be able to
+   register key-events, TurtleScreen must have focus. (See method
+   "listen()".)
+
+      >>> def f():
+      ...     fd(50)
+      ...
+      >>> screen.onkey(f, "Up")
+      >>> screen.listen()
+
+turtle.onclick(fun, btn=1, add=None)
+turtle.onscreenclick(fun, btn=1, add=None)
+
+   Parâmetros:
+      * **fun** -- a function with two arguments which will be called
+        with the coordinates of the clicked point on the canvas
+
+      * **btn** -- number of the mouse-button, defaults to 1 (left
+        mouse button)
+
+      * **add** -- "True" or "False" -- if "True", a new binding will
+        be added, otherwise it will replace a former binding
+
+   Bind *fun* to mouse-click events on this screen.  If *fun* is
+   "None", existing bindings are removed.
+
+   Example for a TurtleScreen instance named "screen" and a Turtle
+   instance named "turtle":
+
+      >>> screen.onclick(turtle.goto) # Subsequently clicking into the TurtleScreen will
+      >>>                             # make the turtle move to the clicked point.
+      >>> screen.onclick(None)        # remove event binding again
+
+   Nota:
+
+     This TurtleScreen method is available as a global function only
+     under the name "onscreenclick".  The global function "onclick" is
+     another one derived from the Turtle method "onclick".
+
+turtle.ontimer(fun, t=0)
+
+   Parâmetros:
+      * **fun** -- um função sem nenhum argumento
+
+      * **t** -- um número >= 0
+
+   Install a timer that calls *fun* after *t* milliseconds.
+
+      >>> running = True
+      >>> def f():
+      ...     if running:
+      ...         fd(50)
+      ...         lt(60)
+      ...         screen.ontimer(f, 250)
+      >>> f()   ### makes the turtle march around
+      >>> running = False
+
+turtle.mainloop()
+turtle.done()
+
+   Starts event loop - calling Tkinter's mainloop function. Must be
+   the last statement in a turtle graphics program. Must *not* be used
+   if a script is run from within IDLE in -n mode (No subprocess) -
+   for interactive use of turtle graphics.
+
+      >>> screen.mainloop()
+
+
+Métodos de entrada
+------------------
+
+turtle.textinput(title, prompt)
+
+   Parâmetros:
+      * **title** -- string
+
+      * **prompt** -- string
+
+   Pop up a dialog window for input of a string. Parameter title is
+   the title of the dialog window, prompt is a text mostly describing
+   what information to input. Return the string input. If the dialog
+   is canceled, return "None".
+
+      >>> screen.textinput("NIM", "Name of first player:")
+
+turtle.numinput(title, prompt, default=None, minval=None, maxval=None)
+
+   Parâmetros:
+      * **title** -- string
+
+      * **prompt** -- string
+
+      * **default** -- número (opcional)
+
+      * **minval** -- número (opcional)
+
+      * **maxval** -- número (opcional)
+
+   Pop up a dialog window for input of a number. title is the title of
+   the dialog window, prompt is a text mostly describing what
+   numerical information to input. default: default value, minval:
+   minimum value for input, maxval: maximum value for input. The
+   number input must be in the range minval .. maxval if these are
+   given. If not, a hint is issued and the dialog remains open for
+   correction. Return the number input. If the dialog is canceled,
+   return "None".
+
+      >>> screen.numinput("Poker", "Your stakes:", 1000, minval=10, maxval=10000)
+
+
+Configurações e métodos especiais
+---------------------------------
+
+turtle.mode(mode=None)
+
+   Parâmetros:
+      **mode** -- one of the strings "standard", "logo" or "world"
+
+   Set turtle mode ("standard", "logo" or "world") and perform reset.
+   If mode is not given, current mode is returned.
+
+   Mode "standard" is compatible with old "turtle".  Mode "logo" is
+   compatible with most Logo turtle graphics.  Mode "world" uses user-
+   defined "world coordinates". **Attention**: in this mode angles
+   appear distorted if "x/y" unit-ratio doesn't equal 1.
+
+   +--------------+---------------------------+---------------------+
+   | Modo         | Título inicial da         | ângulos positivos   |
+   |              | tartaruga                 |                     |
+   |==============|===========================|=====================|
+   | "standard"   | para a direita (east)     | counterclockwise    |
+   +--------------+---------------------------+---------------------+
+   | "logo"       | upward (north)            | sentido horário     |
+   +--------------+---------------------------+---------------------+
+
+      >>> mode("logo")   # resets turtle heading to north
+      >>> mode()
+      'logo'
+
+turtle.colormode(cmode=None)
+
+   Parâmetros:
+      **cmode** -- um dos valroes 1.0 ou 255
+
+   Return the colormode or set it to 1.0 or 255.  Subsequently *r*,
+   *g*, *b* values of color triples have to be in the range
+   0..*cmode*.
+
+      >>> screen.colormode(1)
+      >>> turtle.pencolor(240, 160, 80)
+      Traceback (most recent call last):
+           ...
+      TurtleGraphicsError: bad color sequence: (240, 160, 80)
+      >>> screen.colormode()
+      1.0
+      >>> screen.colormode(255)
+      >>> screen.colormode()
+      255
+      >>> turtle.pencolor(240,160,80)
+
+turtle.getcanvas()
+
+   Return the Canvas of this TurtleScreen.  Useful for insiders who
+   know what to do with a Tkinter Canvas.
+
+      >>> cv = screen.getcanvas()
+      >>> cv
+      <turtle.ScrolledCanvas object ...>
+
+turtle.getshapes()
+
+   Retorna uma lista dos nomes de todas as formas de tartarugas
+   disponíveis no momento.
+
+      >>> screen.getshapes()
+      ['arrow', 'blank', 'circle', ..., 'turtle']
+
+turtle.register_shape(name, shape=None)
+turtle.addshape(name, shape=None)
+
+   Há três maneiras diferentes de chamar essa função:
+
+   1. *name* is the name of a gif-file and *shape* is "None": Install
+      the corresponding image shape.
+
+         >>> screen.register_shape("turtle.gif")
+
+      Nota:
+
+        Image shapes *do not* rotate when turning the turtle, so they
+        do not display the heading of the turtle!
+
+   2. *name* is an arbitrary string and *shape* is a tuple of pairs of
+      coordinates: Install the corresponding polygon shape.
+
+         >>> screen.register_shape("triangle", ((5,-3), (0,5), (-5,-3)))
+
+   3. *name* is an arbitrary string and *shape* is a (compound)
+      "Shape" object: Install the corresponding compound shape.
+
+   Add a turtle shape to TurtleScreen's shapelist.  Only thusly
+   registered shapes can be used by issuing the command
+   "shape(shapename)".
+
+turtle.turtles()
+
+   Retorne uma lista de tartarugas na tela.
+
+      >>> for turtle in screen.turtles():
+      ...     turtle.color("red")
+
+turtle.window_height()
+
+   Retorna a altura da janela da tartaruga.
+
+      >>> screen.window_height()
+      480
+
+turtle.window_width()
+
+   Retorna a largura da janela da tartaruga.
+
+      >>> screen.window_width()
+      640
+
+
+Methods specific to Screen, not inherited from TurtleScreen
+-----------------------------------------------------------
+
+turtle.bye()
+
+   Shut the turtlegraphics window.
+
+turtle.exitonclick()
+
+   Bind "bye()" method to mouse clicks on the Screen.
+
+   If the value "using_IDLE" in the configuration dictionary is
+   "False" (default value), also enter mainloop.  Remark: If IDLE with
+   the "-n" switch (no subprocess) is used, this value should be set
+   to "True" in "turtle.cfg".  In this case IDLE's own mainloop is
+   active also for the client script.
+
+turtle.setup(width=_CFG['width'], height=_CFG['height'], startx=_CFG['leftright'], starty=_CFG['topbottom'])
+
+   Set the size and position of the main window.  Default values of
+   arguments are stored in the configuration dictionary and can be
+   changed via a "turtle.cfg" file.
+
+   Parâmetros:
+      * **width** -- if an integer, a size in pixels, if a float, a
+        fraction of the screen; default is 50% of screen
+
+      * **height** -- if an integer, the height in pixels, if a float,
+        a fraction of the screen; default is 75% of screen
+
+      * **startx** -- if positive, starting position in pixels from
+        the left edge of the screen, if negative from the right edge,
+        if "None", center window horizontally
+
+      * **starty** -- if positive, starting position in pixels from
+        the top edge of the screen, if negative from the bottom edge,
+        if "None", center window vertically
+
+      >>> screen.setup (width=200, height=200, startx=0, starty=0)
+      >>>              # sets window to 200x200 pixels, in upper left of screen
+      >>> screen.setup(width=.75, height=0.5, startx=None, starty=None)
+      >>>              # sets window to 75% of screen by 50% of screen and centers
+
+turtle.title(titlestring)
+
+   Parâmetros:
+      **titlestring** -- a string that is shown in the titlebar of the
+      turtle graphics window
+
+   Set title of turtle window to *titlestring*.
+
+      >>> screen.title("Welcome to the turtle zoo!")
+
+
+Classes Públicas
+================
+
+class turtle.RawTurtle(canvas)
+class turtle.RawPen(canvas)
+
+   Parâmetros:
+      **canvas** -- a "tkinter.Canvas", a "ScrolledCanvas" or a
+      "TurtleScreen"
+
+   Create a turtle.  The turtle has all methods described above as
+   "methods of Turtle/RawTurtle".
+
+class turtle.Turtle
+
+   Subclass of RawTurtle, has the same interface but draws on a
+   default "Screen" object created automatically when needed for the
+   first time.
+
+class turtle.TurtleScreen(cv)
+
+   Parâmetros:
+      **cv** -- a "tkinter.Canvas"
+
+   Provides screen oriented methods like "bgcolor()" etc. that are
+   described above.
+
+class turtle.Screen
+
+   Subclass of TurtleScreen, with four methods added.
+
+class turtle.ScrolledCanvas(master)
+
+   Parâmetros:
+      **master** -- some Tkinter widget to contain the ScrolledCanvas,
+      i.e. a Tkinter-canvas with scrollbars added
+
+   Used by class Screen, which thus automatically provides a
+   ScrolledCanvas as playground for the turtles.
+
+class turtle.Shape(type_, data)
+
+   Parâmetros:
+      **type_** -- one of the strings "polygon", "image", "compound"
+
+   Data structure modeling shapes.  The pair "(type_, data)" must
+   follow this specification:
+
+   +-------------+------------------------------------------------------------+
+   | *type_*     | *data*                                                     |
+   |=============|============================================================|
+   | "polygon"   | a polygon-tuple, i.e. a tuple of pairs of coordinates      |
+   +-------------+------------------------------------------------------------+
+   | "image"     | an image  (in this form only used internally!)             |
+   +-------------+------------------------------------------------------------+
+   | "compound"  | "None" (a compound shape has to be constructed using the   |
+   |             | "addcomponent()" method)                                   |
+   +-------------+------------------------------------------------------------+
+
+   addcomponent(poly, fill, outline=None)
+
+      Parâmetros:
+         * **poly** -- a polygon, i.e. a tuple of pairs of numbers
+
+         * **fill** -- a color the *poly* will be filled with
+
+         * **outline** -- a color for the poly's outline (if given)
+
+      Exemplo:
+
+         >>> poly = ((0,0),(10,-5),(0,10),(-10,-5))
+         >>> s = Shape("compound")
+         >>> s.addcomponent(poly, "red", "blue")
+         >>> # ... add more components and then use register_shape()
+
+      See Formas compostas.
+
+class turtle.Vec2D(x, y)
+
+   A two-dimensional vector class, used as a helper class for
+   implementing turtle graphics.  May be useful for turtle graphics
+   programs too.  Derived from tuple, so a vector is a tuple!
+
+   Provides (for *a*, *b* vectors, *k* number):
+
+   * "a + b" vetor adicional
+
+   * "a - b" subtração de vetor
+
+   * "a * b" produto interno
+
+   * "k * a" e "a * k" multiplicação com escalar
+
+   * "abs(a)" valor absoluto de um
+
+   * rotação "a.rotate(angle)"
+
+
+Explanação
+==========
+
+A turtle object draws on a screen object, and there a number of key
+classes in the turtle object-oriented interface that can be used to
+create them and relate them to each other.
+
+A "Turtle" instance will automatically create a "Screen" instance if
+one is not already present.
+
+"Turtle" is a subclass of "RawTurtle", which *doesn't* automatically
+create a drawing surface - a *canvas* will need to be provided or
+created for it. The *canvas* can be a "tkinter.Canvas",
+"ScrolledCanvas" or "TurtleScreen".
+
+"TurtleScreen" is the basic drawing surface for a turtle. "Screen" is
+a subclass of "TurtleScreen", and includes some additional methods for
+managing its appearance (including size and title) and behaviour.
+"TurtleScreen"'s constructor needs a "tkinter.Canvas" or a
+"ScrolledCanvas" as an argument.
+
+The functional interface for turtle graphics uses the various methods
+of "Turtle" and "TurtleScreen"/"Screen". Behind the scenes, a screen
+object is automatically created whenever a function derived from a
+"Screen" method is called. Similarly, a turtle object is automatically
+created whenever any of the functions derived from a Turtle method is
+called.
+
+To use multiple turtles on a screen, the object-oriented interface
+must be used.
+
+
+Ajuda e Configuração
+====================
+
+
+Como usar a Ajuda
+-----------------
+
+The public methods of the Screen and Turtle classes are documented
+extensively via docstrings.  So these can be used as online-help via
+the Python help facilities:
+
+* When using IDLE, tooltips show the signatures and first lines of the
+  docstrings of typed in function-/method calls.
+
+* Calling "help()" on methods or functions displays the docstrings:
+
+     >>> help(Screen.bgcolor)
+     Help on method bgcolor in module turtle:
+
+     bgcolor(self, *args) unbound turtle.Screen method
+         Set or return backgroundcolor of the TurtleScreen.
+
+         Arguments (if given): a color string or three numbers
+         in the range 0..colormode or a 3-tuple of such numbers.
+
+
+         >>> screen.bgcolor("orange")
+         >>> screen.bgcolor()
+         "orange"
+         >>> screen.bgcolor(0.5,0,0.5)
+         >>> screen.bgcolor()
+         "#800080"
+
+     >>> help(Turtle.penup)
+     Help on method penup in module turtle:
+
+     penup(self) unbound turtle.Turtle method
+         Pull the pen up -- no drawing when moving.
+
+         Aliases: penup | pu | up
+
+         No argument
+
+         >>> turtle.penup()
+
+* The docstrings of the functions which are derived from methods have
+  a modified form:
+
+     >>> help(bgcolor)
+     Help on function bgcolor in module turtle:
+
+     bgcolor(*args)
+         Set or return backgroundcolor of the TurtleScreen.
+
+         Arguments (if given): a color string or three numbers
+         in the range 0..colormode or a 3-tuple of such numbers.
+
+         Example::
+
+           >>> bgcolor("orange")
+           >>> bgcolor()
+           "orange"
+           >>> bgcolor(0.5,0,0.5)
+           >>> bgcolor()
+           "#800080"
+
+     >>> help(penup)
+     Help on function penup in module turtle:
+
+     penup()
+         Pull the pen up -- no drawing when moving.
+
+         Aliases: penup | pu | up
+
+         No argument
+
+         Example:
+         >>> penup()
+
+These modified docstrings are created automatically together with the
+function definitions that are derived from the methods at import time.
+
+
+Translation of docstrings into different languages
+--------------------------------------------------
+
+There is a utility to create a dictionary the keys of which are the
+method names and the values of which are the docstrings of the public
+methods of the classes Screen and Turtle.
+
+turtle.write_docstringdict(filename='turtle_docstringdict')
+
+   Parâmetros:
+      **filename** -- a string, used as filename
+
+   Create and write docstring-dictionary to a Python script with the
+   given filename.  This function has to be called explicitly (it is
+   not used by the turtle graphics classes).  The docstring dictionary
+   will be written to the Python script "*filename*.py".  It is
+   intended to serve as a template for translation of the docstrings
+   into different languages.
+
+If you (or your students) want to use "turtle" with online help in
+your native language, you have to translate the docstrings and save
+the resulting file as e.g. "turtle_docstringdict_german.py".
+
+If you have an appropriate entry in your "turtle.cfg" file this
+dictionary will be read in at import time and will replace the
+original English docstrings.
+
+At the time of this writing there are docstring dictionaries in German
+and in Italian.  (Requests please to glingl@aon.at.)
+
+
+How to configure Screen and Turtles
+-----------------------------------
+
+The built-in default configuration mimics the appearance and behaviour
+of the old turtle module in order to retain best possible
+compatibility with it.
+
+If you want to use a different configuration which better reflects the
+features of this module or which better fits to your needs, e.g. for
+use in a classroom, you can prepare a configuration file "turtle.cfg"
+which will be read at import time and modify the configuration
+according to its settings.
+
+The built in configuration would correspond to the following
+"turtle.cfg":
+
+   width = 0.5
+   height = 0.75
+   leftright = None
+   topbottom = None
+   canvwidth = 400
+   canvheight = 300
+   mode = standard
+   colormode = 1.0
+   delay = 10
+   undobuffersize = 1000
+   shape = classic
+   pencolor = black
+   fillcolor = black
+   resizemode = noresize
+   visible = True
+   language = english
+   exampleturtle = turtle
+   examplescreen = screen
+   title = Python Turtle Graphics
+   using_IDLE = False
+
+Breve explicação das entradas selecionadas:
+
+* The first four lines correspond to the arguments of the
+  "Screen.setup" method.
+
+* Line 5 and 6 correspond to the arguments of the method
+  "Screen.screensize".
+
+* *shape* can be any of the built-in shapes, e.g: arrow, turtle, etc.
+  For more info try "help(shape)".
+
+* If you want to use no fill color (i.e. make the turtle transparent),
+  you have to write "fillcolor = """ (but all nonempty strings must
+  not have quotes in the cfg file).
+
+* If you want to reflect the turtle its state, you have to use
+  "resizemode = auto".
+
+* If you set e.g. "language = italian" the docstringdict
+  "turtle_docstringdict_italian.py" will be loaded at import time (if
+  present on the import path, e.g. in the same directory as "turtle").
+
+* The entries *exampleturtle* and *examplescreen* define the names of
+  these objects as they occur in the docstrings.  The transformation
+  of method-docstrings to function-docstrings will delete these names
+  from the docstrings.
+
+* *using_IDLE*: Set this to "True" if you regularly work with IDLE and
+  its "-n" switch ("no subprocess").  This will prevent
+  "exitonclick()" to enter the mainloop.
+
+There can be a "turtle.cfg" file in the directory where "turtle" is
+stored and an additional one in the current working directory.  The
+latter will override the settings of the first one.
+
+The "Lib/turtledemo" directory contains a "turtle.cfg" file.  You can
+study it as an example and see its effects when running the demos
+(preferably not from within the demo-viewer).
+
+
+"turtledemo" --- Scripts de Demonstração
+========================================
+
+The "turtledemo" package includes a set of demo scripts.  These
+scripts can be run and viewed using the supplied demo viewer as
+follows:
+
+   python -m turtledemo
+
+Alternatively, you can run the demo scripts individually.  For
+example,
+
+   python -m turtledemo.bytedesign
+
+The "turtledemo" package directory contains:
+
+* A demo viewer "__main__.py" which can be used to view the sourcecode
+  of the scripts and run them at the same time.
+
+* Multiple scripts demonstrating different features of the "turtle"
+  module.  Examples can be accessed via the Examples menu.  They can
+  also be run standalone.
+
+* A "turtle.cfg" file which serves as an example of how to write and
+  use such files.
+
+Os scripts de demonstração são:
+
++------------------+--------------------------------+-------------------------+
+| Nome             | Descrição                      | Recursos                |
+|==================|================================|=========================|
+| bytedesign       | Padrão de gráficos de          | "tracer()", delay,      |
+|                  | tartaruga clássico complexo    | "update()"              |
++------------------+--------------------------------+-------------------------+
+| chaos            | graphs Verhulst dynamics,      | coordenadas mundiais    |
+|                  | shows that computer's          |                         |
+|                  | computations can generate      |                         |
+|                  | results sometimes against the  |                         |
+|                  | common sense expectations      |                         |
++------------------+--------------------------------+-------------------------+
+| relógio          | Relógio analógico que mostra o | tartarugas como as mãos |
+|                  | horário do seu computador      | do relógio, ontimer     |
++------------------+--------------------------------+-------------------------+
+| colormixer       | experimento com r, g, b        | "ondrag()"              |
++------------------+--------------------------------+-------------------------+
+| forest           | 3 breadth-first trees          | randomization           |
++------------------+--------------------------------+-------------------------+
+| fractalcurves    | Curvas de Hilbert & Koch       | recursão                |
++------------------+--------------------------------+-------------------------+
+| lindenmayer      | ethnomathematics (indian       | L-System                |
+|                  | kolams)                        |                         |
++------------------+--------------------------------+-------------------------+
+| minimal_hanoi    | Torres de Hanoi                | Tartarugas retângulos   |
+|                  |                                | como discos de Hanói    |
+|                  |                                | (shape, shapesize)      |
++------------------+--------------------------------+-------------------------+
+| nim              | play the classical nim game    | turtles as nimsticks,   |
+|                  | with three heaps of sticks     | event driven (mouse,    |
+|                  | against the computer.          | keyboard)               |
++------------------+--------------------------------+-------------------------+
+| paint            | programa de desenho super      | "onclick()"             |
+|                  | minimalista                    |                         |
++------------------+--------------------------------+-------------------------+
+| peça             | elementar                      | tartaruga: aparência e  |
+|                  |                                | animação                |
++------------------+--------------------------------+-------------------------+
+| penrose          | aperiodic tiling with kites    | "stamp()"               |
+|                  | and darts                      |                         |
++------------------+--------------------------------+-------------------------+
+| planet_and_moon  | simulação do sistema           | formas compostas,       |
+|                  | gravitacional                  | "Vec2D"                 |
++------------------+--------------------------------+-------------------------+
+| rosette          | um padrão do artigo Wikipédia  | "clone()", "undo()"     |
+|                  | sobre gráficos de tartaruga    |                         |
++------------------+--------------------------------+-------------------------+
+| round_dance      | dancing turtles rotating       | compound shapes, clone  |
+|                  | pairwise in opposite direction | shapesize, tilt,        |
+|                  |                                | get_shapepoly, update   |
++------------------+--------------------------------+-------------------------+
+| sorting_animate  | visual demonstration of        | simple alignment,       |
+|                  | different sorting methods      | randomization           |
++------------------+--------------------------------+-------------------------+
+| tree             | a (graphical) breadth first    | "clone()"               |
+|                  | tree (using generators)        |                         |
++------------------+--------------------------------+-------------------------+
+| two_canvases     | desenho simples                | tartarugas em duas      |
+|                  |                                | telas                   |
++------------------+--------------------------------+-------------------------+
+| yinyang          | outro exemplo elementar        | "circle()"              |
++------------------+--------------------------------+-------------------------+
+
+Diverta-se!
+
+
+Modificações desde a versão do Python 2.6
+=========================================
+
+* The methods "Turtle.tracer", "Turtle.window_width" and
+  "Turtle.window_height" have been eliminated. Methods with these
+  names and functionality are now available only as methods of
+  "Screen". The functions derived from these remain available. (In
+  fact already in Python 2.6 these methods were merely duplications of
+  the corresponding "TurtleScreen"/"Screen" methods.)
+
+* The method "Turtle.fill()" has been eliminated. The behaviour of
+  "begin_fill()" and "end_fill()" have changed slightly: now every
+  filling process must be completed with an "end_fill()" call.
+
+* A method "Turtle.filling" has been added. It returns a boolean
+  value: "True" if a filling process is under way, "False" otherwise.
+  This behaviour corresponds to a "fill()" call without arguments in
+  Python 2.6.
+
+
+Modificações desde a versão do Python 3.0
+=========================================
+
+* The "Turtle" methods "shearfactor()", "shapetransform()" and
+  "get_shapepoly()" have been added. Thus the full range of regular
+  linear transforms is now available for transforming turtle shapes.
+  "tiltangle()" has been enhanced in functionality: it now can be used
+  to get or set the tilt angle. "settiltangle()" has been deprecated.
+
+* The "Screen" method "onkeypress()" has been added as a complement to
+  "onkey()". As the latter binds actions to the key release event, an
+  alias: "onkeyrelease()" was also added for it.
+
+* The method "Screen.mainloop" has been added, so there is no longer a
+  need to use the standalone "mainloop()" function when working with
+  "Screen" and "Turtle" objects.
+
+* Two input methods have been added: "Screen.textinput" and
+  "Screen.numinput". These pop up input dialogs and return strings and
+  numbers respectively.
+
+* Two example scripts "tdemo_nim.py" and "tdemo_round_dance.py" have
+  been added to the "Lib/turtledemo" directory.

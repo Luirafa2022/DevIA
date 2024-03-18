@@ -1,0 +1,243 @@
+"sunau" --- Lê e escreve arquivos AU da Sun
+*******************************************
+
+**Código-fonte:** Lib/sunau.py
+
+Descontinuado desde a versão 3.11, será removido na versão 3.13: O
+módulo "sunau" foi descontinuado (veja **PEP 594** para mais
+detalhes).
+
+======================================================================
+
+O módulo "sunau" fornece uma interface conveniente para o formato de
+som AU da Sun. Observe que este módulo é compatível com a interface
+dos módulos "aifc" e "wave".
+
+Um arquivo de áudio consiste em um cabeçalho seguido pelos dados. Os
+campos do cabeçalho são:
+
++-----------------+-------------------------------------------------+
+| Campo           | Conteúdo                                        |
+|=================|=================================================|
+| palavra mágica  | O ".snd" da quatro bytes.                       |
++-----------------+-------------------------------------------------+
+| tamanho do      | Tamanho do cabeçalho, incluindo informações, em |
+| cabeçalho       | bytes.                                          |
++-----------------+-------------------------------------------------+
+| tamanho dos     | Tamanho físico dos dados, em bytes.             |
+| dados           |                                                 |
++-----------------+-------------------------------------------------+
+| codificação     | Indica como as amostras de áudio estão          |
+|                 | codificadas.                                    |
++-----------------+-------------------------------------------------+
+| taxa de amostra | A taxa de amostra.                              |
++-----------------+-------------------------------------------------+
+| nº de canais    | O número de canais nas amostras.                |
++-----------------+-------------------------------------------------+
+| informações     | Uma string ASCII dando uma descrição do arquivo |
+|                 | de áudio (preenchendo com bytes nulos).         |
++-----------------+-------------------------------------------------+
+
+Além do campo de informações, todos os campos de cabeçalho têm 4 bytes
+de tamanho. Eles são todos inteiros sem sinal de 32 bits, codificados
+na ordem de bytes big-endian.
+
+O módulo "sunau" define as seguintes funções:
+
+sunau.open(file, mode)
+
+   Se *file* for uma string, abra o arquivo com esse nome; caso
+   contrário, trata-o como um objeto arquivo ou similar que pode ser
+   procurado. *mode* pode ser qualquer um entre
+
+   "'r'"
+      Modo somente para leitura.
+
+   "'w'"
+      Modo somente para escrita.
+
+   Observe que ele não permite arquivos de leitura e escrita.
+
+   Um *mode* de "'r'" retorna um objeto "AU_read", enquanto um *mode*
+   de "'w'" ou "'wb'" retorna um objeto "AU_write".
+
+O módulo "sunau" define a seguinte exceção:
+
+exception sunau.Error
+
+   Um erro levantado quando algo é impossível devido às especificações
+   AU da Sun ou deficiência de implementação.
+
+O módulo "sunau" define os seguintes itens de dados:
+
+sunau.AUDIO_FILE_MAGIC
+
+   Um número inteiro com o qual todo arquivo AU da Sun válido começa,
+   armazenado no formato big-endian. Esta é a string ".snd"
+   interpretada como um inteiro.
+
+sunau.AUDIO_FILE_ENCODING_MULAW_8
+sunau.AUDIO_FILE_ENCODING_LINEAR_8
+sunau.AUDIO_FILE_ENCODING_LINEAR_16
+sunau.AUDIO_FILE_ENCODING_LINEAR_24
+sunau.AUDIO_FILE_ENCODING_LINEAR_32
+sunau.AUDIO_FILE_ENCODING_ALAW_8
+
+   Valores do campo de codificação do cabeçalho de AU que são
+   suportados por este módulo.
+
+sunau.AUDIO_FILE_ENCODING_FLOAT
+sunau.AUDIO_FILE_ENCODING_DOUBLE
+sunau.AUDIO_FILE_ENCODING_ADPCM_G721
+sunau.AUDIO_FILE_ENCODING_ADPCM_G722
+sunau.AUDIO_FILE_ENCODING_ADPCM_G723_3
+sunau.AUDIO_FILE_ENCODING_ADPCM_G723_5
+
+   Valores conhecidos adicionais de codificação do cabeçalho de AU,
+   mas que não são suportados por este módulo.
+
+
+Objetos AU_read
+===============
+
+Objetos AU_read, conforme retornado por "open()" acima, têm os
+seguintes métodos:
+
+AU_read.close()
+
+   Fecha o fluxo e torna a instância inutilizável. (Isso é chamado
+   automaticamente na exclusão.)
+
+AU_read.getnchannels()
+
+   Retorna o número de canais de áudio (1 para mono, 2 para estéreo).
+
+AU_read.getsampwidth()
+
+   Retorna a largura da amostra em bytes.
+
+AU_read.getframerate()
+
+   Retorna a frequência de amostragem.
+
+AU_read.getnframes()
+
+   Retorna o número de quadros de áudio.
+
+AU_read.getcomptype()
+
+   Retorna o tipo de compressão. Os tipos de compressão suportados são
+   "'ULAW'", "'ALAW'" e "'NONE'".
+
+AU_read.getcompname()
+
+   Versão legível de "getcomptype()". Os tipos suportados têm os
+   respectivos nomes "'CCITT G.711 u-law'", "'CCITT G.711 A-law'" e
+   "'not compressed'".
+
+AU_read.getparams()
+
+   Retorna uma "namedtuple()" "(nchannels, sampwidth, framerate,
+   nframes, comptype, compname)", equivalente à saída dos métodos
+   "get*()".
+
+AU_read.readframes(n)
+
+   Lê e retorna no máximo *n* quadros de áudio, como um objeto
+   "bytes". Os dados serão retornados em formato linear. Se os dados
+   originais estiverem no formato u-LAW, eles serão convertidos.
+
+AU_read.rewind()
+
+   Volta o ponteiro do arquivo para o início do fluxo de áudio.
+
+Os dois métodos a seguir definem um termo "posição" que é compatível
+entre eles e é dependente da implementação.
+
+AU_read.setpos(pos)
+
+   Define o ponteiro do arquivo para a posição especificada. Apenas os
+   valores retornados de "tell()" devem ser usados para *pos*.
+
+AU_read.tell()
+
+   Retorna a posição atual do ponteiro do arquivo. Observe que o valor
+   retornado não tem nada a ver com a posição real no arquivo.
+
+As duas funções a seguir são definidas para compatibilidade com o
+"aifc", e não fazem nada de interessante.
+
+AU_read.getmarkers()
+
+   Retorna "None".
+
+AU_read.getmark(id)
+
+   Levanta um erro.
+
+
+Objetos AU_write
+================
+
+Objetos AU_write, conforme retornado por "open()" acima, têm os
+seguintes métodos:
+
+AU_write.setnchannels(n)
+
+   Define o número de canais.
+
+AU_write.setsampwidth(n)
+
+   Define a largura da amostra (em bytes).
+
+   Alterado na versão 3.4: Adicionado suporte para amostras de 24
+   bits.
+
+AU_write.setframerate(n)
+
+   Define a taxa de quadros.
+
+AU_write.setnframes(n)
+
+   Define o número de quadros. Isso pode ser alterado posteriormente,
+   quando e se mais quadros forem gravados.
+
+AU_write.setcomptype(type, name)
+
+   Define o tipo de compactação e a descrição. Somente "'NONE'" e
+   "'ULAW'" são suportados na saída.
+
+AU_write.setparams(tuple)
+
+   A *tuple* deve ser "(nchannels, sampwidth, framerate, nframes,
+   comptype, compname)", com valores válidos para os métodos "set*()".
+   Define todos os parâmetros.
+
+AU_write.tell()
+
+   Retorna a posição atual no arquivo, com as mesmas observações dos
+   métodos "AU_read.tell()" e "AU_read.setpos()".
+
+AU_write.writeframesraw(data)
+
+   Escreve quadros de áudio, sem corrigir *nframes*.
+
+   Alterado na versão 3.4: Todo *objeto byte ou similar* agora é
+   aceito.
+
+AU_write.writeframes(data)
+
+   Escreve quadros de áudio e certifica-se de que *nframes* esteja
+   correto.
+
+   Alterado na versão 3.4: Todo *objeto byte ou similar* agora é
+   aceito.
+
+AU_write.close()
+
+   Certifica-se de que *nframes* está correto e fecha o arquivo.
+
+   Este método é chamado após a exclusão.
+
+Observe que é inválido definir qualquer parâmetro após chamar
+"writeframes()" ou "writeframesraw()".

@@ -1,0 +1,537 @@
+"warnings" --- Controle de avisos
+*********************************
+
+**Código-fonte:** Lib/warnings.py
+
+======================================================================
+
+As mensagens de aviso são normalmente emitidas em situações em que é
+útil alertar o usuário sobre alguma condição em um programa, onde essa
+condição (normalmente) não garante o levantamento de uma exceção e o
+encerramento do programa. Por exemplo, pode-se querer emitir um aviso
+quando um programa usa um módulo obsoleto.
+
+Os programadores Python emitem avisos chamando a função "warn()"
+definida neste módulo. (Os programadores C usam "PyErr_WarnEx()"; veja
+Manipulando Exceções para detalhes).
+
+Mensagens de aviso são normalmente escritas no "sys.stderr", mas sua
+disposição pode ser alterada de forma flexível, desde ignorar todos os
+avisos até transformá-los em exceções. A disposição dos avisos pode
+variar de acordo com categoria de aviso, o texto da mensagem de aviso
+e o local de origem onde ela é emitida. As repetições de um aviso
+específico para o mesmo local de origem são normalmente suprimidas.
+
+Existem duas etapas no controle de avisos: primeiro, cada vez que um
+aviso é emitido, é feita uma determinação se uma mensagem deve ser
+emitida ou não; a seguir, se uma mensagem deve ser emitida, ela é
+formatada e impressa usando um gancho configurável pelo usuário.
+
+A determinação de emitir ou não uma mensagem de aviso é controlada
+pelo filtro de aviso, que é uma sequência de regras e ações
+correspondentes. As regras podem ser adicionadas ao filtro chamando
+"filterwarnings()" e redefinidas para seu estado padrão chamando
+"resetwarnings()".
+
+A exibição de mensagens de aviso é feita chamando "showwarning()", que
+pode ser substituída; a implementação padrão desta função formata a
+mensagem chamando "formatwarning()", que também está disponível para
+uso por implementações personalizadas.
+
+Ver também:
+
+  "logging.captureWarnings()" permite que você manipule todos os
+  avisos com a infraestrutura de registro padrão.
+
+
+Categorias de avisos
+====================
+
+Existem várias exceções embutidas que representam categorias de aviso.
+Essa categorização é útil para filtrar grupos de avisos.
+
+Embora sejam tecnicamente exceções embutidas, elas são documentadas
+aqui, porque conceitualmente pertencem ao mecanismo de avisos.
+
+O código do usuário pode definir categorias de aviso adicionais
+criando uma subclasse de uma das categorias de aviso padrão. Uma
+categoria de aviso deve ser sempre uma subclasse da classe  "Warning".
+
+As seguintes classes de categorias de avisos estão definidas
+atualmente:
+
++------------------------------------+-------------------------------------------------+
+| Classe                             | Descrição                                       |
+|====================================|=================================================|
+| "Warning"                          | Esta é a classe base de todas as classes de     |
+|                                    | categoria de aviso. É uma subclasse de          |
+|                                    | "Exception".                                    |
++------------------------------------+-------------------------------------------------+
+| "UserWarning"                      | A categoria padrão para "warn()".               |
++------------------------------------+-------------------------------------------------+
+| "DeprecationWarning"               | Categoria base para avisos sobre recursos       |
+|                                    | descontinuados quando esses avisos são          |
+|                                    | destinados a outros desenvolvedores Python      |
+|                                    | (ignorado por padrão, a menos que acionado por  |
+|                                    | código em "__main__").                          |
++------------------------------------+-------------------------------------------------+
+| "SyntaxWarning"                    | Categoria base para avisos sobre recursos       |
+|                                    | sintáticos duvidosos.                           |
++------------------------------------+-------------------------------------------------+
+| "RuntimeWarning"                   | Categoria base para avisos sobre recursos       |
+|                                    | duvidosos de tempo de execução.                 |
++------------------------------------+-------------------------------------------------+
+| "FutureWarning"                    | Categoria base para avisos sobre recursos       |
+|                                    | descontinuados quando esses avisos se destinam  |
+|                                    | a usuários finais de aplicações escritas em     |
+|                                    | Python.                                         |
++------------------------------------+-------------------------------------------------+
+| "PendingDeprecationWarning"        | Categoria base para avisos sobre recursos que   |
+|                                    | serão descontinuados no futuro (ignorados por   |
+|                                    | padrão).                                        |
++------------------------------------+-------------------------------------------------+
+| "ImportWarning"                    | Categoria base para avisos acionados durante o  |
+|                                    | processo de importação de um módulo (ignorado   |
+|                                    | por padrão).                                    |
++------------------------------------+-------------------------------------------------+
+| "UnicodeWarning"                   | Categoria base para avisos relacionados a       |
+|                                    | Unicode.                                        |
++------------------------------------+-------------------------------------------------+
+| "BytesWarning"                     | Categoria base para avisos relacionados a       |
+|                                    | "bytes" e "bytearray".                          |
++------------------------------------+-------------------------------------------------+
+| "ResourceWarning"                  | Base category for warnings related to resource  |
+|                                    | usage (ignored by default).                     |
++------------------------------------+-------------------------------------------------+
+
+Alterado na versão 3.7: Anteriormente, "DeprecationWarning" e
+"FutureWarning" eram diferenciadas com base em se um recurso estava
+sendo removido completamente ou mudando seu comportamento. Elas agora
+são diferenciadas com base em seu público-alvo e na maneira como são
+tratadas pelos filtros de avisos padrão.
+
+
+O filtro de avisos
+==================
+
+O filtro de avisos controla se os avisos são ignorados, exibidos ou
+transformados em erros (levantando uma exceção).
+
+Conceitualmente, o filtro de avisos mantém uma lista ordenada de
+especificações de filtro; qualquer aviso específico é comparado com
+cada especificação de filtro na lista, por sua vez, até que uma
+correspondência seja encontrada; o filtro determina a disposição da
+correspondência. Cada entrada é uma tupla no formato (*action*,
+*message*, *category*, *module*, *lineno*), sendo:
+
+* *action* é uma das seguintes strings:
+
+  +-----------------+------------------------------------------------+
+  | Valor           | Disposição                                     |
+  |=================|================================================|
+  | ""default""     | exibe a primeira ocorrência de avisos          |
+  |                 | correspondentes para cada local (módulo +      |
+  |                 | número da linha) onde o aviso é emitido        |
+  +-----------------+------------------------------------------------+
+  | ""error""       | transforma avisos correspondentes em exceções  |
+  +-----------------+------------------------------------------------+
+  | ""ignore""      | nunca exibe avisos correspondentes             |
+  +-----------------+------------------------------------------------+
+  | ""always""      | sempre exibe avisos correspondentes            |
+  +-----------------+------------------------------------------------+
+  | ""module""      | exibe a primeira ocorrência de avisos          |
+  |                 | correspondentes para cada módulo onde o aviso  |
+  |                 | é emitido (independentemente do número da      |
+  |                 | linha)                                         |
+  +-----------------+------------------------------------------------+
+  | ""once""        | exibe apenas a primeira ocorrência de avisos   |
+  |                 | correspondentes, independentemente da          |
+  |                 | localização                                    |
+  +-----------------+------------------------------------------------+
+
+* *message* is a string containing a regular expression that the start
+  of the warning message must match, case-insensitively.  In "-W" and
+  "PYTHONWARNINGS", *message* is a literal string that the start of
+  the warning message must contain (case-insensitively), ignoring any
+  whitespace at the start or end of *message*.
+
+* *category* é uma classe (uma subclasse de "Warning") da qual a
+  categoria de aviso deve ser uma subclasse para corresponder.
+
+* *module* is a string containing a regular expression that the start
+  of the fully qualified module name must match, case-sensitively.  In
+  "-W" and "PYTHONWARNINGS", *module* is a literal string that the
+  fully qualified module name must be equal to (case-sensitively),
+  ignoring any whitespace at the start or end of *module*.
+
+* *lineno* é um número inteiro que deve corresponder ao número da
+  linha onde ocorreu o aviso, ou "0" para corresponder a todos os
+  números de linha.
+
+Como a classe "Warning" é derivada da classe embutida "Exception",
+para transformar um aviso em um erro, simplesmente levantamos
+"category(message)".
+
+Se um aviso for relatado e não corresponder a nenhum filtro
+registrado, a ação "padrão" será aplicada (daí seu nome).
+
+
+Describing Warning Filters
+--------------------------
+
+The warnings filter is initialized by "-W" options passed to the
+Python interpreter command line and the "PYTHONWARNINGS" environment
+variable. The interpreter saves the arguments for all supplied entries
+without interpretation in "sys.warnoptions"; the "warnings" module
+parses these when it is first imported (invalid options are ignored,
+after printing a message to "sys.stderr").
+
+Individual warnings filters are specified as a sequence of fields
+separated by colons:
+
+   action:message:category:module:line
+
+The meaning of each of these fields is as described in O filtro de
+avisos. When listing multiple filters on a single line (as for
+"PYTHONWARNINGS"), the individual filters are separated by commas and
+the filters listed later take precedence over those listed before them
+(as they're applied left-to-right, and the most recently applied
+filters take precedence over earlier ones).
+
+Commonly used warning filters apply to either all warnings, warnings
+in a particular category, or warnings raised by particular modules or
+packages. Some examples:
+
+   default                      # Show all warnings (even those ignored by default)
+   ignore                       # Ignore all warnings
+   error                        # Convert all warnings to errors
+   error::ResourceWarning       # Treat ResourceWarning messages as errors
+   default::DeprecationWarning  # Show DeprecationWarning messages
+   ignore,default:::mymodule    # Only report warnings triggered by "mymodule"
+   error:::mymodule             # Convert warnings to errors in "mymodule"
+
+
+Filtro de avisos padrão
+-----------------------
+
+By default, Python installs several warning filters, which can be
+overridden by the "-W" command-line option, the "PYTHONWARNINGS"
+environment variable and calls to "filterwarnings()".
+
+In regular release builds, the default warning filter has the
+following entries (in order of precedence):
+
+   default::DeprecationWarning:__main__
+   ignore::DeprecationWarning
+   ignore::PendingDeprecationWarning
+   ignore::ImportWarning
+   ignore::ResourceWarning
+
+In a debug build, the list of default warning filters is empty.
+
+Alterado na versão 3.2: "DeprecationWarning" is now ignored by default
+in addition to "PendingDeprecationWarning".
+
+Alterado na versão 3.7: "DeprecationWarning" is once again shown by
+default when triggered directly by code in "__main__".
+
+Alterado na versão 3.7: "BytesWarning" no longer appears in the
+default filter list and is instead configured via "sys.warnoptions"
+when "-b" is specified twice.
+
+
+Overriding the default filter
+-----------------------------
+
+Developers of applications written in Python may wish to hide *all*
+Python level warnings from their users by default, and only display
+them when running tests or otherwise working on the application. The
+"sys.warnoptions" attribute used to pass filter configurations to the
+interpreter can be used as a marker to indicate whether or not
+warnings should be disabled:
+
+   import sys
+
+   if not sys.warnoptions:
+       import warnings
+       warnings.simplefilter("ignore")
+
+Developers of test runners for Python code are advised to instead
+ensure that *all* warnings are displayed by default for the code under
+test, using code like:
+
+   import sys
+
+   if not sys.warnoptions:
+       import os, warnings
+       warnings.simplefilter("default") # Change the filter in this process
+       os.environ["PYTHONWARNINGS"] = "default" # Also affect subprocesses
+
+Finally, developers of interactive shells that run user code in a
+namespace other than "__main__" are advised to ensure that
+"DeprecationWarning" messages are made visible by default, using code
+like the following (where "user_ns" is the module used to execute code
+entered interactively):
+
+   import warnings
+   warnings.filterwarnings("default", category=DeprecationWarning,
+                                      module=user_ns.get("__name__"))
+
+
+Temporarily Suppressing Warnings
+================================
+
+If you are using code that you know will raise a warning, such as a
+deprecated function, but do not want to see the warning (even when
+warnings have been explicitly configured via the command line), then
+it is possible to suppress the warning using the "catch_warnings"
+context manager:
+
+   import warnings
+
+   def fxn():
+       warnings.warn("deprecated", DeprecationWarning)
+
+   with warnings.catch_warnings():
+       warnings.simplefilter("ignore")
+       fxn()
+
+While within the context manager all warnings will simply be ignored.
+This allows you to use known-deprecated code without having to see the
+warning while not suppressing the warning for other code that might
+not be aware of its use of deprecated code.  Note: this can only be
+guaranteed in a single-threaded application. If two or more threads
+use the "catch_warnings" context manager at the same time, the
+behavior is undefined.
+
+
+Testing Warnings
+================
+
+To test warnings raised by code, use the "catch_warnings" context
+manager. With it you can temporarily mutate the warnings filter to
+facilitate your testing. For instance, do the following to capture all
+raised warnings to check:
+
+   import warnings
+
+   def fxn():
+       warnings.warn("deprecated", DeprecationWarning)
+
+   with warnings.catch_warnings(record=True) as w:
+       # Cause all warnings to always be triggered.
+       warnings.simplefilter("always")
+       # Trigger a warning.
+       fxn()
+       # Verify some things
+       assert len(w) == 1
+       assert issubclass(w[-1].category, DeprecationWarning)
+       assert "deprecated" in str(w[-1].message)
+
+One can also cause all warnings to be exceptions by using "error"
+instead of "always". One thing to be aware of is that if a warning has
+already been raised because of a "once"/"default" rule, then no matter
+what filters are set the warning will not be seen again unless the
+warnings registry related to the warning has been cleared.
+
+Once the context manager exits, the warnings filter is restored to its
+state when the context was entered. This prevents tests from changing
+the warnings filter in unexpected ways between tests and leading to
+indeterminate test results. The "showwarning()" function in the module
+is also restored to its original value.  Note: this can only be
+guaranteed in a single-threaded application. If two or more threads
+use the "catch_warnings" context manager at the same time, the
+behavior is undefined.
+
+When testing multiple operations that raise the same kind of warning,
+it is important to test them in a manner that confirms each operation
+is raising a new warning (e.g. set warnings to be raised as exceptions
+and check the operations raise exceptions, check that the length of
+the warning list continues to increase after each operation, or else
+delete the previous entries from the warnings list before each new
+operation).
+
+
+Updating Code For New Versions of Dependencies
+==============================================
+
+Warning categories that are primarily of interest to Python developers
+(rather than end users of applications written in Python) are ignored
+by default.
+
+Notably, this "ignored by default" list includes "DeprecationWarning"
+(for every module except "__main__"), which means developers should
+make sure to test their code with typically ignored warnings made
+visible in order to receive timely notifications of future breaking
+API changes (whether in the standard library or third party packages).
+
+In the ideal case, the code will have a suitable test suite, and the
+test runner will take care of implicitly enabling all warnings when
+running tests (the test runner provided by the "unittest" module does
+this).
+
+In less ideal cases, applications can be checked for use of deprecated
+interfaces by passing "-Wd" to the Python interpreter (this is
+shorthand for "-W default") or setting "PYTHONWARNINGS=default" in the
+environment. This enables default handling for all warnings, including
+those that are ignored by default. To change what action is taken for
+encountered warnings you can change what argument is passed to "-W"
+(e.g. "-W error"). See the "-W" flag for more details on what is
+possible.
+
+
+Available Functions
+===================
+
+warnings.warn(message, category=None, stacklevel=1, source=None, *, skip_file_prefixes=None)
+
+   Issue a warning, or maybe ignore it or raise an exception.  The
+   *category* argument, if given, must be a warning category class; it
+   defaults to "UserWarning".  Alternatively, *message* can be a
+   "Warning" instance, in which case *category* will be ignored and
+   "message.__class__" will be used. In this case, the message text
+   will be "str(message)". This function raises an exception if the
+   particular warning issued is changed into an error by the warnings
+   filter.  The *stacklevel* argument can be used by wrapper functions
+   written in Python, like this:
+
+      def deprecated_api(message):
+          warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+   This makes the warning refer to "deprecated_api"'s caller, rather
+   than to the source of "deprecated_api" itself (since the latter
+   would defeat the purpose of the warning message).
+
+   The *skip_file_prefixes* keyword argument can be used to indicate
+   which stack frames are ignored when counting stack levels. This can
+   be useful when you want the warning to always appear at call sites
+   outside of a package when a constant *stacklevel* does not fit all
+   call paths or is otherwise challenging to maintain. If supplied, it
+   must be a tuple of strings. When prefixes are supplied, stacklevel
+   is implicitly overridden to be "max(2, stacklevel)". To cause a
+   warning to be attributed to the caller from outside of the current
+   package you might write:
+
+      # example/lower.py
+      _warn_skips = (os.path.dirname(__file__),)
+
+      def one_way(r_luxury_yacht=None, t_wobbler_mangrove=None):
+          if r_luxury_yacht:
+              warnings.warn("Please migrate to t_wobbler_mangrove=.",
+                            skip_file_prefixes=_warn_skips)
+
+      # example/higher.py
+      from . import lower
+
+      def another_way(**kw):
+          lower.one_way(**kw)
+
+   This makes the warning refer to both the "example.lower.one_way()"
+   and "package.higher.another_way()" call sites only from calling
+   code living outside of "example" package.
+
+   *source*, if supplied, is the destroyed object which emitted a
+   "ResourceWarning".
+
+   Alterado na versão 3.6: Added *source* parameter.
+
+   Alterado na versão 3.12: Added *skip_file_prefixes*.
+
+warnings.warn_explicit(message, category, filename, lineno, module=None, registry=None, module_globals=None, source=None)
+
+   This is a low-level interface to the functionality of "warn()",
+   passing in explicitly the message, category, filename and line
+   number, and optionally the module name and the registry (which
+   should be the "__warningregistry__" dictionary of the module).  The
+   module name defaults to the filename with ".py" stripped; if no
+   registry is passed, the warning is never suppressed. *message* must
+   be a string and *category* a subclass of "Warning" or *message* may
+   be a "Warning" instance, in which case *category* will be ignored.
+
+   *module_globals*, if supplied, should be the global namespace in
+   use by the code for which the warning is issued.  (This argument is
+   used to support displaying source for modules found in zipfiles or
+   other non-filesystem import sources).
+
+   *source*, if supplied, is the destroyed object which emitted a
+   "ResourceWarning".
+
+   Alterado na versão 3.6: Add the *source* parameter.
+
+warnings.showwarning(message, category, filename, lineno, file=None, line=None)
+
+   Write a warning to a file.  The default implementation calls
+   "formatwarning(message, category, filename, lineno, line)" and
+   writes the resulting string to *file*, which defaults to
+   "sys.stderr".  You may replace this function with any callable by
+   assigning to "warnings.showwarning". *line* is a line of source
+   code to be included in the warning message; if *line* is not
+   supplied, "showwarning()" will try to read the line specified by
+   *filename* and *lineno*.
+
+warnings.formatwarning(message, category, filename, lineno, line=None)
+
+   Format a warning the standard way.  This returns a string which may
+   contain embedded newlines and ends in a newline.  *line* is a line
+   of source code to be included in the warning message; if *line* is
+   not supplied, "formatwarning()" will try to read the line specified
+   by *filename* and *lineno*.
+
+warnings.filterwarnings(action, message='', category=Warning, module='', lineno=0, append=False)
+
+   Insert an entry into the list of warnings filter specifications.
+   The entry is inserted at the front by default; if *append* is true,
+   it is inserted at the end.  This checks the types of the arguments,
+   compiles the *message* and *module* regular expressions, and
+   inserts them as a tuple in the list of warnings filters.  Entries
+   closer to the front of the list override entries later in the list,
+   if both match a particular warning.  Omitted arguments default to a
+   value that matches everything.
+
+warnings.simplefilter(action, category=Warning, lineno=0, append=False)
+
+   Insert a simple entry into the list of warnings filter
+   specifications.  The meaning of the function parameters is as for
+   "filterwarnings()", but regular expressions are not needed as the
+   filter inserted always matches any message in any module as long as
+   the category and line number match.
+
+warnings.resetwarnings()
+
+   Reset the warnings filter.  This discards the effect of all
+   previous calls to "filterwarnings()", including that of the "-W"
+   command line options and calls to "simplefilter()".
+
+
+Available Context Managers
+==========================
+
+class warnings.catch_warnings(*, record=False, module=None, action=None, category=Warning, lineno=0, append=False)
+
+   A context manager that copies and, upon exit, restores the warnings
+   filter and the "showwarning()" function. If the *record* argument
+   is "False" (the default) the context manager returns "None" on
+   entry. If *record* is "True", a list is returned that is
+   progressively populated with objects as seen by a custom
+   "showwarning()" function (which also suppresses output to
+   "sys.stdout"). Each object in the list has attributes with the same
+   names as the arguments to "showwarning()".
+
+   The *module* argument takes a module that will be used instead of
+   the module returned when you import "warnings" whose filter will be
+   protected. This argument exists primarily for testing the
+   "warnings" module itself.
+
+   If the *action* argument is not "None", the remaining arguments are
+   passed to "simplefilter()" as if it were called immediately on
+   entering the context.
+
+   Nota:
+
+     The "catch_warnings" manager works by replacing and then later
+     restoring the module's "showwarning()" function and internal list
+     of filter specifications.  This means the context manager is
+     modifying global state and therefore is not thread-safe.
+
+   Alterado na versão 3.11: Added the *action*, *category*, *lineno*,
+   and *append* parameters.

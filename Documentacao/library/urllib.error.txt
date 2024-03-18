@@ -1,0 +1,73 @@
+"urllib.error" --- Classes de exceção levantadas por urllib.request
+*******************************************************************
+
+**Código-fonte:** Lib/urllib/error.py
+
+======================================================================
+
+O módulo "urllib.error" define as classes de exceção para exceções
+levantadas por "urllib.request". A classe de exceção base é
+"URLError".
+
+As seguintes exceções são levantadas por "urllib.error" conforme
+apropriado:
+
+exception urllib.error.URLError
+
+   Os manipuladores levantam essa exceção (ou exceções derivadas)
+   quando encontram um problema. É uma subclasse de "OSError".
+
+   reason
+
+      O motivo desse erro. Pode ser uma string de mensagem ou outra
+      instância de exceção.
+
+   Alterado na versão 3.3: "URLError" costumava ser um subtipo de
+   "IOError", que agora é um apelido de "OSError".
+
+exception urllib.error.HTTPError(url, code, msg, hdrs, fp)
+
+   Embora seja uma exceção (uma subclasse de "URLError"), uma
+   "HTTPError" também pode funcionar como um valor de retorno não
+   excepcional do tipo arquivo (a mesma coisa que "urlopen()"
+   retorna). Isso é útil ao lidar com erros de HTTP exóticos, como
+   solicitações de autenticação.
+
+   url
+
+      Contém a solicitação URL. Um apelido para *nome do arquivo*
+      atributo.
+
+   code
+
+      Um código de status HTTP conforme definido em **RFC 2616**. Este
+      valor numérico corresponde a um valor encontrado no dicionário
+      de códigos conforme encontrado em
+      "http.server.BaseHTTPRequestHandler.responses".
+
+   reason
+
+      Geralmente é uma string explicando o motivo desse erro. Um
+      apelido para o atributo *msg*.
+
+   headers
+
+      Os cabeçalhos de resposta HTTP para a solicitação HTTP que
+      causou a "HTTPError". Um apelido para o atributo *hdrs*.
+
+      Novo na versão 3.4.
+
+   fp
+
+      Um objeto arquivo ou similar no qual o corpo do HTTP erro pode
+      ser lido.
+
+exception urllib.error.ContentTooShortError(msg, content)
+
+   Esta exceção é levantada quando a função "urlretrieve()" detecta
+   que a quantidade de dados baixados é menor que a quantidade
+   esperada (fornecida pelo cabeçalho *Content-Length*).
+
+   content
+
+      Os dados baixados (e supostamente truncados).

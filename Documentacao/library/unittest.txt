@@ -1,0 +1,2490 @@
+"unittest" --- Framework de Testes Unitários
+********************************************
+
+**Source code:** Lib/unittest/__init__.py
+
+======================================================================
+
+(Caso já estejas familiarizado com os conceitos básicos de testes,
+poderás querer ignorar a lista de métodos assertivos.)
+
+O framework de testes unitários "unittest" foi originalmente inspirado
+no JUnit e tem um sabor semelhante contendo as principais estruturas
+de teste de unidades existentes em outras linguagens. Ele suporta a
+automação de testes, compartilhamento de configuração e código de
+desligamento para testes, agregação de testes em coleções e
+independência dos testes do framework de relatórios.
+
+Para conseguir isso, o módulo "unittest" suporta alguns conceitos
+importantes de forma orientada a objetos:
+
+definição de contexto de teste
+   Uma *definição de contexto de teste* representa a preparação
+   necessária pra performar um ou mais testes, além de quaisquer ações
+   de limpeza relacionadas. Isso pode envolver, por exemplo, criar
+   bancos de dados proxy ou temporários, diretórios ou iniciar um
+   processo de servidor.
+
+caso de teste
+   Um *test case* é uma unidade de teste individual. O mesmo verifica
+   uma resposta específica a um determinado conjunto de entradas. O
+   "unittest" fornece uma classe base, "TestCase", que pode ser usada
+   para criar novos casos de teste.
+
+Suíte de Testes
+   Uma *test suite* é uma coleção de casos de teste, conjuntos de
+   teste ou ambos. O mesmo é usado para agregar testes que devem ser
+   executados juntos.
+
+test runner
+   Um *test runner* é um componente que orquestra a execução de testes
+   e fornece o resultado para o usuário. O runner pode usar uma
+   interface gráfica, uma interface textual ou retornar um valor
+   especial para indicar os resultados da execução dos testes.
+
+Ver também:
+
+  Módulo "doctest"
+     Outro módulo de suporte a testes com um sabor muito diferente.
+
+  Simple Smalltalk Testing: With Patterns
+     O documento original de Kent Beck sobre estruturas de teste
+     usando o padrão compartilhado por "unittest".
+
+  pytest
+     É um framework externo do unittest com uma sintaxe mais leve para
+     escrever testes. Por exemplo, "assert func(10) == 42".
+
+  The Python Testing Tools Taxonomy
+     Uma extensa lista de ferramentas para testar código Python,
+     incluindo estruturas de teste funcionais e bibliotecas de objetos
+     simulados.
+
+  Testing in Python Mailing List
+     Um grupo de interesse especial para discussão de testes e
+     ferramentas de teste, em Python.
+
+  The script "Tools/unittestgui/unittestgui.py" in the Python source
+  distribution is a GUI tool for test discovery and execution.  This
+  is intended largely for ease of use for those new to unit testing.
+  For production environments it is recommended that tests be driven
+  by a continuous integration system such as Buildbot, Jenkins, GitHub
+  Actions, or AppVeyor.
+
+
+Exemplo Básico
+==============
+
+O módulo "unittest" fornece um conjunto amplo de ferramentas para a
+construção e execução de testes. Esta seção demonstra que um pequeno
+subconjunto das ferramentas é suficiente para atender às necessidades
+da maioria dos usuários.
+
+Aqui temos um simples Script para testar três métodos de String:
+
+   import unittest
+
+   class TestStringMethods(unittest.TestCase):
+
+       def test_upper(self):
+           self.assertEqual('foo'.upper(), 'FOO')
+
+       def test_isupper(self):
+           self.assertTrue('FOO'.isupper())
+           self.assertFalse('Foo'.isupper())
+
+       def test_split(self):
+           s = 'hello world'
+           self.assertEqual(s.split(), ['hello', 'world'])
+           # check that s.split fails when the separator is not a string
+           with self.assertRaises(TypeError):
+               s.split(2)
+
+   if __name__ == '__main__':
+       unittest.main()
+
+Para criar um testcase basta criar uma classe que estende de
+"unittest.TestCase". Os três testes individuais são definidos com
+métodos cujos nomes começam com as letras "test". Esta convenção na
+nomenclatura informa o runner a respeitos de quais métodos são, na
+verdade, testes.
+
+O cerne de cada teste é a invocação de um método "assertEqual()" para
+verificar se há um resultado esperado; "assertTrue()" ou
+"assertFalse()" para verificar uma condição; ou "assertRaises()" para
+verificar se uma exceção específica será levantada. Esses métodos são
+usados ao invés de utilizar a expressão "assert" para que o runner de
+teste possa acumular todos os resultados do teste e produzir um
+relatório.
+
+Os métodos "setUp()" e "tearDown()" permitem que você defina
+instruções que serão executadas antes e depois de cada método de
+teste. Eles são abordados em mais detalhes na seção Organizando código
+teste.
+
+O bloco final mostra uma maneira simples de executar os testes. A
+função "unittest.main()" fornece uma interface de linha de comando
+para o Script de teste. Quando executado a partir da linha de comando,
+o Script acima produz uma saída que se parece com isso:
+
+   ...
+   ----------------------------------------------------------------------
+   Ran 3 tests in 0.000s
+
+   OK
+
+Passando a opção "-v" para o nosso Script de teste instruirá a função
+"unittest.main()" a habilitar um nível mais alto de verbosidade e
+produzirá a seguinte saída:
+
+   test_isupper (__main__.TestStringMethods.test_isupper) ... ok
+   test_split (__main__.TestStringMethods.test_split) ... ok
+   test_upper (__main__.TestStringMethods.test_upper) ... ok
+
+   ----------------------------------------------------------------------
+   Ran 3 tests in 0.001s
+
+   OK
+
+Os exemplos acima mostram os recursos mais utilizados "unittest" que
+são suficientes para atender a muitas necessidades de testes diários.
+O restante da documentação explora o conjunto completo de recursos
+desde os primeiros princípios.
+
+Alterado na versão 3.11: The behavior of returning a value from a test
+method (other than the default "None" value), is now deprecated.
+
+
+Interface de Linha de Comando
+=============================
+
+O módulo unittest pode ser usado diretamente da linha de comando para
+executar testes de módulos, classes ou mesmo testes de métodos
+individuais:
+
+   python -m unittest test_module1 test_module2
+   python -m unittest test_module.TestClass
+   python -m unittest test_module.TestClass.test_method
+
+Você pode passar uma lista com qualquer combinação de nomes de módulos
+e nomes de classes ou métodos totalmente qualificados.
+
+Os módulos de teste podem ser especificados por caminhos de arquivo
+também:
+
+   python -m unittest tests/test_something.py
+
+Isso permite que você use o auto-completar do console/shell para
+especificar o módulo de teste. O arquivo especificado precisa ser
+"importável" como um módulo. O caminho é convertido para um nome de
+módulo ao remover a extensão *.py* e conversando os separadores do
+caminho em *.*. Se você quer executar um arquivo de teste que não é
+importável como um módulo, você deve executar o arquivo diretamente.
+
+Você pode executar os testes com mais detalhes (maior verbosidade) ao
+usar o sinalizador -v:
+
+   python -m unittest -v test_module
+
+Quando executado sem argumentos Test Discovery é iniciado:
+
+   python -m unittest
+
+Para uma lista de todas as opções de linha de comando:
+
+   python -m unittest -h
+
+Alterado na versão 3.2: Em versões mais antigas, era possível de
+executar apenas testes de métodos individuais e não de módulos ou
+classes.
+
+
+Opções de linha de comando
+--------------------------
+
+**unittest** suporta as seguintes opções de linha de comando:
+
+-b, --buffer
+
+   Os streams da saída padrão e do erro padrão são carregados durante
+   a execução do teste. A saída de um teste que passou é descartada. A
+   saída geralmente é mostrada quando um teste falha e é adicionada às
+   mensagens de falha.
+
+-c, --catch
+
+   "Control-C" durante a execução do teste aguarda até que o teste
+   corrente termine e a partir disso mostra todos os resultados até o
+   momento. Um segundo "Control-C" invoca uma exceção
+   "KeyboardInterrupt" comum.
+
+   Veja Signal Handling para as funções que provêm essa
+   funcionalidade.
+
+-f, --failfast
+
+   Parar a execução do teste no primeiro erro ou falha.
+
+-k
+
+   Only run test methods and classes that match the pattern or
+   substring. This option may be used multiple times, in which case
+   all test cases that match any of the given patterns are included.
+
+   Padrões que contém um caractere curinga ("*") são combinados com os
+   testes pelo método "fnmatch.fnmatchcase()"; caso contrário, é
+   utilizada uma combinação simples de substrings, diferenciando-se
+   letras maiúsculas e minúsculas.
+
+   Padrões são combinados com o nome completo qualificado do método de
+   teste no formato que ele é importado pelo carregador.
+
+   Por exemplo, "-k foo" combina com
+   "foo_tests.SomeTest.test_something", "bar_tests.SomeTest.test_foo",
+   mas não com "bar_tests.FooTest.test_something".
+
+--locals
+
+   Mostra variáveis locais no traceback.
+
+--durations N
+
+   Show the N slowest test cases (N=0 for all).
+
+Novo na versão 3.2: As opções de linha de comando "-b", "-c" e "-f"
+foram adicionadas.
+
+Novo na versão 3.5: A opção de linha de comando "--locals".
+
+Novo na versão 3.7: A opção de linha de comando "-k".
+
+Novo na versão 3.12: The command-line option "--durations".
+
+A linha de comando também pode ser usada para descobrir testes, para
+executar todos os testes de um projeto ou apenas de um subconjunto.
+
+
+Test Discovery
+==============
+
+Novo na versão 3.2.
+
+Unittest supports simple test discovery. In order to be compatible
+with test discovery, all of the test files must be modules or packages
+importable from the top-level directory of the project (this means
+that their filenames must be valid identifiers).
+
+O descobrimento de testes é implementado no "TestLoader.discover()",
+mas também pode ser utilizado a partir da linha de comando. O comando
+básico para uso é:
+
+   cd project_directory
+   python -m unittest discover
+
+Nota:
+
+  Como um atalho, "python -m unittest" é o equivalente a "python -m
+  unittest discover". Se você deseja passar argumentos para a
+  descoberta de testes, o subcomando "discover" deve ser usado
+  explicitamente.
+
+O sub-comando "discover" (descubra) tem as seguintes opções:
+
+-v, --verbose
+
+   Saída verbosa
+
+-s, --start-directory directory
+
+   Diretório no qual se inicia o descobrimento ("." por padrão)
+
+-p, --pattern pattern
+
+   Padrão de texto para se descobrir os arquivos de teste ("test*.py"
+   por padrão)
+
+-t, --top-level-directory directory
+
+   Diretório raiz do projeto (diretório de início por padrão)
+
+As opções "-s", "-p" e "-t" podem ser passadas como argumentos
+posicionais nessa ordem. As duas linhas de comando seguintes são
+equivalentes:
+
+   python -m unittest discover -s project_directory -p "*_test.py"
+   python -m unittest discover project_directory "*_test.py"
+
+Além de aceitar caminhos, também é possível passar o nome de um
+pacote, como "myproject.subpackage.test", como diretório de início. O
+nome do pacote que for passado será importado e sua localização no
+sistema de arquivos será utilizada como diretório de início.
+
+Cuidado:
+
+  O descobridor de testes importa os testes para carregá-los. Uma vez
+  que o descobridor tiver encontrado todos os arquivos de teste a
+  partir do diretório de início especificado, ele transforma os
+  caminhos em nomes de pacotes para conseguir importá-los. Por
+  exemplo, "foo/bar/baz.py" será importado como "foo.bar.baz".Se você
+  possuir um pacote instalado globalmente e tentar executar o
+  descobrimento em uma versão diferente deste mesmo pacote, a
+  importação *pode* acontecer do lugar errado. Se isso acontecer, o
+  descobridor de testes irá emitir um alerta e encerrar a execução.Se
+  você configurar o diretório de início como sendo um nome de pacote,
+  não um caminho para um diretório, o descobridor irá assumir que
+  qualquer local do qual ele importar é o local correto. Neste caso,
+  nenhum alerta será emitido.
+
+Módulos de testes e pacotes podem conter customizações no carregamento
+de testes utilizando load_tests protocol.
+
+Alterado na versão 3.4: Descoberta de testes suporta *pacote de espaço
+de nomes* para o diretório de início. Perceba que você precisa
+especificar o diretório de nível superior também (ex: "python -m
+unittest discover -s root/namespace -t root").
+
+Alterado na versão 3.11: "unittest" dropped the *namespace packages*
+support in Python 3.11. It has been broken since Python 3.7. Start
+directory and subdirectories containing tests must be regular package
+that have "__init__.py" file.Directories containing start directory
+still can be a namespace package. In this case, you need to specify
+start directory as dotted package name, and target directory
+explicitly. For example:
+
+   # proj/  <-- current directory
+   #   namespace/
+   #     mypkg/
+   #       __init__.py
+   #       test_mypkg.py
+
+   python -m unittest discover -s namespace.mypkg -t .
+
+
+Organizando código teste
+========================
+
+O bloco básico de construção dos testes unitários são os *casos de
+teste* --- cenários únicos que devem ser configurados e avaliados em
+sua correção. No "unittest", casos de teste são representados por
+instâncias "unittest.TestCase". Para criar seus próprios casos de
+teste, você deve escrever subclasses de "TestCase" ou utilizar
+"FunctionTestCase".
+
+O código de teste em uma instância da classe "TestCase" deve ser
+completamente auto-contido, de maneira que ele possa ser executado
+isoladamente ou combinado, de forma arbitrária, com quaisquer outros
+casos de teste.
+
+A mais simples subclasse de "TestCase" irá implementar um método de
+teste (i.e. um método cujo nome começa com "test") para executar um
+teste:
+
+   import unittest
+
+   class DefaultWidgetSizeTestCase(unittest.TestCase):
+       def test_default_widget_size(self):
+           widget = Widget('The widget')
+           self.assertEqual(widget.size(), (50, 50))
+
+Note that in order to test something, we use one of the assert*
+methods provided by the "TestCase" base class.  If the test fails, an
+exception will be raised with an explanatory message, and "unittest"
+will identify the test case as a *failure*.  Any other exceptions will
+be treated as *errors*.
+
+Os testes podem ser muitos, e as configurações podem ser repetitivas.
+Por sorte, temos como reaproveitar estas configurações implementando
+um método chamado "setUp()", o qual será automaticamente chamado pelo
+framework de teste para cada teste único que executarmos:
+
+   import unittest
+
+   class WidgetTestCase(unittest.TestCase):
+       def setUp(self):
+           self.widget = Widget('The widget')
+
+       def test_default_widget_size(self):
+           self.assertEqual(self.widget.size(), (50,50),
+                            'incorrect default size')
+
+       def test_widget_resize(self):
+           self.widget.resize(100,150)
+           self.assertEqual(self.widget.size(), (100,150),
+                            'wrong size after resize')
+
+Nota:
+
+  A ordem de execução dos testes será feita com base na ordenação dos
+  nomes dos métodos de teste respeitando os critérios da ordenação de
+  strings embutida.
+
+Se o método "setUp()" levantar uma exceção durante a sua execução, o
+framework irá considerar que o teste sofreu um erro e o método de
+teste não será executado.
+
+De maneira similar, pode-se definir um método "tearDown()" que limpa o
+ambiente após a execução do método de teste:
+
+   import unittest
+
+   class WidgetTestCase(unittest.TestCase):
+       def setUp(self):
+           self.widget = Widget('The widget')
+
+       def tearDown(self):
+           self.widget.dispose()
+
+Se o método "setUp()" for bem sucedido, o método "tearDown()" será
+executado, independente do resultado do método de teste.
+
+Tal ambiente de trabalho do código de teste é chamado de *definição de
+contexto de teste*. Uma nova instância TestCase é criada como uma
+única definição de contexto de teste usada para executar cada método
+de teste. Portanto, os métodos "setUp()", "tearDown()", e "__init__()"
+serão chamados uma vez por teste.
+
+É recomendado utilizar implementações de TestCase para agrupar testes
+de acordo com as funcionalidades que eles testam. "unittest"
+disponibiliza um mecanismo para isso: a *suíte de testes*,
+representada pela classe "TestSuite" do módulo "unittest". Em grande
+parte dos casos, chamar "unittest.main()" é suficiente para coletar
+todos os casos de teste do módulo e executá-los para você.
+
+Entretanto, caso você queira customizar a construção da sua suíte de
+testes, é possível fazê-la desta forma:
+
+   def suite():
+       suite = unittest.TestSuite()
+       suite.addTest(WidgetTestCase('test_default_widget_size'))
+       suite.addTest(WidgetTestCase('test_widget_resize'))
+       return suite
+
+   if __name__ == '__main__':
+       runner = unittest.TextTestRunner()
+       runner.run(suite())
+
+Você pode colocar as definições dos casos de teste e suíte de testes
+em um mesmo módulo que contém o código a ser testado (tal como
+"widget.py"), mas existem várias vantagens ao colocar o código dos
+testes em um módulo separado, como "test_widget.py":
+
+* O módulo de teste pode ser executado de maneira isolada a partir da
+  linha de comando.
+
+* O código de teste pode ser mais facilmente separado do código a ser
+  entregue.
+
+* Há uma menor tentação para modificar o código de teste para que ele
+  se adéque ao código testado sem que haja uma boa razão.
+
+* O código de teste deve ser modificado muito menos frequentemente do
+  que o código que ele testa.
+
+* Código testado pode ser reformulado mais facilmente.
+
+* Testes para módulos escritos em C devem ser, obrigatoriamente,
+  colocados em módulos separados, então por que não manter a
+  consistência?
+
+* Se as estratégias de teste mudarem, não há a necessidade de mudar o
+  código-fonte.
+
+
+Reutilizando códigos de teste antigos
+=====================================
+
+Alguns usuários irão encontrar antigos códigos de teste que eles
+gostariam de executar com "unittest" sem converter cada função antiga
+para uma subclasse de "TestCase".
+
+Por isso, "unittest" contém uma classe "FunctionTestCase". Esta
+subclasse de "TestCase" pode ser utilizada para englobar funções de
+teste existentes. Funções de definição de estado inicial e final (set-
+up e tear-down) também podem ser fornecidas.
+
+Dadas as seguintes funções de teste:
+
+   def testSomething():
+       something = makeSomething()
+       assert something.name is not None
+       # ...
+
+é possível criar uma instância de caso de teste, com métodos opcionais
+de configuração inicial e final (set-up e tear-down), como mostrado a
+seguir:
+
+   testcase = unittest.FunctionTestCase(testSomething,
+                                        setUp=makeSomethingDB,
+                                        tearDown=deleteSomethingDB)
+
+Nota:
+
+  Apesar da classe "FunctionTestCase" poder ser utilizada para
+  converter rapidamente um teste existente em um teste do módulo
+  "unittest", esta abordagem não é recomendada. Investir tempo para
+  configurar corretamente uma subclasse de "TestCase" irá tornar
+  futuras refatorações infinitamente mais fáceis.
+
+Em alguns casos, os testes existentes podem ter sido escritos
+utilizando o módulo "doctest". Se for o caso, "doctest" contém a
+classe "DocTestSuite" que pode construir, automaticamente, instâncias
+"unittest.TestSuite" a partir dos testes baseados em "doctest".
+
+
+Ignorando testes e falhas esperadas
+===================================
+
+Novo na versão 3.1.
+
+Unittest suporta ignorar métodos de teste individuais e, até mesmo,
+classes de teste inteiras. Além disso, há suporte para a marcação de
+um teste como uma "falha esperada", um teste que está incorreto e irá
+falhar, mas não deve ser considerado como uma falha no "TestResult".
+
+Ignorar um teste é simplesmente uma questão de utilizar o *decorador*
+"skip()" ou uma de suas variantes condicionais, chamando
+"TestCase.skipTest()" em um "setUp()" ou método de teste, ou
+levantando "SkipTest" diretamente.
+
+Ignorar se parece basicamente com:
+
+   class MyTestCase(unittest.TestCase):
+
+       @unittest.skip("demonstrating skipping")
+       def test_nothing(self):
+           self.fail("shouldn't happen")
+
+       @unittest.skipIf(mylib.__version__ < (1, 3),
+                        "not supported in this library version")
+       def test_format(self):
+           # Tests that work for only a certain version of the library.
+           pass
+
+       @unittest.skipUnless(sys.platform.startswith("win"), "requires Windows")
+       def test_windows_support(self):
+           # windows specific testing code
+           pass
+
+       def test_maybe_skipped(self):
+           if not external_resource_available():
+               self.skipTest("external resource not available")
+           # test code that depends on the external resource
+           pass
+
+Esta é a saída da execução do exemplo acima em modo verboso:
+
+   test_format (__main__.MyTestCase.test_format) ... skipped 'not supported in this library version'
+   test_nothing (__main__.MyTestCase.test_nothing) ... skipped 'demonstrating skipping'
+   test_maybe_skipped (__main__.MyTestCase.test_maybe_skipped) ... skipped 'external resource not available'
+   test_windows_support (__main__.MyTestCase.test_windows_support) ... skipped 'requires Windows'
+
+   ----------------------------------------------------------------------
+   Ran 4 tests in 0.005s
+
+   OK (skipped=4)
+
+Classes podem ser puladas assim como métodos:
+
+   @unittest.skip("showing class skipping")
+   class MySkippedTestCase(unittest.TestCase):
+       def test_not_run(self):
+           pass
+
+"TestCase.setUp()" também pode ignorar o teste. Isso é útil quando um
+recurso que precisa ser configurado não está disponível.
+
+Falhas esperadas usam o decorador "expectedFailure()":
+
+   class ExpectedFailureTestCase(unittest.TestCase):
+       @unittest.expectedFailure
+       def test_fail(self):
+           self.assertEqual(1, 0, "broken")
+
+É simples ignorar com decoradores customizados, basta fazer um
+decorador que chama "skip()" no teste quando ele deve ser ignorado.
+Este decorador ignora o teste a não ser que o objeto fornecido tenha
+um determinado atributo:
+
+   def skipUnlessHasattr(obj, attr):
+       if hasattr(obj, attr):
+           return lambda func: func
+       return unittest.skip("{!r} doesn't have {!r}".format(obj, attr))
+
+Os decoradores e exceção seguintes ignoram testes e falhas esperadas:
+
+@unittest.skip(reason)
+
+   Ignora incondicionalmente o teste decorado. *reason* deve descrever
+   a razão pela qual o teste está sendo ignorado.
+
+@unittest.skipIf(condition, reason)
+
+   Ignora o teste decorado se *condition* for verdadeiro.
+
+@unittest.skipUnless(condition, reason)
+
+   Ignora o teste decorado a não ser que *condition* seja verdadeiro.
+
+@unittest.expectedFailure
+
+   Marca o teste como uma falha ou erro esperado. Se o teste falhar ou
+   ocorrerem erros na função de teste mesmo (ao invés de em um dos
+   métodos *test fixture*), então ele será considerado como executado
+   com sucesso. Se o teste passar, ele será considerado como uma
+   falha.
+
+exception unittest.SkipTest(reason)
+
+   Esta exceção é levantada para ignorar um teste.
+
+   Normalmente, você pode utilizar "TestCase.skipTest()" ou um dos
+   decoradores para ignorar sem ter de levantar esta exceção
+   diretamente.
+
+Testes ignorados não terão seus métodos "setUp()" ou "tearDown()"
+executados. Classes ignoradas não terão seus métodos "setUpClass()" ou
+"tearDownClass()" executados. Módulos ignorados não terão seus métodos
+"setUpModule()" ou "tearDownModule()" executados.
+
+
+Distinguindo iterações de teste utilizando subtestes
+====================================================
+
+Novo na versão 3.4.
+
+Quando existem pequenas diferenças entre os seus testes, por exemplo
+alguns parâmetros, unittest permite que você distinga-os dentro do
+corpo de um método de teste utilizando o gerenciador de contexto
+"subTest()".
+
+Por exemplo, o teste seguinte:
+
+   class NumbersTest(unittest.TestCase):
+
+       def test_even(self):
+           """
+           Test that numbers between 0 and 5 are all even.
+           """
+           for i in range(0, 6):
+               with self.subTest(i=i):
+                   self.assertEqual(i % 2, 0)
+
+irá produzir a seguinte saída:
+
+   ======================================================================
+   FAIL: test_even (__main__.NumbersTest.test_even) (i=1)
+   Test that numbers between 0 and 5 are all even.
+   ----------------------------------------------------------------------
+   Traceback (most recent call last):
+     File "subtests.py", line 11, in test_even
+       self.assertEqual(i % 2, 0)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   AssertionError: 1 != 0
+
+   ======================================================================
+   FAIL: test_even (__main__.NumbersTest.test_even) (i=3)
+   Test that numbers between 0 and 5 are all even.
+   ----------------------------------------------------------------------
+   Traceback (most recent call last):
+     File "subtests.py", line 11, in test_even
+       self.assertEqual(i % 2, 0)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   AssertionError: 1 != 0
+
+   ======================================================================
+   FAIL: test_even (__main__.NumbersTest.test_even) (i=5)
+   Test that numbers between 0 and 5 are all even.
+   ----------------------------------------------------------------------
+   Traceback (most recent call last):
+     File "subtests.py", line 11, in test_even
+       self.assertEqual(i % 2, 0)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   AssertionError: 1 != 0
+
+Sem usar um subteste, a execução para depois da primeira falha e o
+erro será menos fácil de ser diagnosticado porque o valor de "i" não
+será mostrado:
+
+   ======================================================================
+   FAIL: test_even (__main__.NumbersTest.test_even)
+   ----------------------------------------------------------------------
+   Traceback (most recent call last):
+     File "subtests.py", line 32, in test_even
+       self.assertEqual(i % 2, 0)
+   AssertionError: 1 != 0
+
+
+Classes e funções
+=================
+
+Esta seção descreve de maneira aprofundada a API do módulo "unittest".
+
+
+Casos de teste
+--------------
+
+class unittest.TestCase(methodName='runTest')
+
+   Instâncias da classe "TestCase" representam unidades lógicas de
+   teste no universo do "unittest". Esta classe deve ser utilizada
+   como classe base, com testes específicos sendo implementados por
+   subclasses concretas. Esta classe implementa a interface requerida
+   pelo executor de testes, para permitir o controle dos testes, e
+   métodos que o código de teste pode utilizar para checar e reportar
+   diversos tipos de falhas.
+
+   Cada instância da classe "TestCase" irá executar um único método
+   base: o método chamado *methodName*. Em muitos casos de uso da
+   classe "TestCase", você não precisará modificar o *methodName* ou
+   reimplementar o método "runTest()" padrão.
+
+   Alterado na versão 3.2: "TestCase" pode ser instanciada com sucesso
+   sem fornecer um *methodName*. Isso torna mais fácil experimentar
+   com "TestCase" a partir de um interpretador interativo.
+
+   Instâncias "TestCase" possuem três grupos de métodos: um grupo
+   utilizado para executar o teste, outro utilizado pela implementação
+   do teste para checar as condições e reportar falhas, e alguns
+   métodos de investigação para permitir coletar dados sobre o teste
+   em si.
+
+   Os métodos do primeiro grupo (que executam os testes) são:
+
+   setUp()
+
+      Método chamado para preparar a definição de contexto de teste.
+      Chamado imediatamente após chamar o método de teste; exceto pelo
+      "AssertionError" ou "SkipTest", qualquer exceção levantada por
+      este método será considerada um erro além de uma simples falha
+      de teste. A implementação padrão não faz nada.
+
+   tearDown()
+
+      Método chamado imediatamente após o método de teste ter sido
+      chamado e o resultado registrado. Este método é chamado mesmo se
+      o método de teste tiver levantado uma exceção, então a
+      implementação em subclasses deve ser feita com cautela ao
+      verificar o estado interno. Qualquer exceção além de
+      "AssertionError" ou "SkipTest" levantada por este método será
+      considerado um erro adicional, e não uma simples falha de teste
+      (que incrementaria o número total de erros no relatório final de
+      testes). Este método será executado apenas se o método "setUp()"
+      for bem sucedido, independente do resultado do método de teste.
+      A implementação padrão não faz nada.
+
+   setUpClass()
+
+      Um método de classe chamado antes da execução dos testes de uma
+      classe específica. O método "setUpClass" é chamado com a classe
+      sendo o único argumento e deve ser decorada como um
+      "classmethod()":
+
+         @classmethod
+         def setUpClass(cls):
+             ...
+
+      Veja Classes e Módulos de Definição de Contexto para mais
+      detalhes.
+
+      Novo na versão 3.2.
+
+   tearDownClass()
+
+      Um método de classe chamado depois da execução dos testes de uma
+      classe específica. O método "tearDownClass" é chamado com a
+      classe sendo o único argumento e deve ser decorada como um
+      "classmethod()":
+
+         @classmethod
+         def tearDownClass(cls):
+             ...
+
+      Veja Classes e Módulos de Definição de Contexto para mais
+      detalhes.
+
+      Novo na versão 3.2.
+
+   run(result=None)
+
+      Executa o teste, registrando as informações no objeto resultado
+      "TestResult", passado como *result*. Se *result* for omitido, ou
+      definido como "None", um objeto resultado temporário é criado
+      (chamando o método "defaultTestResult()") e utilizado. O objeto
+      resultado é retornado para quem chamou o método "run()".
+
+      O mesmo efeito pode ser obtido ao chamar uma instância da classe
+      "TestCase".
+
+      Alterado na versão 3.3: Versões anteriores de "run" não
+      retornavam o resultado. Nem chamando por uma instância.
+
+   skipTest(reason)
+
+      Ao se executar durante um método de teste ou "setUp()", pula o
+      teste em execução. Veja Ignorando testes e falhas esperadas para
+      mais informações.
+
+      Novo na versão 3.1.
+
+   subTest(msg=None, **params)
+
+      Retorna um gerenciador de contexto que executa, como subteste, o
+      bloco de código englobado. *msg* e *params* são valores
+      opcionais e arbitrários que são mostrados sempre quando um
+      subteste falha, permitindo identificá-los claramente.
+
+      Um caso de teste pode conter inúmeras declarações de subteste e
+      elas podem ser aninhadas de forma arbitrária.
+
+      Veja Distinguindo iterações de teste utilizando subtestes para
+      mais informações.
+
+      Novo na versão 3.4.
+
+   debug()
+
+      Executa o teste sem coletar o resultado. Permite propagar
+      exceções levantadas pelo teste e pode ser utilizado para
+      oferecer suporte aos testes sob um depurador.
+
+   A classe "TestCase" oferece diversos métodos de asserção para
+   checar e reportar falhas. A tabela a seguir lista os métodos mais
+   utilizados (veja as tabelas abaixo para mais métodos de asserção).
+
+   +-------------------------------------------+-------------------------------+-----------------+
+   | Método                                    | Avalia se                     | Novo em         |
+   |===========================================|===============================|=================|
+   | "assertEqual(a, b)"                       | "a == b"                      |                 |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertNotEqual(a, b)"                    | "a != b"                      |                 |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertTrue(x)"                           | "bool(x) is True"             |                 |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertFalse(x)"                          | "bool(x) is False"            |                 |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIs(a, b)"                          | "a is b"                      | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIsNot(a, b)"                       | "a is not b"                  | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIsNone(x)"                         | "x is None"                   | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIsNotNone(x)"                      | "x is not None"               | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIn(a, b)"                          | "a in b"                      | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertNotIn(a, b)"                       | "a not in b"                  | 3.1             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertIsInstance(a, b)"                  | "isinstance(a, b)"            | 3.2             |
+   +-------------------------------------------+-------------------------------+-----------------+
+   | "assertNotIsInstance(a, b)"               | "not isinstance(a, b)"        | 3.2             |
+   +-------------------------------------------+-------------------------------+-----------------+
+
+   Todos os métodos de asserção aceitam um argumento *msg* que, se
+   especificado, é utilizado como a mensagem de erro em caso de falha
+   (veja também "longMessage"). Note que o argumento nomeado *msg*
+   pode ser passado para "assertRaises()", "assertRaisesRegex()",
+   "assertWarns()" e "assertWarnsRegex()" apenas quando eles são
+   utilizados como gerenciador de contexto.
+
+   assertEqual(first, second, msg=None)
+
+      Testa se *first* e *second* são iguais. Se o resultado da
+      comparação não indicar igualdade, o teste irá falhar.
+
+      Além disso, se *first* e *second* são exatamente do mesmo tipo e
+      são uma lista, tupla, dict, set, frozenset, str, ou qualquer
+      outro tipo que é registrado na subclasse com
+      "addTypeEqualityFunc()", a função de igualdade específica do
+      tipo é será chamada para gerar uma mensagem de erro mais útil
+      (veja também lista de métodos específicos por tipo)
+
+      Alterado na versão 3.1: Adição da chamada automática da função
+      específica por tipo.
+
+      Alterado na versão 3.2: método "assertMultiLineEqual()"
+      adicionado como função de igualdade padrão para o tipo string.
+
+   assertNotEqual(first, second, msg=None)
+
+      Testa se *first* e *second* não são iguais. Se o resultado da
+      comparação indicar igualdade, o teste irá falhar.
+
+   assertTrue(expr, msg=None)
+   assertFalse(expr, msg=None)
+
+      Testa se a expressão *expr* é verdadeira (ou falsa).
+
+      Note que isso é equivalente a "bool(expr) is True" e não a "expr
+      is True" (use "assertIs(expr, True)" neste último caso). Este
+      método também deve ser evitado quando outros métodos mais
+      específicos estão disponíveis (e.g. "assertEqual(a, b)" no lugar
+      de "assertTrue(a == b)"), já que estes podem ter uma melhor
+      mensagem de erro em caso de falha.
+
+   assertIs(first, second, msg=None)
+   assertIsNot(first, second, msg=None)
+
+      Testa que *first* e *second* são (ou não são) o mesmo objeto.
+
+      Novo na versão 3.1.
+
+   assertIsNone(expr, msg=None)
+   assertIsNotNone(expr, msg=None)
+
+      Testa se *expr* é (ou não é) "None".
+
+      Novo na versão 3.1.
+
+   assertIn(member, container, msg=None)
+   assertNotIn(member, container, msg=None)
+
+      Testa se *member* está (ou não está) em *container*.
+
+      Novo na versão 3.1.
+
+   assertIsInstance(obj, cls, msg=None)
+   assertNotIsInstance(obj, cls, msg=None)
+
+      Testa se *obj* é (ou não é) uma instância de *cls* (que pode ser
+      uma classe ou uma tupla de classes, como suportado pela função
+      "isinstance()"). Para checar pelo tipo exato, use
+      "assertIs(type(obj), cls)".
+
+      Novo na versão 3.2.
+
+   Também é possível checar a produção de exceções, avisos e mensagens
+   de log usando os seguintes métodos:
+
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | Método                                                    | Avalia se                              | Novo em      |
+   |===========================================================|========================================|==============|
+   | "assertRaises(exc, fun, *args, **kwds)"                   | "fun(*args, **kwds)" levanta *exc*     |              |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | "assertRaisesRegex(exc, r, fun, *args, **kwds)"           | "fun(*args, **kwds)" levanta *exc* e a | 3.1          |
+   |                                                           | mensagem casa com a expressão regular  |              |
+   |                                                           | *r*                                    |              |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | "assertWarns(warn, fun, *args, **kwds)"                   | "fun(*args, **kwds)" levanta *warn*    | 3.2          |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | "assertWarnsRegex(warn, r, fun, *args, **kwds)"           | "fun(*args, **kwds)" levanta *warn* e  | 3.2          |
+   |                                                           | a mensagem casa com a expressão        |              |
+   |                                                           | regular *r*                            |              |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | "assertLogs(logger, level)"                               | O bloco "with" registra logs no        | Módulos para |
+   |                                                           | *logger* com pelo menos um nível       | processamen  |
+   |                                                           | *level*                                | to de XML    |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+   | "assertNoLogs(logger, level)"                             | O bloco "with" não loga em *logger*    | 3.10         |
+   |                                                           | com *level* mínimo                     |              |
+   +-----------------------------------------------------------+----------------------------------------+--------------+
+
+   assertRaises(exception, callable, *args, **kwds)
+   assertRaises(exception, *, msg=None)
+
+      Testa se uma exceção é levantada quando *callable* é chamado com
+      quaisquer argumentos nomeados ou posicionais que também são
+      passados para "assertRaises()". O teste passa se *exception* for
+      levantada e falha se outra exceção ou nenhuma exceção for
+      levantada.
+
+      Se somente os argumentos *exception* e, possivelmente, *msg*
+      forem passados, retorna um gerenciador de contexto para que o
+      código sob teste possa ser escrito de forma embutida ao invés de
+      ser definido como uma função:
+
+         with self.assertRaises(SomeException):
+             do_something()
+
+      Quando utilizado como gerenciador de contexto, "assertRaises()"
+      aceita o argumento nomeado adicional *msg*.
+
+      O gerenciador de contexto irá armazenar o objeto exceção
+      capturado no seu atributo "exception". Isso pode ser útil se a
+      intenção for realizar testes adicionais na exceção levantada:
+
+         with self.assertRaises(SomeException) as cm:
+             do_something()
+
+         the_exception = cm.exception
+         self.assertEqual(the_exception.error_code, 3)
+
+      Alterado na versão 3.1: Adicionada a possibilidade de se
+      utilizar "assertRaises()" como gerenciador de contexto.
+
+      Alterado na versão 3.2: Adicionado o atributo "exception".
+
+      Alterado na versão 3.3: Adicionado o argumento nomeado *msg*
+      quando utilizado como gerenciador de contexto.
+
+   assertRaisesRegex(exception, regex, callable, *args, **kwds)
+   assertRaisesRegex(exception, regex, *, msg=None)
+
+      Similar ao "assertRaises()" mas também testa se *regex* casa com
+      a representação em string da exceção levantada. *regex* pode ser
+      um objeto expressão regular ou uma string contendo uma expressão
+      regular compatível com o uso pela função "re.search()".
+      Exemplos:
+
+         self.assertRaisesRegex(ValueError, "invalid literal for.*XYZ'$",
+                                int, 'XYZ')
+
+      or:
+
+         with self.assertRaisesRegex(ValueError, 'literal'):
+            int('XYZ')
+
+      Novo na versão 3.1: Adicionado com o nome "assertRaisesRegexp".
+
+      Alterado na versão 3.2: Renomeado para "assertRaisesRegex()".
+
+      Alterado na versão 3.3: Adicionado o argumento nomeado *msg*
+      quando utilizado como gerenciador de contexto.
+
+   assertWarns(warning, callable, *args, **kwds)
+   assertWarns(warning, *, msg=None)
+
+      Testa se o aviso *warning* é acionado quando *callable* é
+      chamado com quaisquer argumentos nomeados ou posicionais que
+      também são passados para "assertWarns()". O teste passa se
+      *warning* for acionado e falha se não for. Qualquer exceção é
+      considerada como falha. Para capturar qualquer aviso presente em
+      um grupo de avisos, uma tupla contendo as classes de aviso podem
+      ser passadas como *warning*.
+
+      Se apenas os argumentos *warning* e, possivelmente, *msg* forem
+      passados, retorna um gerenciador de contexto para que o código
+      sob teste possa ser escrito de forma embutida ao invés de ser
+      definido como uma função:
+
+         with self.assertWarns(SomeWarning):
+             do_something()
+
+      Quando usado como gerenciador de contexto, "assertWarns()"
+      aceita o argumento nomeado adicional *msg*.
+
+      O gerenciador de contexto irá armazenar o objeto de aviso
+      capturado no atributo "warning" e a linha de código fonte que
+      acionou o aviso nos atributos "filename" e "lineno". Isso pode
+      ser útil se a intenção for executar verificações adicionais no
+      aviso capturado:
+
+         with self.assertWarns(SomeWarning) as cm:
+             do_something()
+
+         self.assertIn('myfile.py', cm.filename)
+         self.assertEqual(320, cm.lineno)
+
+      Este método funciona independente dos filtros de aviso
+      configurados no momento em que é chamado.
+
+      Novo na versão 3.2.
+
+      Alterado na versão 3.3: Adicionado o argumento nomeado *msg*
+      quando utilizado como gerenciador de contexto.
+
+   assertWarnsRegex(warning, regex, callable, *args, **kwds)
+   assertWarnsRegex(warning, regex, *, msg=None)
+
+      Similar ao "assertWarns()" mas também testa se *regex* casa com
+      a mensagem do aviso acionado. *regex* pode ser um objeto
+      expressão regular ou uma string contendo uma expressão regular
+      compatível para uso pela função "re.search()". Exemplo:
+
+         self.assertWarnsRegex(DeprecationWarning,
+                               r'legacy_function\(\) is deprecated',
+                               legacy_function, 'XYZ')
+
+      or:
+
+         with self.assertWarnsRegex(RuntimeWarning, 'unsafe frobnicating'):
+             frobnicate('/etc/passwd')
+
+      Novo na versão 3.2.
+
+      Alterado na versão 3.3: Adicionado o argumento nomeado *msg*
+      quando utilizado como gerenciador de contexto.
+
+   assertLogs(logger=None, level=None)
+
+      Um gerenciador de contexto para testar se pelo menos uma
+      mensagem é inserida em *logger* ou em um de seus filhos, com
+      pelo menos um nível *level*.
+
+      Se fornecido, *logger* deve ser um objeto "logging.Logger" ou
+      uma "str" fornecendo o nome de um logger. O padrão é o logger
+      root, o qual irá capturar todas as mensagens que não foram
+      bloqueadas por um logger descendente não-propagante.
+
+      If given, *level* should be either a numeric logging level or
+      its string equivalent (for example either ""ERROR"" or
+      "logging.ERROR").  The default is "logging.INFO".
+
+      O teste passa se pelo menos uma das mensagens emitidas dentro do
+      bloco "with" casa com as condições dadas por *logger* e *level*,
+      falhando caso contrário.
+
+      O objeto retornado pelo gerenciador de contexto é um registro
+      auxiliar que mantém os rastros das mensagens de log capturadas
+      de acordo com os critérios dados. Ele possui dois atributos:
+
+      records
+
+         Uma lista de objetos de log da classe "logging.LogRecord" que
+         foram compatíveis com os critérios dados.
+
+      output
+
+         Uma lista de objetos da classe "str" com a saída formatada
+         das mensagens de log compatíveis com os critérios dados.
+
+      Exemplo:
+
+         with self.assertLogs('foo', level='INFO') as cm:
+             logging.getLogger('foo').info('first message')
+             logging.getLogger('foo.bar').error('second message')
+         self.assertEqual(cm.output, ['INFO:foo:first message',
+                                      'ERROR:foo.bar:second message'])
+
+      Novo na versão 3.4.
+
+   assertNoLogs(logger=None, level=None)
+
+      Um gerenciador de contexto para testar que nenhuma mensagem é
+      logada no *logger* ou um dos seus filhos, com pelo menos o
+      *level* fornecido.
+
+      Se passado, *logger* deve ser um objeto da classe
+      "logging.Logger" ou um objeto da classe "str" com o nome do
+      registrador de logs. O padrão é o registrador de log raíz, que
+      irá capturar todas as mensagens.
+
+      If given, *level* should be either a numeric logging level or
+      its string equivalent (for example either ""ERROR"" or
+      "logging.ERROR").  The default is "logging.INFO".
+
+      Ao contrário de "assertLogs()", nada será retornado pelo
+      gerenciador de contexto.
+
+      Novo na versão 3.10.
+
+   Existem também outros métodos usados para executar verificações
+   mais específicas, como:
+
+   +-----------------------------------------+----------------------------------+----------------+
+   | Método                                  | Avalia se                        | Novo em        |
+   |=========================================|==================================|================|
+   | "assertAlmostEqual(a, b)"               | "round(a-b, 7) == 0"             |                |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertNotAlmostEqual(a, b)"            | "round(a-b, 7) != 0"             |                |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertGreater(a, b)"                   | "a > b"                          | 3.1            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertGreaterEqual(a, b)"              | "a >= b"                         | 3.1            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertLess(a, b)"                      | "a < b"                          | 3.1            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertLessEqual(a, b)"                 | "a <= b"                         | 3.1            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertRegex(s, r)"                     | "r.search(s)"                    | 3.1            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertNotRegex(s, r)"                  | "not r.search(s)"                | 3.2            |
+   +-----------------------------------------+----------------------------------+----------------+
+   | "assertCountEqual(a, b)"                | *a* e *b* possuem os mesmos      | 3.2            |
+   |                                         | elementos na mesma quantidade,   |                |
+   |                                         | independente da sua ordem.       |                |
+   +-----------------------------------------+----------------------------------+----------------+
+
+   assertAlmostEqual(first, second, places=7, msg=None, delta=None)
+   assertNotAlmostEqual(first, second, places=7, msg=None, delta=None)
+
+      Testa se *first* e *second* são (ou não são) aproximadamente
+      iguais considerando a diferença entre eles, arredondando para o
+      número de casas decimais dado (7 por padrão), e comparando a
+      zero. Note que estes métodos arredondam os valores considerando
+      o número de casas decimais (i.e. como a função "round()") e não
+      o número de algarismos significativos.
+
+      Se *delta* é fornecido no lugar de *places*, a diferença entre
+      *first* e *second* deve ser menor ou igual a (ou maior que)
+      *delta*.
+
+      Passar *delta* e *places* ao mesmo tempo levanta a exceção
+      "TypeError".
+
+      Alterado na versão 3.2: "assertAlmostEqual()" considera,
+      automaticamente, objetos quase iguais que possuem a comparação
+      de igualdade dada como verdadeira. "assertNotAlmostEqual()"
+      falha automaticamente se os objetos possuem a comparação de
+      igualdade dada como verdadeira. Adicionado o argumento nomeado
+      *delta*.
+
+   assertGreater(first, second, msg=None)
+   assertGreaterEqual(first, second, msg=None)
+   assertLess(first, second, msg=None)
+   assertLessEqual(first, second, msg=None)
+
+      Testa que *first* é respectivamente >, >=, < ou <= que *second*,
+      dependendo do nome do método. Se não for, o teste irá falhar:
+
+         >>> self.assertGreaterEqual(3, 4)
+         AssertionError: "3" unexpectedly not greater than or equal to "4"
+
+      Novo na versão 3.1.
+
+   assertRegex(text, regex, msg=None)
+   assertNotRegex(text, regex, msg=None)
+
+      Testa que uma procura por *regex* corresponde (ou não
+      corresponde) a *text*. Em caso de falha, a mensagem de erro irá
+      incluir o padrão e o *text* (ou o padrão e a parte do *text* que
+      inesperadamente correspondeu). *regex* pode ser um objeto de
+      expressão regular ou uma string contendo uma expressão regular
+      adequada para uso por "re.search()".
+
+      Novo na versão 3.1: Adicionada abaixo do nome
+      "assertRegexpMatches".
+
+      Alterado na versão 3.2: O método "assertRegexpMatches()" foi
+      renomeado para "assertRegex()".
+
+      Novo na versão 3.2: "assertNotRegex()".
+
+   assertCountEqual(first, second, msg=None)
+
+      Test that sequence *first* contains the same elements as
+      *second*, regardless of their order. When they don't, an error
+      message listing the differences between the sequences will be
+      generated.
+
+      Elementos duplicados *não* são ignorados ao comparar *first* e
+      *second*. É verificado se cada elemento tem a mesma contagem em
+      ambas sequências. Equivalente a:
+      "assertEqual(Counter(list(first)), Counter(list(second)))", mas
+      também funciona com sequências de objetos não hasheáveis.
+
+      Novo na versão 3.2.
+
+   The "assertEqual()" method dispatches the equality check for
+   objects of the same type to different type-specific methods.  These
+   methods are already implemented for most of the built-in types, but
+   it's also possible to register new methods using
+   "addTypeEqualityFunc()":
+
+   addTypeEqualityFunc(typeobj, function)
+
+      Registers a type-specific method called by "assertEqual()" to
+      check if two objects of exactly the same *typeobj* (not
+      subclasses) compare equal.  *function* must take two positional
+      arguments and a third msg=None keyword argument just as
+      "assertEqual()" does.  It must raise
+      "self.failureException(msg)" when inequality between the first
+      two parameters is detected -- possibly providing useful
+      information and explaining the inequalities in details in the
+      error message.
+
+      Novo na versão 3.1.
+
+   The list of type-specific methods automatically used by
+   "assertEqual()" are summarized in the following table.  Note that
+   it's usually not necessary to invoke these methods directly.
+
+   +-------------------------------------------+-------------------------------+----------------+
+   | Método                                    | Usado para comparar           | Novo em        |
+   |===========================================|===============================|================|
+   | "assertMultiLineEqual(a, b)"              | strings                       | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+   | "assertSequenceEqual(a, b)"               | sequências                    | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+   | "assertListEqual(a, b)"                   | listas                        | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+   | "assertTupleEqual(a, b)"                  | tuplas                        | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+   | "assertSetEqual(a, b)"                    | sets ou frozensets            | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+   | "assertDictEqual(a, b)"                   | dicionários                   | 3.1            |
+   +-------------------------------------------+-------------------------------+----------------+
+
+   assertMultiLineEqual(first, second, msg=None)
+
+      Test that the multiline string *first* is equal to the string
+      *second*. When not equal a diff of the two strings highlighting
+      the differences will be included in the error message. This
+      method is used by default when comparing strings with
+      "assertEqual()".
+
+      Novo na versão 3.1.
+
+   assertSequenceEqual(first, second, msg=None, seq_type=None)
+
+      Tests that two sequences are equal.  If a *seq_type* is
+      supplied, both *first* and *second* must be instances of
+      *seq_type* or a failure will be raised.  If the sequences are
+      different an error message is constructed that shows the
+      difference between the two.
+
+      This method is not called directly by "assertEqual()", but it's
+      used to implement "assertListEqual()" and "assertTupleEqual()".
+
+      Novo na versão 3.1.
+
+   assertListEqual(first, second, msg=None)
+   assertTupleEqual(first, second, msg=None)
+
+      Tests that two lists or tuples are equal.  If not, an error
+      message is constructed that shows only the differences between
+      the two.  An error is also raised if either of the parameters
+      are of the wrong type. These methods are used by default when
+      comparing lists or tuples with "assertEqual()".
+
+      Novo na versão 3.1.
+
+   assertSetEqual(first, second, msg=None)
+
+      Tests that two sets are equal.  If not, an error message is
+      constructed that lists the differences between the sets.  This
+      method is used by default when comparing sets or frozensets with
+      "assertEqual()".
+
+      Fails if either of *first* or *second* does not have a
+      "set.difference()" method.
+
+      Novo na versão 3.1.
+
+   assertDictEqual(first, second, msg=None)
+
+      Test that two dictionaries are equal.  If not, an error message
+      is constructed that shows the differences in the dictionaries.
+      This method will be used by default to compare dictionaries in
+      calls to "assertEqual()".
+
+      Novo na versão 3.1.
+
+   Finally the "TestCase" provides the following methods and
+   attributes:
+
+   fail(msg=None)
+
+      Signals a test failure unconditionally, with *msg* or "None" for
+      the error message.
+
+   failureException
+
+      This class attribute gives the exception raised by the test
+      method.  If a test framework needs to use a specialized
+      exception, possibly to carry additional information, it must
+      subclass this exception in order to "play fair" with the
+      framework.  The initial value of this attribute is
+      "AssertionError".
+
+   longMessage
+
+      This class attribute determines what happens when a custom
+      failure message is passed as the msg argument to an assertXYY
+      call that fails. "True" is the default value. In this case, the
+      custom message is appended to the end of the standard failure
+      message. When set to "False", the custom message replaces the
+      standard message.
+
+      The class setting can be overridden in individual test methods
+      by assigning an instance attribute, self.longMessage, to "True"
+      or "False" before calling the assert methods.
+
+      The class setting gets reset before each test call.
+
+      Novo na versão 3.1.
+
+   maxDiff
+
+      This attribute controls the maximum length of diffs output by
+      assert methods that report diffs on failure. It defaults to 80*8
+      characters. Assert methods affected by this attribute are
+      "assertSequenceEqual()" (including all the sequence comparison
+      methods that delegate to it), "assertDictEqual()" and
+      "assertMultiLineEqual()".
+
+      Setting "maxDiff" to "None" means that there is no maximum
+      length of diffs.
+
+      Novo na versão 3.2.
+
+   Frameworks de teste podem usar os seguintes métodos para coletar
+   informações sobre o teste:
+
+   countTestCases()
+
+      Retorna o número de testes representados por esse objeto de
+      teste. Para instâncias "TestCase" será sempre "1".
+
+   defaultTestResult()
+
+      Return an instance of the test result class that should be used
+      for this test case class (if no other result instance is
+      provided to the "run()" method).
+
+      For "TestCase" instances, this will always be an instance of
+      "TestResult"; subclasses of "TestCase" should override this as
+      necessary.
+
+   id()
+
+      Retorna uma string identificando o caso de teste específico.
+      Geralmente é o nome completo do método do teste, incluindo o
+      módulo e o nome da classe.
+
+   shortDescription()
+
+      Retorna uma descrição do teste ou "None" se nenhuma descrição
+      for fornecida. A implementação padrão desse método retorna a
+      primeira linha da docstring do método do teste, se disponível,
+      ou "None".
+
+      Alterado na versão 3.1: In 3.1 this was changed to add the test
+      name to the short description even in the presence of a
+      docstring.  This caused compatibility issues with unittest
+      extensions and adding the test name was moved to the
+      "TextTestResult" in Python 3.2.
+
+   addCleanup(function, /, *args, **kwargs)
+
+      Add a function to be called after "tearDown()" to cleanup
+      resources used during the test. Functions will be called in
+      reverse order to the order they are added (LIFO (last-in, first-
+      out)).  They are called with any arguments and keyword arguments
+      passed into "addCleanup()" when they are added.
+
+      If "setUp()" fails, meaning that "tearDown()" is not called,
+      then any cleanup functions added will still be called.
+
+      Novo na versão 3.1.
+
+   enterContext(cm)
+
+      Enter the supplied *context manager*.  If successful, also add
+      its "__exit__()" method as a cleanup function by "addCleanup()"
+      and return the result of the "__enter__()" method.
+
+      Novo na versão 3.11.
+
+   doCleanups()
+
+      This method is called unconditionally after "tearDown()", or
+      after "setUp()" if "setUp()" raises an exception.
+
+      It is responsible for calling all the cleanup functions added by
+      "addCleanup()". If you need cleanup functions to be called
+      *prior* to "tearDown()" then you can call "doCleanups()"
+      yourself.
+
+      "doCleanups()" pops methods off the stack of cleanup functions
+      one at a time, so it can be called at any time.
+
+      Novo na versão 3.1.
+
+   classmethod addClassCleanup(function, /, *args, **kwargs)
+
+      Add a function to be called after "tearDownClass()" to cleanup
+      resources used during the test class. Functions will be called
+      in reverse order to the order they are added (LIFO (last-in,
+      first-out)). They are called with any arguments and keyword
+      arguments passed into "addClassCleanup()" when they are added.
+
+      If "setUpClass()" fails, meaning that "tearDownClass()" is not
+      called, then any cleanup functions added will still be called.
+
+      Novo na versão 3.8.
+
+   classmethod enterClassContext(cm)
+
+      Enter the supplied *context manager*.  If successful, also add
+      its "__exit__()" method as a cleanup function by
+      "addClassCleanup()" and return the result of the "__enter__()"
+      method.
+
+      Novo na versão 3.11.
+
+   classmethod doClassCleanups()
+
+      This method is called unconditionally after "tearDownClass()",
+      or after "setUpClass()" if "setUpClass()" raises an exception.
+
+      It is responsible for calling all the cleanup functions added by
+      "addClassCleanup()". If you need cleanup functions to be called
+      *prior* to "tearDownClass()" then you can call
+      "doClassCleanups()" yourself.
+
+      "doClassCleanups()" pops methods off the stack of cleanup
+      functions one at a time, so it can be called at any time.
+
+      Novo na versão 3.8.
+
+class unittest.IsolatedAsyncioTestCase(methodName='runTest')
+
+   This class provides an API similar to "TestCase" and also accepts
+   coroutines as test functions.
+
+   Novo na versão 3.8.
+
+   coroutine asyncSetUp()
+
+      Method called to prepare the test fixture. This is called after
+      "setUp()". This is called immediately before calling the test
+      method; other than "AssertionError" or "SkipTest", any exception
+      raised by this method will be considered an error rather than a
+      test failure. The default implementation does nothing.
+
+   coroutine asyncTearDown()
+
+      Method called immediately after the test method has been called
+      and the result recorded.  This is called before "tearDown()".
+      This is called even if the test method raised an exception, so
+      the implementation in subclasses may need to be particularly
+      careful about checking internal state.  Any exception, other
+      than "AssertionError" or "SkipTest", raised by this method will
+      be considered an additional error rather than a test failure
+      (thus increasing the total number of reported errors). This
+      method will only be called if the "asyncSetUp()" succeeds,
+      regardless of the outcome of the test method. The default
+      implementation does nothing.
+
+   addAsyncCleanup(function, /, *args, **kwargs)
+
+      This method accepts a coroutine that can be used as a cleanup
+      function.
+
+   coroutine enterAsyncContext(cm)
+
+      Enter the supplied *asynchronous context manager*.  If
+      successful, also add its "__aexit__()" method as a cleanup
+      function by "addAsyncCleanup()" and return the result of the
+      "__aenter__()" method.
+
+      Novo na versão 3.11.
+
+   run(result=None)
+
+      Sets up a new event loop to run the test, collecting the result
+      into the "TestResult" object passed as *result*.  If *result* is
+      omitted or "None", a temporary result object is created (by
+      calling the "defaultTestResult()" method) and used. The result
+      object is returned to "run()"'s caller. At the end of the test
+      all the tasks in the event loop are cancelled.
+
+   An example illustrating the order:
+
+      from unittest import IsolatedAsyncioTestCase
+
+      events = []
+
+
+      class Test(IsolatedAsyncioTestCase):
+
+
+          def setUp(self):
+              events.append("setUp")
+
+          async def asyncSetUp(self):
+              self._async_connection = await AsyncConnection()
+              events.append("asyncSetUp")
+
+          async def test_response(self):
+              events.append("test_response")
+              response = await self._async_connection.get("https://example.com")
+              self.assertEqual(response.status_code, 200)
+              self.addAsyncCleanup(self.on_cleanup)
+
+          def tearDown(self):
+              events.append("tearDown")
+
+          async def asyncTearDown(self):
+              await self._async_connection.close()
+              events.append("asyncTearDown")
+
+          async def on_cleanup(self):
+              events.append("cleanup")
+
+      if __name__ == "__main__":
+          unittest.main()
+
+   After running the test, "events" would contain "["setUp",
+   "asyncSetUp", "test_response", "asyncTearDown", "tearDown",
+   "cleanup"]".
+
+class unittest.FunctionTestCase(testFunc, setUp=None, tearDown=None, description=None)
+
+   This class implements the portion of the "TestCase" interface which
+   allows the test runner to drive the test, but does not provide the
+   methods which test code can use to check and report errors.  This
+   is used to create test cases using legacy test code, allowing it to
+   be integrated into a "unittest"-based test framework.
+
+
+Grouping tests
+--------------
+
+class unittest.TestSuite(tests=())
+
+   This class represents an aggregation of individual test cases and
+   test suites. The class presents the interface needed by the test
+   runner to allow it to be run as any other test case.  Running a
+   "TestSuite" instance is the same as iterating over the suite,
+   running each test individually.
+
+   If *tests* is given, it must be an iterable of individual test
+   cases or other test suites that will be used to build the suite
+   initially. Additional methods are provided to add test cases and
+   suites to the collection later on.
+
+   "TestSuite" objects behave much like "TestCase" objects, except
+   they do not actually implement a test.  Instead, they are used to
+   aggregate tests into groups of tests that should be run together.
+   Some additional methods are available to add tests to "TestSuite"
+   instances:
+
+   addTest(test)
+
+      Add a "TestCase" or "TestSuite" to the suite.
+
+   addTests(tests)
+
+      Add all the tests from an iterable of "TestCase" and "TestSuite"
+      instances to this test suite.
+
+      This is equivalent to iterating over *tests*, calling
+      "addTest()" for each element.
+
+   "TestSuite" shares the following methods with "TestCase":
+
+   run(result)
+
+      Run the tests associated with this suite, collecting the result
+      into the test result object passed as *result*.  Note that
+      unlike "TestCase.run()", "TestSuite.run()" requires the result
+      object to be passed in.
+
+   debug()
+
+      Run the tests associated with this suite without collecting the
+      result. This allows exceptions raised by the test to be
+      propagated to the caller and can be used to support running
+      tests under a debugger.
+
+   countTestCases()
+
+      Return the number of tests represented by this test object,
+      including all individual tests and sub-suites.
+
+   __iter__()
+
+      Tests grouped by a "TestSuite" are always accessed by iteration.
+      Subclasses can lazily provide tests by overriding "__iter__()".
+      Note that this method may be called several times on a single
+      suite (for example when counting tests or comparing for
+      equality) so the tests returned by repeated iterations before
+      "TestSuite.run()" must be the same for each call iteration.
+      After "TestSuite.run()", callers should not rely on the tests
+      returned by this method unless the caller uses a subclass that
+      overrides "TestSuite._removeTestAtIndex()" to preserve test
+      references.
+
+      Alterado na versão 3.2: In earlier versions the "TestSuite"
+      accessed tests directly rather than through iteration, so
+      overriding "__iter__()" wasn't sufficient for providing tests.
+
+      Alterado na versão 3.4: In earlier versions the "TestSuite" held
+      references to each "TestCase" after "TestSuite.run()".
+      Subclasses can restore that behavior by overriding
+      "TestSuite._removeTestAtIndex()".
+
+   In the typical usage of a "TestSuite" object, the "run()" method is
+   invoked by a "TestRunner" rather than by the end-user test harness.
+
+
+Carregando e executando testes
+------------------------------
+
+class unittest.TestLoader
+
+   The "TestLoader" class is used to create test suites from classes
+   and modules.  Normally, there is no need to create an instance of
+   this class; the "unittest" module provides an instance that can be
+   shared as "unittest.defaultTestLoader".  Using a subclass or
+   instance, however, allows customization of some configurable
+   properties.
+
+   Objetos da classe "TestLoader" possuem os seguintes atributos:
+
+   errors
+
+      A list of the non-fatal errors encountered while loading tests.
+      Not reset by the loader at any point. Fatal errors are signalled
+      by the relevant method raising an exception to the caller. Non-
+      fatal errors are also indicated by a synthetic test that will
+      raise the original error when run.
+
+      Novo na versão 3.5.
+
+   Objetos da classe "TestLoader" possuem os seguintes métodos:
+
+   loadTestsFromTestCase(testCaseClass)
+
+      Return a suite of all test cases contained in the
+      "TestCase"-derived "testCaseClass".
+
+      A test case instance is created for each method named by
+      "getTestCaseNames()". By default these are the method names
+      beginning with "test". If "getTestCaseNames()" returns no
+      methods, but the "runTest()" method is implemented, a single
+      test case is created for that method instead.
+
+   loadTestsFromModule(module, *, pattern=None)
+
+      Return a suite of all test cases contained in the given module.
+      This method searches *module* for classes derived from
+      "TestCase" and creates an instance of the class for each test
+      method defined for the class.
+
+      Nota:
+
+        While using a hierarchy of "TestCase"-derived classes can be
+        convenient in sharing fixtures and helper functions, defining
+        test methods on base classes that are not intended to be
+        instantiated directly does not play well with this method.
+        Doing so, however, can be useful when the fixtures are
+        different and defined in subclasses.
+
+      If a module provides a "load_tests" function it will be called
+      to load the tests. This allows modules to customize test
+      loading. This is the load_tests protocol.  The *pattern*
+      argument is passed as the third argument to "load_tests".
+
+      Alterado na versão 3.2: Suporte para "load_tests" adicionado.
+
+      Alterado na versão 3.5: Support for a keyword-only argument
+      *pattern* has been added.
+
+      Alterado na versão 3.12: The undocumented and unofficial
+      *use_load_tests* parameter has been removed.
+
+   loadTestsFromName(name, module=None)
+
+      Return a suite of all test cases given a string specifier.
+
+      The specifier *name* is a "dotted name" that may resolve either
+      to a module, a test case class, a test method within a test case
+      class, a "TestSuite" instance, or a callable object which
+      returns a "TestCase" or "TestSuite" instance.  These checks are
+      applied in the order listed here; that is, a method on a
+      possible test case class will be picked up as "a test method
+      within a test case class", rather than "a callable object".
+
+      For example, if you have a module "SampleTests" containing a
+      "TestCase"-derived class "SampleTestCase" with three test
+      methods ("test_one()", "test_two()", and "test_three()"), the
+      specifier "'SampleTests.SampleTestCase'" would cause this method
+      to return a suite which will run all three test methods. Using
+      the specifier "'SampleTests.SampleTestCase.test_two'" would
+      cause it to return a test suite which will run only the
+      "test_two()" test method. The specifier can refer to modules and
+      packages which have not been imported; they will be imported as
+      a side-effect.
+
+      O método opcionalmente resolve o *nome* relativo ao *módulo*
+      dado.
+
+      Alterado na versão 3.5: If an "ImportError" or "AttributeError"
+      occurs while traversing *name* then a synthetic test that raises
+      that error when run will be returned. These errors are included
+      in the errors accumulated by self.errors.
+
+   loadTestsFromNames(names, module=None)
+
+      Similar to "loadTestsFromName()", but takes a sequence of names
+      rather than a single name.  The return value is a test suite
+      which supports all the tests defined for each name.
+
+   getTestCaseNames(testCaseClass)
+
+      Return a sorted sequence of method names found within
+      *testCaseClass*; this should be a subclass of "TestCase".
+
+   discover(start_dir, pattern='test*.py', top_level_dir=None)
+
+      Find all the test modules by recursing into subdirectories from
+      the specified start directory, and return a TestSuite object
+      containing them. Only test files that match *pattern* will be
+      loaded. (Using shell style pattern matching.) Only module names
+      that are importable (i.e. are valid Python identifiers) will be
+      loaded.
+
+      All test modules must be importable from the top level of the
+      project. If the start directory is not the top level directory
+      then the top level directory must be specified separately.
+
+      If importing a module fails, for example due to a syntax error,
+      then this will be recorded as a single error and discovery will
+      continue.  If the import failure is due to "SkipTest" being
+      raised, it will be recorded as a skip instead of an error.
+
+      If a package (a directory containing a file named "__init__.py")
+      is found, the package will be checked for a "load_tests"
+      function. If this exists then it will be called
+      "package.load_tests(loader, tests, pattern)". Test discovery
+      takes care to ensure that a package is only checked for tests
+      once during an invocation, even if the load_tests function
+      itself calls "loader.discover".
+
+      If "load_tests" exists then discovery does *not* recurse into
+      the package, "load_tests" is responsible for loading all tests
+      in the package.
+
+      The pattern is deliberately not stored as a loader attribute so
+      that packages can continue discovery themselves. *top_level_dir*
+      is stored so "load_tests" does not need to pass this argument in
+      to "loader.discover()".
+
+      *start_dir* can be a dotted module name as well as a directory.
+
+      Novo na versão 3.2.
+
+      Alterado na versão 3.4: Modules that raise "SkipTest" on import
+      are recorded as skips, not errors.
+
+      Alterado na versão 3.4: *start_dir* can be a *namespace
+      packages*.
+
+      Alterado na versão 3.4: Paths are sorted before being imported
+      so that execution order is the same even if the underlying file
+      system's ordering is not dependent on file name.
+
+      Alterado na versão 3.5: Found packages are now checked for
+      "load_tests" regardless of whether their path matches *pattern*,
+      because it is impossible for a package name to match the default
+      pattern.
+
+      Alterado na versão 3.11: *start_dir* can not be a *namespace
+      packages*. It has been broken since Python 3.7 and Python 3.11
+      officially remove it.
+
+   The following attributes of a "TestLoader" can be configured either
+   by subclassing or assignment on an instance:
+
+   testMethodPrefix
+
+      String giving the prefix of method names which will be
+      interpreted as test methods.  The default value is "'test'".
+
+      This affects "getTestCaseNames()" and all the "loadTestsFrom*"
+      methods.
+
+   sortTestMethodsUsing
+
+      Function to be used to compare method names when sorting them in
+      "getTestCaseNames()" and all the "loadTestsFrom*" methods.
+
+   suiteClass
+
+      Callable object that constructs a test suite from a list of
+      tests. No methods on the resulting object are needed.  The
+      default value is the "TestSuite" class.
+
+      This affects all the "loadTestsFrom*" methods.
+
+   testNamePatterns
+
+      List of Unix shell-style wildcard test name patterns that test
+      methods have to match to be included in test suites (see "-k"
+      option).
+
+      If this attribute is not "None" (the default), all test methods
+      to be included in test suites must match one of the patterns in
+      this list. Note that matches are always performed using
+      "fnmatch.fnmatchcase()", so unlike patterns passed to the "-k"
+      option, simple substring patterns will have to be converted
+      using "*" wildcards.
+
+      This affects all the "loadTestsFrom*" methods.
+
+      Novo na versão 3.7.
+
+class unittest.TestResult
+
+   This class is used to compile information about which tests have
+   succeeded and which have failed.
+
+   A "TestResult" object stores the results of a set of tests.  The
+   "TestCase" and "TestSuite" classes ensure that results are properly
+   recorded; test authors do not need to worry about recording the
+   outcome of tests.
+
+   Testing frameworks built on top of "unittest" may want access to
+   the "TestResult" object generated by running a set of tests for
+   reporting purposes; a "TestResult" instance is returned by the
+   "TestRunner.run()" method for this purpose.
+
+   "TestResult" instances have the following attributes that will be
+   of interest when inspecting the results of running a set of tests:
+
+   errors
+
+      A list containing 2-tuples of "TestCase" instances and strings
+      holding formatted tracebacks. Each tuple represents a test which
+      raised an unexpected exception.
+
+   failures
+
+      A list containing 2-tuples of "TestCase" instances and strings
+      holding formatted tracebacks. Each tuple represents a test where
+      a failure was explicitly signalled using the assert* methods.
+
+   skipped
+
+      A list containing 2-tuples of "TestCase" instances and strings
+      holding the reason for skipping the test.
+
+      Novo na versão 3.1.
+
+   expectedFailures
+
+      A list containing 2-tuples of "TestCase" instances and strings
+      holding formatted tracebacks.  Each tuple represents an expected
+      failure or error of the test case.
+
+   unexpectedSuccesses
+
+      A list containing "TestCase" instances that were marked as
+      expected failures, but succeeded.
+
+   collectedDurations
+
+      A list containing 2-tuples of test case names and floats
+      representing the elapsed time of each test which was run.
+
+      Novo na versão 3.12.
+
+   shouldStop
+
+      Set to "True" when the execution of tests should stop by
+      "stop()".
+
+   testsRun
+
+      The total number of tests run so far.
+
+   buffer
+
+      If set to true, "sys.stdout" and "sys.stderr" will be buffered
+      in between "startTest()" and "stopTest()" being called.
+      Collected output will only be echoed onto the real "sys.stdout"
+      and "sys.stderr" if the test fails or errors. Any output is also
+      attached to the failure / error message.
+
+      Novo na versão 3.2.
+
+   failfast
+
+      Se definido como true (verdadeiro) "stop()" será chamado na
+      primeira falha ou erro, interrompendo a execução do teste.
+
+      Novo na versão 3.2.
+
+   tb_locals
+
+      If set to true then local variables will be shown in tracebacks.
+
+      Novo na versão 3.5.
+
+   wasSuccessful()
+
+      Return "True" if all tests run so far have passed, otherwise
+      returns "False".
+
+      Alterado na versão 3.4: Returns "False" if there were any
+      "unexpectedSuccesses" from tests marked with the
+      "expectedFailure()" decorator.
+
+   stop()
+
+      This method can be called to signal that the set of tests being
+      run should be aborted by setting the "shouldStop" attribute to
+      "True". "TestRunner" objects should respect this flag and return
+      without running any additional tests.
+
+      For example, this feature is used by the "TextTestRunner" class
+      to stop the test framework when the user signals an interrupt
+      from the keyboard.  Interactive tools which provide "TestRunner"
+      implementations can use this in a similar manner.
+
+   The following methods of the "TestResult" class are used to
+   maintain the internal data structures, and may be extended in
+   subclasses to support additional reporting requirements.  This is
+   particularly useful in building tools which support interactive
+   reporting while tests are being run.
+
+   startTest(test)
+
+      Called when the test case *test* is about to be run.
+
+   stopTest(test)
+
+      Called after the test case *test* has been executed, regardless
+      of the outcome.
+
+   startTestRun()
+
+      Called once before any tests are executed.
+
+      Novo na versão 3.1.
+
+   stopTestRun()
+
+      Called once after all tests are executed.
+
+      Novo na versão 3.1.
+
+   addError(test, err)
+
+      Called when the test case *test* raises an unexpected exception.
+      *err* is a tuple of the form returned by "sys.exc_info()":
+      "(type, value, traceback)".
+
+      The default implementation appends a tuple "(test,
+      formatted_err)" to the instance's "errors" attribute, where
+      *formatted_err* is a formatted traceback derived from *err*.
+
+   addFailure(test, err)
+
+      Called when the test case *test* signals a failure. *err* is a
+      tuple of the form returned by "sys.exc_info()": "(type, value,
+      traceback)".
+
+      The default implementation appends a tuple "(test,
+      formatted_err)" to the instance's "failures" attribute, where
+      *formatted_err* is a formatted traceback derived from *err*.
+
+   addSuccess(test)
+
+      Called when the test case *test* succeeds.
+
+      The default implementation does nothing.
+
+   addSkip(test, reason)
+
+      Called when the test case *test* is skipped.  *reason* is the
+      reason the test gave for skipping.
+
+      The default implementation appends a tuple "(test, reason)" to
+      the instance's "skipped" attribute.
+
+   addExpectedFailure(test, err)
+
+      Called when the test case *test* fails or errors, but was marked
+      with the "expectedFailure()" decorator.
+
+      The default implementation appends a tuple "(test,
+      formatted_err)" to the instance's "expectedFailures" attribute,
+      where *formatted_err* is a formatted traceback derived from
+      *err*.
+
+   addUnexpectedSuccess(test)
+
+      Called when the test case *test* was marked with the
+      "expectedFailure()" decorator, but succeeded.
+
+      The default implementation appends the test to the instance's
+      "unexpectedSuccesses" attribute.
+
+   addSubTest(test, subtest, outcome)
+
+      Called when a subtest finishes.  *test* is the test case
+      corresponding to the test method.  *subtest* is a custom
+      "TestCase" instance describing the subtest.
+
+      If *outcome* is "None", the subtest succeeded.  Otherwise, it
+      failed with an exception where *outcome* is a tuple of the form
+      returned by "sys.exc_info()": "(type, value, traceback)".
+
+      The default implementation does nothing when the outcome is a
+      success, and records subtest failures as normal failures.
+
+      Novo na versão 3.4.
+
+   addDuration(test, elapsed)
+
+      Called when the test case finishes.  *elapsed* is the time
+      represented in seconds, and it includes the execution of cleanup
+      functions.
+
+      Novo na versão 3.12.
+
+class unittest.TextTestResult(stream, descriptions, verbosity, *, durations=None)
+
+   A concrete implementation of "TestResult" used by the
+   "TextTestRunner". Subclasses should accept "**kwargs" to ensure
+   compatibility as the interface changes.
+
+   Novo na versão 3.2.
+
+   Alterado na versão 3.12: Added the *durations* keyword parameter.
+
+unittest.defaultTestLoader
+
+   Instance of the "TestLoader" class intended to be shared.  If no
+   customization of the "TestLoader" is needed, this instance can be
+   used instead of repeatedly creating new instances.
+
+class unittest.TextTestRunner(stream=None, descriptions=True, verbosity=1, failfast=False, buffer=False, resultclass=None, warnings=None, *, tb_locals=False, durations=None)
+
+   A basic test runner implementation that outputs results to a
+   stream. If *stream* is "None", the default, "sys.stderr" is used as
+   the output stream. This class has a few configurable parameters,
+   but is essentially very simple.  Graphical applications which run
+   test suites should provide alternate implementations. Such
+   implementations should accept "**kwargs" as the interface to
+   construct runners changes when features are added to unittest.
+
+   By default this runner shows "DeprecationWarning",
+   "PendingDeprecationWarning", "ResourceWarning" and "ImportWarning"
+   even if they are ignored by default.  This behavior can be
+   overridden using Python's "-Wd" or "-Wa" options (see Warning
+   control) and leaving *warnings* to "None".
+
+   Alterado na versão 3.2: Added the *warnings* parameter.
+
+   Alterado na versão 3.2: The default stream is set to "sys.stderr"
+   at instantiation time rather than import time.
+
+   Alterado na versão 3.5: Added the *tb_locals* parameter.
+
+   Alterado na versão 3.12: Added the *durations* parameter.
+
+   _makeResult()
+
+      This method returns the instance of "TestResult" used by
+      "run()". It is not intended to be called directly, but can be
+      overridden in subclasses to provide a custom "TestResult".
+
+      "_makeResult()" instantiates the class or callable passed in the
+      "TextTestRunner" constructor as the "resultclass" argument. It
+      defaults to "TextTestResult" if no "resultclass" is provided.
+      The result class is instantiated with the following arguments:
+
+         stream, descriptions, verbosity
+
+   run(test)
+
+      This method is the main public interface to the
+      "TextTestRunner". This method takes a "TestSuite" or "TestCase"
+      instance. A "TestResult" is created by calling "_makeResult()"
+      and the test(s) are run and the results printed to stdout.
+
+unittest.main(module='__main__', defaultTest=None, argv=None, testRunner=None, testLoader=unittest.defaultTestLoader, exit=True, verbosity=1, failfast=None, catchbreak=None, buffer=None, warnings=None)
+
+   A command-line program that loads a set of tests from *module* and
+   runs them; this is primarily for making test modules conveniently
+   executable. The simplest use for this function is to include the
+   following line at the end of a test script:
+
+      if __name__ == '__main__':
+          unittest.main()
+
+   You can run tests with more detailed information by passing in the
+   verbosity argument:
+
+      if __name__ == '__main__':
+          unittest.main(verbosity=2)
+
+   The *defaultTest* argument is either the name of a single test or
+   an iterable of test names to run if no test names are specified via
+   *argv*.  If not specified or "None" and no test names are provided
+   via *argv*, all tests found in *module* are run.
+
+   O argumento *argv* pode ser uma lista de opções passada para o
+   programa, com o primeiro elemento sendo o nome do programa. Se não
+   for especificado ou for "None", os valores de "sys.argv" são
+   usados.
+
+   The *testRunner* argument can either be a test runner class or an
+   already created instance of it. By default "main" calls
+   "sys.exit()" with an exit code indicating success (0) or failure
+   (1) of the tests run. An exit code of 5 indicates that no tests
+   were run or skipped.
+
+   The *testLoader* argument has to be a "TestLoader" instance, and
+   defaults to "defaultTestLoader".
+
+   "main" supports being used from the interactive interpreter by
+   passing in the argument "exit=False". This displays the result on
+   standard output without calling "sys.exit()":
+
+      >>> from unittest import main
+      >>> main(module='test_module', exit=False)
+
+   The *failfast*, *catchbreak* and *buffer* parameters have the same
+   effect as the same-name command-line options.
+
+   The *warnings* argument specifies the warning filter that should be
+   used while running the tests.  If it's not specified, it will
+   remain "None" if a "-W" option is passed to **python** (see Warning
+   control), otherwise it will be set to "'default'".
+
+   Calling "main" actually returns an instance of the "TestProgram"
+   class. This stores the result of the tests run as the "result"
+   attribute.
+
+   Alterado na versão 3.1: The *exit* parameter was added.
+
+   Alterado na versão 3.2: The *verbosity*, *failfast*, *catchbreak*,
+   *buffer* and *warnings* parameters were added.
+
+   Alterado na versão 3.4: The *defaultTest* parameter was changed to
+   also accept an iterable of test names.
+
+
+load_tests Protocol
+~~~~~~~~~~~~~~~~~~~
+
+Novo na versão 3.2.
+
+Modules or packages can customize how tests are loaded from them
+during normal test runs or test discovery by implementing a function
+called "load_tests".
+
+If a test module defines "load_tests" it will be called by
+"TestLoader.loadTestsFromModule()" with the following arguments:
+
+   load_tests(loader, standard_tests, pattern)
+
+where *pattern* is passed straight through from "loadTestsFromModule".
+It defaults to "None".
+
+It should return a "TestSuite".
+
+*loader* is the instance of "TestLoader" doing the loading.
+*standard_tests* are the tests that would be loaded by default from
+the module. It is common for test modules to only want to add or
+remove tests from the standard set of tests. The third argument is
+used when loading packages as part of test discovery.
+
+A typical "load_tests" function that loads tests from a specific set
+of "TestCase" classes may look like:
+
+   test_cases = (TestCase1, TestCase2, TestCase3)
+
+   def load_tests(loader, tests, pattern):
+       suite = TestSuite()
+       for test_class in test_cases:
+           tests = loader.loadTestsFromTestCase(test_class)
+           suite.addTests(tests)
+       return suite
+
+If discovery is started in a directory containing a package, either
+from the command line or by calling "TestLoader.discover()", then the
+package "__init__.py" will be checked for "load_tests".  If that
+function does not exist, discovery will recurse into the package as
+though it were just another directory.  Otherwise, discovery of the
+package's tests will be left up to "load_tests" which is called with
+the following arguments:
+
+   load_tests(loader, standard_tests, pattern)
+
+This should return a "TestSuite" representing all the tests from the
+package. ("standard_tests" will only contain tests collected from
+"__init__.py".)
+
+Because the pattern is passed into "load_tests" the package is free to
+continue (and potentially modify) test discovery. A 'do nothing'
+"load_tests" function for a test package would look like:
+
+   def load_tests(loader, standard_tests, pattern):
+       # top level directory cached on loader instance
+       this_dir = os.path.dirname(__file__)
+       package_tests = loader.discover(start_dir=this_dir, pattern=pattern)
+       standard_tests.addTests(package_tests)
+       return standard_tests
+
+Alterado na versão 3.5: Discovery no longer checks package names for
+matching *pattern* due to the impossibility of package names matching
+the default pattern.
+
+
+Classes e Módulos de Definição de Contexto
+==========================================
+
+Definições de contexto em um nível de classe e módulo são
+implementadas na classe "TestSuite". Quando a suíte de testes
+encontrar um teste de uma nova classe, o método "tearDownClass()" da
+classe anterior (se houver alguma) é chamado logo antes da chamada do
+método "setUpClass()" da nova classe.
+
+Similarly if a test is from a different module from the previous test
+then "tearDownModule" from the previous module is run, followed by
+"setUpModule" from the new module.
+
+Após executar todos os testes, haverá a execução final do
+"tearDownClass" e do "tearDownModule".
+
+Note that shared fixtures do not play well with [potential] features
+like test parallelization and they break test isolation. They should
+be used with care.
+
+The default ordering of tests created by the unittest test loaders is
+to group all tests from the same modules and classes together. This
+will lead to "setUpClass" / "setUpModule" (etc) being called exactly
+once per class and module. If you randomize the order, so that tests
+from different modules and classes are adjacent to each other, then
+these shared fixture functions may be called multiple times in a
+single test run.
+
+Shared fixtures are not intended to work with suites with non-standard
+ordering. A "BaseTestSuite" still exists for frameworks that don't
+want to support shared fixtures.
+
+If there are any exceptions raised during one of the shared fixture
+functions the test is reported as an error. Because there is no
+corresponding test instance an "_ErrorHolder" object (that has the
+same interface as a "TestCase") is created to represent the error. If
+you are just using the standard unittest test runner then this detail
+doesn't matter, but if you are a framework author it may be relevant.
+
+
+setUpClass and tearDownClass
+----------------------------
+
+These must be implemented as class methods:
+
+   import unittest
+
+   class Test(unittest.TestCase):
+       @classmethod
+       def setUpClass(cls):
+           cls._connection = createExpensiveConnectionObject()
+
+       @classmethod
+       def tearDownClass(cls):
+           cls._connection.destroy()
+
+If you want the "setUpClass" and "tearDownClass" on base classes
+called then you must call up to them yourself. The implementations in
+"TestCase" are empty.
+
+If an exception is raised during a "setUpClass" then the tests in the
+class are not run and the "tearDownClass" is not run. Skipped classes
+will not have "setUpClass" or "tearDownClass" run. If the exception is
+a "SkipTest" exception then the class will be reported as having been
+skipped instead of as an error.
+
+
+setUpModule and tearDownModule
+------------------------------
+
+These should be implemented as functions:
+
+   def setUpModule():
+       createConnection()
+
+   def tearDownModule():
+       closeConnection()
+
+If an exception is raised in a "setUpModule" then none of the tests in
+the module will be run and the "tearDownModule" will not be run. If
+the exception is a "SkipTest" exception then the module will be
+reported as having been skipped instead of as an error.
+
+To add cleanup code that must be run even in the case of an exception,
+use "addModuleCleanup":
+
+unittest.addModuleCleanup(function, /, *args, **kwargs)
+
+   Add a function to be called after "tearDownModule()" to cleanup
+   resources used during the test class. Functions will be called in
+   reverse order to the order they are added (LIFO (last-in, first-
+   out)). They are called with any arguments and keyword arguments
+   passed into "addModuleCleanup()" when they are added.
+
+   If "setUpModule()" fails, meaning that "tearDownModule()" is not
+   called, then any cleanup functions added will still be called.
+
+   Novo na versão 3.8.
+
+classmethod unittest.enterModuleContext(cm)
+
+   Enter the supplied *context manager*.  If successful, also add its
+   "__exit__()" method as a cleanup function by "addModuleCleanup()"
+   and return the result of the "__enter__()" method.
+
+   Novo na versão 3.11.
+
+unittest.doModuleCleanups()
+
+   This function is called unconditionally after "tearDownModule()",
+   or after "setUpModule()" if "setUpModule()" raises an exception.
+
+   It is responsible for calling all the cleanup functions added by
+   "addModuleCleanup()". If you need cleanup functions to be called
+   *prior* to "tearDownModule()" then you can call
+   "doModuleCleanups()" yourself.
+
+   "doModuleCleanups()" pops methods off the stack of cleanup
+   functions one at a time, so it can be called at any time.
+
+   Novo na versão 3.8.
+
+
+Tratamento de sinal
+===================
+
+Novo na versão 3.2.
+
+The "-c/--catch" command-line option to unittest, along with the
+"catchbreak" parameter to "unittest.main()", provide more friendly
+handling of control-C during a test run. With catch break behavior
+enabled control-C will allow the currently running test to complete,
+and the test run will then end and report all the results so far. A
+second control-c will raise a "KeyboardInterrupt" in the usual way.
+
+The control-c handling signal handler attempts to remain compatible
+with code or tests that install their own "signal.SIGINT" handler. If
+the "unittest" handler is called but *isn't* the installed
+"signal.SIGINT" handler, i.e. it has been replaced by the system under
+test and delegated to, then it calls the default handler. This will
+normally be the expected behavior by code that replaces an installed
+handler and delegates to it. For individual tests that need "unittest"
+control-c handling disabled the "removeHandler()" decorator can be
+used.
+
+There are a few utility functions for framework authors to enable
+control-c handling functionality within test frameworks.
+
+unittest.installHandler()
+
+   Install the control-c handler. When a "signal.SIGINT" is received
+   (usually in response to the user pressing control-c) all registered
+   results have "stop()" called.
+
+unittest.registerResult(result)
+
+   Register a "TestResult" object for control-c handling. Registering
+   a result stores a weak reference to it, so it doesn't prevent the
+   result from being garbage collected.
+
+   Registering a "TestResult" object has no side-effects if control-c
+   handling is not enabled, so test frameworks can unconditionally
+   register all results they create independently of whether or not
+   handling is enabled.
+
+unittest.removeResult(result)
+
+   Remove um resultado registrado. Dado que um resultado for removido,
+   então "stop()" não será mais chamado no objeto resultado em
+   resposta a um Ctrl+C
+
+unittest.removeHandler(function=None)
+
+   When called without arguments this function removes the control-c
+   handler if it has been installed. This function can also be used as
+   a test decorator to temporarily remove the handler while the test
+   is being executed:
+
+      @unittest.removeHandler
+      def test_signal_handling(self):
+          ...

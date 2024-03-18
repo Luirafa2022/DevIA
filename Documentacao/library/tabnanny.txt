@@ -1,0 +1,53 @@
+"tabnanny" --- Detecção de recuo ambíguo
+****************************************
+
+**Código-fonte:** Lib/tabnanny.py
+
+======================================================================
+
+Por enquanto, este módulo deve ser chamado como um script. No entanto,
+é possível importá-lo para um IDE e usar a função "check()" descrita
+abaixo.
+
+Nota:
+
+  A API fornecida por este módulo provavelmente mudará em versões
+  futuras; essas mudanças podem não ser compatíveis com versões
+  anteriores.
+
+tabnanny.check(file_or_dir)
+
+   Se *file_or_dir* for um diretório e não um link simbólico, desce
+   recursivamente a árvore de diretórios nomeada por *file_or_dir*,
+   verificando todos os arquivos ".py" ao longo do caminho. Se
+   *file_or_dir* for um arquivo-fonte comum do Python, ele será
+   verificado quanto a problemas relacionados ao espaço em branco. As
+   mensagens de diagnóstico são gravadas na saída padrão usando a
+   função "print()".
+
+tabnanny.verbose
+
+   Sinalizador indicando se as mensagens detalhadas devem ser
+   impressas. Isso é incrementado pela opção "-v" se chamado como um
+   script.
+
+tabnanny.filename_only
+
+   Sinalizador indicando se os nomes dos arquivos devem ser impressos
+   apenas com problemas relacionados a espaços em branco. Isso é
+   definido como true pela opção "-q" se chamado como um script.
+
+exception tabnanny.NannyNag
+
+   Levantada por "process_tokens()" se detectar um recuo ambíguo.
+   Capturado e manipulado em "check()".
+
+tabnanny.process_tokens(tokens)
+
+   Esta função é usada por "check()" para processar os tokens gerados
+   pelo módulo "tokenize".
+
+Ver também:
+
+  Módulo "tokenize"
+     Scanner léxico para código-fonte Python.
