@@ -9,14 +9,12 @@ from PySide2.QtGui import QFont, QIcon, QSyntaxHighlighter, QTextCharFormat, QCo
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from string import punctuation
-from nltk.probability import FreqDist
-from heapq import nlargest
+from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Downloada os recursos necessários do NLTK
+# Download os recursos necessários do NLTK
 nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 
 # Diretório contendo as pastas e arquivos da documentação
@@ -34,27 +32,68 @@ def load_documentation_text():
                     documentation_text += content + "\n"
     return documentation_text
 
-# Pré-processa o texto removendo pontuação, stopwords e tornando minúsculo
 def preprocess_text(text):
-    stop_words = set(stopwords.words('portuguese') + list(punctuation))
-    words = word_tokenize(text.lower())
-    filtered_words = [word for word in words if word not in stop_words]
-    return ' '.join(filtered_words)
+    # Tokenização
+    tokens = word_tokenize(text.lower())
+    
+    # Remoção de stopwords e pontuação
+    stop_words = set(stopwords.words('english') + list(punctuation))
+    filtered_tokens = [token for token in tokens if token not in stop_words]
+    
+    # Stemming
+    stemmer = PorterStemmer()
+    stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
+    
+    return ' '.join(stemmed_tokens)
 
-# Gera uma resposta com base nas informações encontradas na documentação
-def generate_response(query, documentation_text):
-    preprocessed_query = preprocess_text(query)
-    sentences = sent_tokenize(documentation_text)
-    preprocessed_sentences = [preprocess_text(sentence) for sentence in sentences]
-    
+def find_relevant_docs(query, docs, top_n=3):
+    # Vetorização TF-IDF
     vectorizer = TfidfVectorizer()
-    sentence_vectors = vectorizer.fit_transform(preprocessed_sentences)
-    query_vector = vectorizer.transform([preprocessed_query])
+    doc_vectors = vectorizer.fit_transform(docs)
+    query_vector = vectorizer.transform([query])
     
-    similarities = cosine_similarity(query_vector, sentence_vectors)
-    most_similar_sentence_index = similarities.argmax()
+    # Cálculo da similaridade do cosseno
+    similarity_scores = cosine_similarity(query_vector, doc_vectors)
+    top_indices = similarity_scores.argsort()[0][-top_n:][::-1]
     
-    return sentences[most_similar_sentence_index]
+    return [docs[i] for i in top_indices]
+
+def generate_response(query, docs):
+    if not docs:
+        return "Desculpe, não encontrei informações relevantes para a sua pergunta."
+    
+    # Concatenar os documentos relevantes
+    relevant_text = ' '.join(docs)
+    
+    # Tokenizar o texto em sentenças
+    sentences = sent_tokenize(relevant_text)
+    
+    # Vetorização TF-IDF
+    vectorizer = TfidfVectorizer()
+    sentence_vectors = vectorizer.fit_transform(sentences)
+    query_vector = vectorizer.transform([query])
+    
+    # Cálculo da similaridade do cosseno
+    similarity_scores = cosine_similarity(query_vector, sentence_vectors)
+    top_index = similarity_scores.argmax()
+    
+    return sentences[top_index]
+
+# Função para processar a entrada do usuário e gerar uma resposta adequada
+def process_user_input(user_input, documentation):
+    # Pré-processamento do texto do usuário
+    preprocessed_input = preprocess_text(user_input)
+    
+    # Pré-processamento da documentação
+    preprocessed_docs = [preprocess_text(doc) for doc in documentation]
+    
+    # Encontrar a documentação mais relevante
+    relevant_docs = find_relevant_docs(preprocessed_input, preprocessed_docs)
+    
+    # Gerar a resposta com base na documentação relevante
+    response = generate_response(preprocessed_input, relevant_docs)
+    
+    return response
 
 # Função para encontrar a resposta mais próxima usando fuzzy string matching
 def find_closest_match(user_input, patterns):
@@ -177,14 +216,10 @@ class MainWindow(QMainWindow):
             user_item = QListWidgetItem(user_message)
             self.conversation_list.addItem(user_item)
             
-            closest_match = find_closest_match(user_input, [pair[0] for pair in pairs])
-            if closest_match:
-                response = chatbot.respond(closest_match)
-            else:
-                try:
-                    response = generate_response(user_input, documentation_text)
-                except Exception as e:
-                    response = f"Desculpe, ocorreu um erro ao gerar a resposta: {str(e)}"
+            try:
+                response = process_user_input(user_input, documentation_text.split('\n'))
+            except Exception as e:
+                response = f"Desculpe, ocorreu um erro ao gerar a resposta: {str(e)}"
             
             ai_message = f"DevIA: {response}"
             ai_item = QListWidgetItem(ai_message)
@@ -194,6 +229,7 @@ class MainWindow(QMainWindow):
                 self.highlight_code(ai_item)
             
             self.user_input.clear()
+
     
     def write_chatbot_response(self, item, response):
         chars = list(response)
